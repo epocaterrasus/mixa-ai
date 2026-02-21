@@ -1,6 +1,7 @@
 import { TabBar } from "./components/TabBar";
 import { Toolbar } from "./components/Toolbar";
 import { TabContent } from "./components/TabContent";
+import { Sidebar } from "./components/Sidebar";
 import { useTabEvents } from "./hooks/useTabEvents";
 import { useTabShortcuts } from "./hooks/useTabShortcuts";
 import { useTabLifecycle } from "./hooks/useTabLifecycle";
@@ -9,12 +10,19 @@ import { useTabStore } from "./stores/tabs";
 const styles = {
   root: {
     display: "flex",
-    flexDirection: "column",
+    flexDirection: "row",
     height: "100vh",
     overflow: "hidden",
     backgroundColor: "#0a0a0a",
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  } as React.CSSProperties,
+  main: {
+    display: "flex",
+    flexDirection: "column",
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
   } as React.CSSProperties,
   content: {
     flex: 1,
@@ -75,14 +83,17 @@ export function App(): React.ReactElement {
 
   return (
     <div style={styles.root}>
-      <TabBar />
-      <Toolbar />
-      <div style={styles.content}>
-        {activeTab ? (
-          <TabContent type={activeTab.type} hasUrl={!!activeTab.url} />
-        ) : hasTabs ? null : (
-          <EmptyState />
-        )}
+      <Sidebar />
+      <div style={styles.main}>
+        <TabBar />
+        <Toolbar />
+        <div style={styles.content}>
+          {activeTab ? (
+            <TabContent type={activeTab.type} hasUrl={!!activeTab.url} />
+          ) : hasTabs ? null : (
+            <EmptyState />
+          )}
+        </div>
       </div>
     </div>
   );
