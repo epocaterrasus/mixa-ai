@@ -46,7 +46,7 @@
 | 28 | MIXA-023 | GUARD module (secrets) | 🟢 DONE | 020 | TERMINAL-ENGINEER |
 | 29 | MIXA-024 | FORGE module (Git/GitHub) | 🟢 DONE | 020 | TERMINAL-ENGINEER |
 | 30 | MIXA-025 | KEYS module (shortcuts) | 🟢 DONE | 020 | TERMINAL-ENGINEER |
-| 31 | MIXA-026 | xterm.js shell fallback | 🔴 TODO | 022 | TERMINAL-ENGINEER |
+| 31 | MIXA-026 | xterm.js shell fallback | 🟢 DONE | 022 | TERMINAL-ENGINEER |
 | 32 | MIXA-027 | COST module | 🔴 TODO | 020 | TERMINAL-ENGINEER |
 | 33 | MIXA-028 | PULSE module | 🔴 TODO | 020 | TERMINAL-ENGINEER |
 
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 30
-- Remaining: 21
+- Completed: 31
+- Remaining: 20
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes
