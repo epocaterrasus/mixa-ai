@@ -69,12 +69,32 @@ const iconPlaceholderStyle: React.CSSProperties = {
 const titleCellStyle: React.CSSProperties = {
   flex: 1,
   minWidth: 0,
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  overflow: "hidden",
+};
+
+const titleTextStyle: React.CSSProperties = {
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
   fontSize: "13px",
   fontWeight: 500,
   color: "var(--mixa-text-primary)",
+};
+
+const inlineTagStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "3px",
+  fontSize: "10px",
+  padding: "1px 5px",
+  borderRadius: "8px",
+  backgroundColor: "var(--mixa-bg-active)",
+  color: "var(--mixa-text-muted)",
+  flexShrink: 0,
+  whiteSpace: "nowrap",
 };
 
 const domainCellStyle: React.CSSProperties = {
@@ -228,8 +248,29 @@ export function ItemRow({
         <div style={iconPlaceholderStyle}>{itemTypeIcon(item.itemType)}</div>
       )}
 
-      {/* Title */}
-      <div style={titleCellStyle}>{item.title}</div>
+      {/* Title + Tags */}
+      <div style={titleCellStyle}>
+        <span style={titleTextStyle}>{item.title}</span>
+        {item.tags.slice(0, 2).map((tag) => (
+          <span key={tag.id} style={inlineTagStyle}>
+            {tag.color && (
+              <span
+                style={{
+                  width: "5px",
+                  height: "5px",
+                  borderRadius: "50%",
+                  backgroundColor: tag.color,
+                  flexShrink: 0,
+                }}
+              />
+            )}
+            {tag.name}
+          </span>
+        ))}
+        {item.tags.length > 2 && (
+          <span style={inlineTagStyle}>+{item.tags.length - 2}</span>
+        )}
+      </div>
 
       {/* Domain */}
       <div style={domainCellStyle}>{item.domain ?? "local"}</div>

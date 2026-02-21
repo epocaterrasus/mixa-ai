@@ -1,12 +1,16 @@
 // Knowledge filter sidebar panel
 
-import { useCallback } from "react";
-import type { KnowledgeFilters } from "../../stores/knowledge";
+import { useCallback, useEffect } from "react";
+import type { KnowledgeFilters, AvailableTag, AvailableProject } from "../../stores/knowledge";
 
 interface FilterPanelProps {
   filters: KnowledgeFilters;
+  availableTags: AvailableTag[];
+  availableProjects: AvailableProject[];
   onSetFilter: <K extends keyof KnowledgeFilters>(key: K, value: KnowledgeFilters[K]) => void;
   onClearFilters: () => void;
+  onLoadTags: () => Promise<void>;
+  onLoadProjects: () => Promise<void>;
 }
 
 const panelStyle: React.CSSProperties = {
@@ -81,6 +85,35 @@ const dateInputStyle: React.CSSProperties = {
   transition: "border-color 0.15s",
 };
 
+const emptyHintStyle: React.CSSProperties = {
+  fontSize: "11px",
+  color: "var(--mixa-text-muted)",
+  fontStyle: "italic",
+  padding: "4px 8px",
+};
+
+const tagChipStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "4px",
+  padding: "3px 8px",
+  borderRadius: "10px",
+  border: "1px solid var(--mixa-border-default)",
+  backgroundColor: "transparent",
+  color: "var(--mixa-text-secondary)",
+  fontSize: "11px",
+  cursor: "pointer",
+  transition: "background-color 0.1s, border-color 0.1s",
+};
+
+const tagChipActiveStyle: React.CSSProperties = {
+  ...tagChipStyle,
+  backgroundColor: "var(--mixa-bg-active-accent)",
+  borderColor: "var(--mixa-accent-primary)",
+  color: "var(--mixa-accent-primary)",
+  fontWeight: 500,
+};
+
 const ITEM_TYPES = [
   { value: "article" as const, label: "Articles", icon: "\u{1F4C4}" },
   { value: "highlight" as const, label: "Highlights", icon: "\u{1F4CC}" },
@@ -115,21 +148,52 @@ function getActiveDatePreset(dateFrom: string | undefined, dateTo: string | unde
 
 export function FilterPanel({
   filters,
+  availableTags,
+  availableProjects,
   onSetFilter,
   onClearFilters,
+  onLoadTags,
+  onLoadProjects,
 }: FilterPanelProps): React.ReactElement {
+  // Load tags and projects when the panel mounts
+  useEffect(() => {
+    void onLoadTags();
+    void onLoadProjects();
+  }, [onLoadTags, onLoadProjects]);
+
   const hasActiveFilters =
     filters.itemType !== undefined ||
     filters.isFavorite !== undefined ||
     filters.isArchived !== false ||
     filters.dateFrom !== undefined ||
-    filters.dateTo !== undefined;
+    filters.dateTo !== undefined ||
+    filters.tagIds.length > 0 ||
+    filters.projectId !== undefined;
 
   const handleTypeClick = useCallback(
     (type: typeof ITEM_TYPES[number]["value"]) => {
       onSetFilter("itemType", filters.itemType === type ? undefined : type);
     },
     [filters.itemType, onSetFilter],
+  );
+
+  const handleTagClick = useCallback(
+    (tagId: string) => {
+      const current = filters.tagIds;
+      if (current.includes(tagId)) {
+        onSetFilter("tagIds", current.filter((id) => id !== tagId));
+      } else {
+        onSetFilter("tagIds", [...current, tagId]);
+      }
+    },
+    [filters.tagIds, onSetFilter],
+  );
+
+  const handleProjectClick = useCallback(
+    (projectId: string) => {
+      onSetFilter("projectId", filters.projectId === projectId ? undefined : projectId);
+    },
+    [filters.projectId, onSetFilter],
   );
 
   const activeDatePreset = getActiveDatePreset(filters.dateFrom, filters.dateTo);
@@ -220,6 +284,101 @@ export function FilterPanel({
             <span>{type.label}</span>
           </button>
         ))}
+      </div>
+
+      {/* Tags filter */}
+      <div style={sectionStyle}>
+        <div style={sectionLabelStyle}>Tags</div>
+        {availableTags.length === 0 ? (
+          <div style={emptyHintStyle}>No tags yet</div>
+        ) : (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+            {availableTags.map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                style={filters.tagIds.includes(tag.id) ? tagChipActiveStyle : tagChipStyle}
+                onClick={() => handleTagClick(tag.id)}
+                onMouseEnter={(e) => {
+                  if (!filters.tagIds.includes(tag.id)) {
+                    e.currentTarget.style.backgroundColor = "var(--mixa-bg-hover)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!filters.tagIds.includes(tag.id)) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                {tag.color && (
+                  <span
+                    style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "50%",
+                      backgroundColor: tag.color,
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+                {tag.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Projects filter */}
+      <div style={sectionStyle}>
+        <div style={sectionLabelStyle}>Projects</div>
+        {availableProjects.length === 0 ? (
+          <div style={emptyHintStyle}>No projects yet</div>
+        ) : (
+          <>
+            <button
+              type="button"
+              style={filters.projectId === undefined ? filterButtonActiveStyle : filterButtonStyle}
+              onClick={() => onSetFilter("projectId", undefined)}
+              onMouseEnter={(e) => {
+                if (filters.projectId !== undefined) {
+                  e.currentTarget.style.backgroundColor = "var(--mixa-bg-hover)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (filters.projectId !== undefined) {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }
+              }}
+            >
+              All projects
+            </button>
+            {availableProjects.map((project) => (
+              <button
+                key={project.id}
+                type="button"
+                style={
+                  filters.projectId === project.id
+                    ? filterButtonActiveStyle
+                    : filterButtonStyle
+                }
+                onClick={() => handleProjectClick(project.id)}
+                onMouseEnter={(e) => {
+                  if (filters.projectId !== project.id) {
+                    e.currentTarget.style.backgroundColor = "var(--mixa-bg-hover)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (filters.projectId !== project.id) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                {project.icon && <span>{project.icon}</span>}
+                <span>{project.name}</span>
+              </button>
+            ))}
+          </>
+        )}
       </div>
 
       {/* Status filter */}

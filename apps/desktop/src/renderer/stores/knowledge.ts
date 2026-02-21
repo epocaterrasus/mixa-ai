@@ -3,6 +3,12 @@ import { trpc } from "../trpc";
 
 // ── Types ─────────────────────────────────────────────────────
 
+export interface ItemTag {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
 export interface KnowledgeItem {
   id: string;
   url: string | null;
@@ -17,11 +23,28 @@ export interface KnowledgeItem {
   domain: string | null;
   wordCount: number | null;
   readingTime: number | null;
+  summary: string | null;
   isArchived: boolean;
   isFavorite: boolean;
+  tags: ItemTag[];
+  projectId: string | null;
   capturedAt: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AvailableTag {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
+export interface AvailableProject {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
 }
 
 export type SortField = "capturedAt" | "title" | "updatedAt";
@@ -33,6 +56,8 @@ export interface KnowledgeFilters {
   isArchived: boolean | undefined;
   dateFrom: string | undefined;
   dateTo: string | undefined;
+  tagIds: string[];
+  projectId: string | undefined;
 }
 
 const DEFAULT_FILTERS: KnowledgeFilters = {
@@ -41,6 +66,8 @@ const DEFAULT_FILTERS: KnowledgeFilters = {
   isArchived: false,
   dateFrom: undefined,
   dateTo: undefined,
+  tagIds: [],
+  projectId: undefined,
 };
 
 const PAGE_SIZE = 24;
@@ -62,9 +89,13 @@ interface KnowledgeStore {
   sortOrder: "asc" | "desc";
   page: number;
   pageSize: number;
+  availableTags: AvailableTag[];
+  availableProjects: AvailableProject[];
 
   // Actions
   loadItems: () => Promise<void>;
+  loadTags: () => Promise<void>;
+  loadProjects: () => Promise<void>;
   search: (query: string) => void;
   setViewMode: (mode: ViewMode) => void;
   setFilter: <K extends keyof KnowledgeFilters>(key: K, value: KnowledgeFilters[K]) => void;
@@ -99,6 +130,8 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   sortOrder: "desc",
   page: 0,
   pageSize: PAGE_SIZE,
+  availableTags: [],
+  availableProjects: [],
 
   loadItems: async () => {
     const { searchQuery, filters, sortBy, sortOrder, page, pageSize } = get();
@@ -141,6 +174,24 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load items";
       set({ error: message, isLoading: false });
+    }
+  },
+
+  loadTags: async () => {
+    try {
+      const result = await trpc.tags.list.query({}) as { tags: AvailableTag[] };
+      set({ availableTags: result.tags });
+    } catch {
+      // Tags not yet available — silently ignore
+    }
+  },
+
+  loadProjects: async () => {
+    try {
+      const result = await trpc.projects.list.query({}) as { projects: AvailableProject[] };
+      set({ availableProjects: result.projects });
+    } catch {
+      // Projects not yet available — silently ignore
     }
   },
 

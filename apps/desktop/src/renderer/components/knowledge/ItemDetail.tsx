@@ -137,6 +137,18 @@ const contentBodyStyle: React.CSSProperties = {
   border: "1px solid var(--mixa-border-subtle)",
 };
 
+const detailTagStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "4px",
+  fontSize: "11px",
+  padding: "3px 8px",
+  borderRadius: "10px",
+  border: "1px solid var(--mixa-border-default)",
+  backgroundColor: "var(--mixa-bg-active)",
+  color: "var(--mixa-text-secondary)",
+};
+
 function formatFullDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString(undefined, {
     weekday: "short",
@@ -300,6 +312,31 @@ export function ItemDetail({
             </div>
           )}
         </div>
+
+        {/* Tags */}
+        {item.tags.length > 0 && (
+          <div>
+            <div style={sectionTitleStyle}>Tags</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {item.tags.map((tag) => (
+                <span key={tag.id} style={detailTagStyle}>
+                  {tag.color && (
+                    <span
+                      style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        backgroundColor: tag.color,
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Captured date */}
         <div>

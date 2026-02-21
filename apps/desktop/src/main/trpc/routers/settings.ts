@@ -1,6 +1,14 @@
 import { z } from "zod";
-import type { UserSettings } from "@mixa-ai/types";
+import type { UserSettings, LLMProviderName } from "@mixa-ai/types";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { homedir } from "node:os";
 import { router, publicProcedure } from "../trpc.js";
+import {
+  storeApiKey,
+  deleteApiKey,
+  getApiKeyStatus,
+} from "../../settings/keychain.js";
 
 const llmProviderNameSchema = z.enum([
   "openai",
@@ -12,6 +20,17 @@ const llmProviderNameSchema = z.enum([
 const themeModeSchema = z.enum(["dark", "light", "system"]);
 const sidebarPositionSchema = z.enum(["left", "right"]);
 const tabBarPositionSchema = z.enum(["top", "bottom"]);
+
+// --- File-based settings persistence ---
+
+const MIXA_DIR = join(homedir(), ".mixa");
+const SETTINGS_FILE = join(MIXA_DIR, "settings.json");
+
+function ensureDir(): void {
+  if (!existsSync(MIXA_DIR)) {
+    mkdirSync(MIXA_DIR, { recursive: true });
+  }
+}
 
 const defaultSettings: UserSettings = {
   llm: {
@@ -76,10 +95,46 @@ const defaultSettings: UserSettings = {
   defaultSearchEngine: "https://www.google.com/search?q=",
 };
 
+function loadSettings(): UserSettings {
+  try {
+    if (existsSync(SETTINGS_FILE)) {
+      const raw = readFileSync(SETTINGS_FILE, "utf-8");
+      const parsed: unknown = JSON.parse(raw);
+      if (typeof parsed === "object" && parsed !== null) {
+        // Merge with defaults to handle new fields
+        return { ...defaultSettings, ...(parsed as Record<string, unknown>) } as UserSettings;
+      }
+    }
+  } catch {
+    // corrupted file, return defaults
+  }
+  return { ...defaultSettings };
+}
+
+function saveSettings(settings: UserSettings): void {
+  ensureDir();
+  writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), "utf-8");
+}
+
+/** Merge API key status into provider list */
+function withApiKeyStatus(settings: UserSettings): UserSettings {
+  const keyStatus = getApiKeyStatus();
+  return {
+    ...settings,
+    llm: {
+      ...settings.llm,
+      providers: settings.llm.providers.map((p) => ({
+        ...p,
+        apiKeyConfigured: keyStatus[p.name],
+      })),
+    },
+  };
+}
+
 export const settingsRouter = router({
   get: publicProcedure.query(async (): Promise<UserSettings> => {
-    // TODO: Load from persistent storage (electron-store or PGlite)
-    return defaultSettings;
+    const settings = loadSettings();
+    return withApiKeyStatus(settings);
   }),
 
   update: publicProcedure
@@ -107,11 +162,84 @@ export const settingsRouter = router({
         autoCaptureEnabled: z.boolean().optional(),
         autoCaptureMinSeconds: z.number().int().min(5).max(300).optional(),
         augmentedBrowsingEnabled: z.boolean().optional(),
-        defaultSearchEngine: z.string().url().optional(),
+        defaultSearchEngine: z.string().optional(),
       }),
     )
-    .mutation(async ({ input: _input }): Promise<UserSettings> => {
-      // TODO: Persist settings to storage
-      return defaultSettings;
+    .mutation(async ({ input }): Promise<UserSettings> => {
+      const current = loadSettings();
+
+      // Merge theme updates
+      if (input.theme) {
+        current.theme = { ...current.theme, ...input.theme };
+      }
+
+      // Merge LLM updates
+      if (input.llm) {
+        if (input.llm.activeProvider) {
+          current.llm.providers = current.llm.providers.map((p) => ({
+            ...p,
+            isActive: p.name === input.llm?.activeProvider,
+          }));
+        }
+        if (input.llm.selectedModel && input.llm.activeProvider) {
+          current.llm.providers = current.llm.providers.map((p) =>
+            p.name === input.llm?.activeProvider
+              ? { ...p, selectedModel: input.llm?.selectedModel ?? p.selectedModel }
+              : p,
+          );
+        }
+        if (input.llm.embeddingProvider) {
+          current.llm.embeddingProvider = input.llm.embeddingProvider;
+        }
+        if (input.llm.embeddingModel) {
+          current.llm.embeddingModel = input.llm.embeddingModel;
+        }
+      }
+
+      // Merge scalar settings
+      if (input.autoCaptureEnabled !== undefined) {
+        current.autoCaptureEnabled = input.autoCaptureEnabled;
+      }
+      if (input.autoCaptureMinSeconds !== undefined) {
+        current.autoCaptureMinSeconds = input.autoCaptureMinSeconds;
+      }
+      if (input.augmentedBrowsingEnabled !== undefined) {
+        current.augmentedBrowsingEnabled = input.augmentedBrowsingEnabled;
+      }
+      if (input.defaultSearchEngine !== undefined) {
+        current.defaultSearchEngine = input.defaultSearchEngine;
+      }
+
+      saveSettings(current);
+      return withApiKeyStatus(current);
     }),
+
+  setApiKey: publicProcedure
+    .input(
+      z.object({
+        provider: llmProviderNameSchema,
+        apiKey: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ input }): Promise<{ success: boolean }> => {
+      storeApiKey(input.provider as LLMProviderName, input.apiKey);
+      return { success: true };
+    }),
+
+  deleteApiKey: publicProcedure
+    .input(
+      z.object({
+        provider: llmProviderNameSchema,
+      }),
+    )
+    .mutation(async ({ input }): Promise<{ success: boolean }> => {
+      deleteApiKey(input.provider as LLMProviderName);
+      return { success: true };
+    }),
+
+  getApiKeyStatus: publicProcedure.query(
+    async (): Promise<Record<string, boolean>> => {
+      return getApiKeyStatus();
+    },
+  ),
 });

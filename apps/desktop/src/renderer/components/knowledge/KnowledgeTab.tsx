@@ -114,7 +114,11 @@ export function KnowledgeTab(): React.ReactElement {
     sortOrder,
     page,
     pageSize,
+    availableTags,
+    availableProjects,
     loadItems,
+    loadTags,
+    loadProjects,
     search,
     setViewMode,
     setFilter,
@@ -182,7 +186,9 @@ export function KnowledgeTab(): React.ReactElement {
     filters.isFavorite !== undefined ||
     filters.isArchived !== false ||
     filters.dateFrom !== undefined ||
-    filters.dateTo !== undefined;
+    filters.dateTo !== undefined ||
+    filters.tagIds.length > 0 ||
+    filters.projectId !== undefined;
 
   return (
     <div style={containerStyle}>
@@ -195,6 +201,9 @@ export function KnowledgeTab(): React.ReactElement {
         showFilters={showFilters}
         totalItems={total}
         checkedCount={checkedIds.size}
+        isSearchActive={searchQuery.trim().length > 0}
+        availableTags={availableTags}
+        availableProjects={availableProjects}
         onSearch={search}
         onSetViewMode={setViewMode}
         onSetSortBy={setSortBy}
@@ -221,8 +230,12 @@ export function KnowledgeTab(): React.ReactElement {
         {showFilters && (
           <FilterPanel
             filters={filters}
+            availableTags={availableTags}
+            availableProjects={availableProjects}
             onSetFilter={setFilter}
             onClearFilters={clearFilters}
+            onLoadTags={loadTags}
+            onLoadProjects={loadProjects}
           />
         )}
 

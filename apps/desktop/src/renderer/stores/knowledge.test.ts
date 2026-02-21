@@ -18,6 +18,16 @@ vi.mock("../trpc", () => ({
         mutate: vi.fn().mockResolvedValue({}),
       },
     },
+    tags: {
+      list: {
+        query: vi.fn().mockResolvedValue({ tags: [] }),
+      },
+    },
+    projects: {
+      list: {
+        query: vi.fn().mockResolvedValue({ projects: [] }),
+      },
+    },
   },
 }));
 
@@ -36,8 +46,11 @@ function makeItem(overrides: Partial<KnowledgeItem> = {}): KnowledgeItem {
     domain: overrides.domain ?? "example.com",
     wordCount: overrides.wordCount ?? 42,
     readingTime: overrides.readingTime ?? 1,
+    summary: overrides.summary ?? null,
     isArchived: overrides.isArchived ?? false,
     isFavorite: overrides.isFavorite ?? false,
+    tags: overrides.tags ?? [],
+    projectId: overrides.projectId ?? null,
     capturedAt: overrides.capturedAt ?? "2026-02-21T10:00:00.000Z",
     createdAt: overrides.createdAt ?? "2026-02-21T10:00:00.000Z",
     updatedAt: overrides.updatedAt ?? "2026-02-21T10:00:00.000Z",
@@ -58,11 +71,21 @@ describe("Knowledge Store", () => {
       error: null,
       checkedIds: new Set<string>(),
       showFilters: false,
-      filters: { itemType: undefined, isFavorite: undefined, isArchived: false, dateFrom: undefined, dateTo: undefined },
+      filters: {
+        itemType: undefined,
+        isFavorite: undefined,
+        isArchived: false,
+        dateFrom: undefined,
+        dateTo: undefined,
+        tagIds: [],
+        projectId: undefined,
+      },
       sortBy: "capturedAt",
       sortOrder: "desc",
       page: 0,
       pageSize: 24,
+      availableTags: [],
+      availableProjects: [],
     });
   });
 
@@ -113,10 +136,32 @@ describe("Knowledge Store", () => {
     it("clears all filters", () => {
       useKnowledgeStore.getState().setFilter("itemType", "article");
       useKnowledgeStore.getState().setFilter("isFavorite", true);
+      useKnowledgeStore.getState().setFilter("tagIds", ["tag-1"]);
+      useKnowledgeStore.getState().setFilter("projectId", "proj-1");
       useKnowledgeStore.getState().clearFilters();
       expect(useKnowledgeStore.getState().filters.itemType).toBeUndefined();
       expect(useKnowledgeStore.getState().filters.isFavorite).toBeUndefined();
       expect(useKnowledgeStore.getState().filters.isArchived).toBe(false);
+      expect(useKnowledgeStore.getState().filters.tagIds).toEqual([]);
+      expect(useKnowledgeStore.getState().filters.projectId).toBeUndefined();
+    });
+
+    it("sets tag filter", () => {
+      useKnowledgeStore.getState().setFilter("tagIds", ["tag-1", "tag-2"]);
+      expect(useKnowledgeStore.getState().filters.tagIds).toEqual(["tag-1", "tag-2"]);
+    });
+
+    it("sets project filter", () => {
+      useKnowledgeStore.getState().setFilter("projectId", "proj-1");
+      expect(useKnowledgeStore.getState().filters.projectId).toBe("proj-1");
+    });
+
+    it("defaults tag filter to empty array", () => {
+      expect(useKnowledgeStore.getState().filters.tagIds).toEqual([]);
+    });
+
+    it("defaults project filter to undefined", () => {
+      expect(useKnowledgeStore.getState().filters.projectId).toBeUndefined();
     });
   });
 
@@ -191,6 +236,19 @@ describe("Knowledge Store", () => {
       useKnowledgeStore.getState().selectItem("nonexistent");
       expect(useKnowledgeStore.getState().selectedItem).toBeNull();
     });
+
+    it("selects item with tags", () => {
+      const tags = [
+        { id: "tag-1", name: "react", color: "#61dafb" },
+        { id: "tag-2", name: "typescript", color: "#3178c6" },
+      ];
+      const item = makeItem({ id: "item-1", tags });
+      useKnowledgeStore.setState({ items: [item] });
+
+      useKnowledgeStore.getState().selectItem("item-1");
+
+      expect(useKnowledgeStore.getState().selectedItem?.tags).toEqual(tags);
+    });
   });
 
   describe("checked items (bulk selection)", () => {
@@ -251,6 +309,61 @@ describe("Knowledge Store", () => {
       expect(useKnowledgeStore.getState().showFilters).toBe(true);
       useKnowledgeStore.getState().toggleFilters();
       expect(useKnowledgeStore.getState().showFilters).toBe(false);
+    });
+  });
+
+  describe("available tags and projects", () => {
+    it("defaults to empty tags", () => {
+      expect(useKnowledgeStore.getState().availableTags).toEqual([]);
+    });
+
+    it("defaults to empty projects", () => {
+      expect(useKnowledgeStore.getState().availableProjects).toEqual([]);
+    });
+
+    it("loads tags via tRPC", async () => {
+      const { trpc } = await import("../trpc");
+      const mockTags = [
+        { id: "tag-1", name: "react", color: "#61dafb" },
+        { id: "tag-2", name: "typescript", color: "#3178c6" },
+      ];
+      vi.mocked(trpc.tags.list.query).mockResolvedValueOnce({ tags: mockTags });
+
+      await useKnowledgeStore.getState().loadTags();
+
+      expect(useKnowledgeStore.getState().availableTags).toEqual(mockTags);
+    });
+
+    it("loads projects via tRPC", async () => {
+      const { trpc } = await import("../trpc");
+      const mockProjects = [
+        { id: "proj-1", name: "My Project", description: null, icon: null, color: null },
+      ];
+      vi.mocked(trpc.projects.list.query).mockResolvedValueOnce({ projects: mockProjects });
+
+      await useKnowledgeStore.getState().loadProjects();
+
+      expect(useKnowledgeStore.getState().availableProjects).toEqual(mockProjects);
+    });
+
+    it("silently handles tags load failure", async () => {
+      const { trpc } = await import("../trpc");
+      vi.mocked(trpc.tags.list.query).mockRejectedValueOnce(new Error("Not connected"));
+
+      await useKnowledgeStore.getState().loadTags();
+
+      expect(useKnowledgeStore.getState().availableTags).toEqual([]);
+      expect(useKnowledgeStore.getState().error).toBeNull();
+    });
+
+    it("silently handles projects load failure", async () => {
+      const { trpc } = await import("../trpc");
+      vi.mocked(trpc.projects.list.query).mockRejectedValueOnce(new Error("Not connected"));
+
+      await useKnowledgeStore.getState().loadProjects();
+
+      expect(useKnowledgeStore.getState().availableProjects).toEqual([]);
+      expect(useKnowledgeStore.getState().error).toBeNull();
     });
   });
 

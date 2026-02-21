@@ -20,6 +20,12 @@ const sourceTypeSchema = z.enum([
   "terminal",
 ]);
 
+export interface ItemTagResponse {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
 export interface ItemResponse {
   id: string;
   url: string | null;
@@ -34,8 +40,11 @@ export interface ItemResponse {
   domain: string | null;
   wordCount: number | null;
   readingTime: number | null;
+  summary: string | null;
   isArchived: boolean;
   isFavorite: boolean;
+  tags: ItemTagResponse[];
+  projectId: string | null;
   capturedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -56,8 +65,11 @@ function toItemResponse(item: CapturedItem): ItemResponse {
     domain: item.domain,
     wordCount: item.wordCount,
     readingTime: item.readingTime,
+    summary: item.description,
     isArchived: item.isArchived,
     isFavorite: item.isFavorite,
+    tags: [],
+    projectId: null,
     capturedAt: item.capturedAt,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,

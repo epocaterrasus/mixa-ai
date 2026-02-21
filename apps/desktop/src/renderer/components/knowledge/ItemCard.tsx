@@ -157,6 +157,24 @@ const typeBadgeStyle: React.CSSProperties = {
   flexShrink: 0,
 };
 
+const tagsRowStyle: React.CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "4px",
+  marginTop: "2px",
+};
+
+const tagStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "3px",
+  fontSize: "10px",
+  padding: "1px 6px",
+  borderRadius: "8px",
+  backgroundColor: "var(--mixa-bg-active)",
+  color: "var(--mixa-text-muted)",
+};
+
 function itemTypeIcon(type: string): string {
   switch (type) {
     case "article": return "\u{1F4C4}";
@@ -294,6 +312,29 @@ export function ItemCard({
       <div style={bodyStyle}>
         <div style={titleStyle}>{item.title}</div>
         {item.description && <div style={excerptStyle}>{item.description}</div>}
+        {item.tags.length > 0 && (
+          <div style={tagsRowStyle}>
+            {item.tags.slice(0, 3).map((tag) => (
+              <span key={tag.id} style={tagStyle}>
+                {tag.color && (
+                  <span
+                    style={{
+                      width: "5px",
+                      height: "5px",
+                      borderRadius: "50%",
+                      backgroundColor: tag.color,
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+                {tag.name}
+              </span>
+            ))}
+            {item.tags.length > 3 && (
+              <span style={tagStyle}>+{item.tags.length - 3}</span>
+            )}
+          </div>
+        )}
         <div style={metaStyle}>
           <div style={domainStyle}>
             {item.faviconUrl && (

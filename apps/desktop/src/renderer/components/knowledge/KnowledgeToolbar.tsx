@@ -1,7 +1,7 @@
-// Knowledge toolbar — search input, view mode toggle, sort controls, filter toggle
+// Knowledge toolbar — search input, view mode toggle, sort controls, filter toggle, bulk actions
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import type { SortField, ViewMode } from "../../stores/knowledge";
+import type { SortField, ViewMode, AvailableTag, AvailableProject } from "../../stores/knowledge";
 
 interface KnowledgeToolbarProps {
   searchQuery: string;
@@ -11,6 +11,9 @@ interface KnowledgeToolbarProps {
   showFilters: boolean;
   totalItems: number;
   checkedCount: number;
+  isSearchActive: boolean;
+  availableTags: AvailableTag[];
+  availableProjects: AvailableProject[];
   onSearch: (query: string) => void;
   onSetViewMode: (mode: ViewMode) => void;
   onSetSortBy: (sortBy: SortField) => void;
@@ -142,12 +145,50 @@ const bulkButtonStyle: React.CSSProperties = {
   fontSize: "11px",
   cursor: "pointer",
   transition: "background-color 0.1s",
+  position: "relative",
 };
 
 const bulkDeleteButtonStyle: React.CSSProperties = {
   ...bulkButtonStyle,
   color: "#ef4444",
   borderColor: "rgba(239, 68, 68, 0.3)",
+};
+
+const dropdownStyle: React.CSSProperties = {
+  position: "absolute",
+  top: "100%",
+  left: 0,
+  marginTop: "4px",
+  minWidth: "160px",
+  maxHeight: "200px",
+  overflowY: "auto",
+  backgroundColor: "var(--mixa-bg-elevated)",
+  border: "1px solid var(--mixa-border-default)",
+  borderRadius: "6px",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+  zIndex: 100,
+  padding: "4px 0",
+};
+
+const dropdownItemStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  width: "100%",
+  padding: "6px 12px",
+  border: "none",
+  backgroundColor: "transparent",
+  color: "var(--mixa-text-secondary)",
+  fontSize: "12px",
+  cursor: "pointer",
+  textAlign: "left",
+};
+
+const dropdownEmptyStyle: React.CSSProperties = {
+  padding: "8px 12px",
+  fontSize: "11px",
+  color: "var(--mixa-text-muted)",
+  fontStyle: "italic",
 };
 
 export function KnowledgeToolbar({
@@ -158,6 +199,9 @@ export function KnowledgeToolbar({
   showFilters,
   totalItems,
   checkedCount,
+  isSearchActive,
+  availableTags,
+  availableProjects,
   onSearch,
   onSetViewMode,
   onSetSortBy,
@@ -168,12 +212,30 @@ export function KnowledgeToolbar({
   onDeleteChecked,
 }: KnowledgeToolbarProps): React.ReactElement {
   const [inputValue, setInputValue] = useState(searchQuery);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
+  const projectDropdownRef = useRef<HTMLDivElement>(null);
 
   // Keep input in sync with store (for external resets)
   useEffect(() => {
     setInputValue(searchQuery);
   }, [searchQuery]);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(e.target as Node)) {
+        setShowTagDropdown(false);
+      }
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(e.target as Node)) {
+        setShowProjectDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,6 +287,10 @@ export function KnowledgeToolbar({
       } else if (value === "updated") {
         onSetSortBy("updatedAt");
         onSetSortOrder("desc");
+      } else if (value === "relevant") {
+        // When searching, "most relevant" keeps default search ordering
+        onSetSortBy("capturedAt");
+        onSetSortOrder("desc");
       }
     },
     [onSetSortBy, onSetSortOrder],
@@ -232,7 +298,7 @@ export function KnowledgeToolbar({
 
   const currentSortValue =
     sortBy === "capturedAt" && sortOrder === "desc"
-      ? "newest"
+      ? isSearchActive ? "relevant" : "newest"
       : sortBy === "capturedAt" && sortOrder === "asc"
         ? "oldest"
         : sortBy === "title" && sortOrder === "asc"
@@ -297,6 +363,7 @@ export function KnowledgeToolbar({
           style={sortSelectStyle}
           aria-label="Sort items"
         >
+          {isSearchActive && <option value="relevant">Most relevant</option>}
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
           <option value="title-az">Title A-Z</option>
@@ -359,22 +426,111 @@ export function KnowledgeToolbar({
           >
             Clear
           </button>
-          <button
-            type="button"
-            style={{ ...bulkButtonStyle, opacity: 0.5, cursor: "not-allowed" }}
-            title="Add tag (coming soon)"
-            disabled
-          >
-            Add tag
-          </button>
-          <button
-            type="button"
-            style={{ ...bulkButtonStyle, opacity: 0.5, cursor: "not-allowed" }}
-            title="Move to project (coming soon)"
-            disabled
-          >
-            Move to project
-          </button>
+
+          {/* Add tag dropdown */}
+          <div ref={tagDropdownRef} style={{ position: "relative" }}>
+            <button
+              type="button"
+              style={bulkButtonStyle}
+              onClick={() => {
+                setShowTagDropdown(!showTagDropdown);
+                setShowProjectDropdown(false);
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--mixa-bg-hover)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+            >
+              Add tag
+            </button>
+            {showTagDropdown && (
+              <div style={dropdownStyle}>
+                {availableTags.length === 0 ? (
+                  <div style={dropdownEmptyStyle}>
+                    No tags available yet. Tags will appear here once items are auto-tagged.
+                  </div>
+                ) : (
+                  availableTags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      style={dropdownItemStyle}
+                      onClick={() => setShowTagDropdown(false)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--mixa-bg-hover)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      {tag.color && (
+                        <span
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            backgroundColor: tag.color,
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
+                      {tag.name}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Move to project dropdown */}
+          <div ref={projectDropdownRef} style={{ position: "relative" }}>
+            <button
+              type="button"
+              style={bulkButtonStyle}
+              onClick={() => {
+                setShowProjectDropdown(!showProjectDropdown);
+                setShowTagDropdown(false);
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--mixa-bg-hover)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+            >
+              Move to project
+            </button>
+            {showProjectDropdown && (
+              <div style={dropdownStyle}>
+                {availableProjects.length === 0 ? (
+                  <div style={dropdownEmptyStyle}>
+                    No projects yet. Create a project in Settings to organize items.
+                  </div>
+                ) : (
+                  availableProjects.map((project) => (
+                    <button
+                      key={project.id}
+                      type="button"
+                      style={dropdownItemStyle}
+                      onClick={() => setShowProjectDropdown(false)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--mixa-bg-hover)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      {project.icon && <span>{project.icon}</span>}
+                      {project.name}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
             style={bulkDeleteButtonStyle}
