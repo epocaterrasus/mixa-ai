@@ -4,12 +4,14 @@ import { TabContent } from "./components/TabContent";
 import { FindBar } from "./components/FindBar";
 import { Sidebar } from "./components/Sidebar";
 import { CaptureToast } from "./components/CaptureToast";
+import { UpdateNotification } from "./components/UpdateNotification";
 import { useTabEvents } from "./hooks/useTabEvents";
 import { useTabShortcuts } from "./hooks/useTabShortcuts";
 import { useTabLifecycle } from "./hooks/useTabLifecycle";
 import { useEngineStatus } from "./hooks/useEngineStatus";
 import { useCapture } from "./hooks/useCapture";
 import { useAugmentedBrowsing } from "./hooks/useAugmentedBrowsing";
+import { useUpdater } from "./hooks/useUpdater";
 import { RelatedItemsPanel } from "./components/RelatedItemsPanel";
 import { useTabStore } from "./stores/tabs";
 
@@ -83,6 +85,7 @@ export function App(): React.ReactElement {
   useEngineStatus();
   useCapture();
   useAugmentedBrowsing();
+  useUpdater();
 
   const activeTab = useTabStore((s) => {
     const id = s.activeTabId;
@@ -107,6 +110,7 @@ export function App(): React.ReactElement {
       </div>
       <RelatedItemsPanel />
       <CaptureToast />
+      <UpdateNotification />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { setupTerminalHandlers, cleanupTerminalStreams } from "./terminal/handle
 import { setupShellHandlers, cleanupShells } from "./shell/handler.js";
 import { augmentedBrowsingService } from "./augmented/index.js";
 import { loadSettings } from "./trpc/routers/settings.js";
+import { setupUpdater, cleanupUpdater } from "./updater/service.js";
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -78,6 +79,9 @@ void app.whenReady().then(() => {
   // Start the Go engine as a child process
   void engineLifecycle.start();
 
+  // Set up auto-updater (checks for updates after 5s delay, then every 4h)
+  setupUpdater(mainWindow);
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       const newWindow = createWindow();
@@ -91,6 +95,7 @@ void app.whenReady().then(() => {
 app.on("before-quit", () => {
   cleanupTerminalStreams();
   cleanupShells();
+  cleanupUpdater();
   void engineLifecycle.stop();
 });
 

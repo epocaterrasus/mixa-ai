@@ -306,6 +306,58 @@ const electronAPI = {
     },
   },
 
+  // Auto-updater IPC
+  updater: {
+    getState: (): Promise<{
+      status: string;
+      version: string | null;
+      releaseDate: string | null;
+      downloadProgress: number | null;
+      bytesPerSecond: number | null;
+      transferred: number | null;
+      total: number | null;
+      error: string | null;
+      currentVersion: string;
+    }> => ipcRenderer.invoke("updater:get-state"),
+
+    checkForUpdates: (): Promise<void> =>
+      ipcRenderer.invoke("updater:check"),
+
+    downloadUpdate: (): Promise<void> =>
+      ipcRenderer.invoke("updater:download"),
+
+    installUpdate: (): Promise<void> =>
+      ipcRenderer.invoke("updater:install"),
+
+    onStateChanged: (callback: (data: {
+      status: string;
+      version: string | null;
+      releaseDate: string | null;
+      downloadProgress: number | null;
+      bytesPerSecond: number | null;
+      transferred: number | null;
+      total: number | null;
+      error: string | null;
+      currentVersion: string;
+    }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: {
+        status: string;
+        version: string | null;
+        releaseDate: string | null;
+        downloadProgress: number | null;
+        bytesPerSecond: number | null;
+        transferred: number | null;
+        total: number | null;
+        error: string | null;
+        currentVersion: string;
+      }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("updater:state-changed", handler);
+      return () => ipcRenderer.removeListener("updater:state-changed", handler);
+    },
+  },
+
   // Engine lifecycle events from main → renderer
   engine: {
     onStatusChanged: (callback: (data: {
