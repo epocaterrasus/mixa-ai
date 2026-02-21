@@ -17,6 +17,7 @@ import (
 	"github.com/mixa-ai/engine/internal/modules/forge"
 	"github.com/mixa-ai/engine/internal/modules/guard"
 	"github.com/mixa-ai/engine/internal/modules/keys"
+	"github.com/mixa-ai/engine/internal/modules/pulse"
 	"github.com/mixa-ai/engine/internal/modules/system"
 )
 
@@ -71,6 +72,13 @@ func main() {
 		log.Fatalf("Failed to register cost module: %v", err)
 	}
 
+	// PULSE module — health & uptime monitoring.
+	pulseDataDir := pulseStoragePath()
+	pulseMod := pulse.New(filepath.Join(pulseDataDir, "pulse.db"), guardKey)
+	if err := registry.Register(pulseMod); err != nil {
+		log.Fatalf("Failed to register pulse module: %v", err)
+	}
+
 	if err := registry.StartAll(); err != nil {
 		log.Fatalf("Failed to start modules: %v", err)
 	}
@@ -118,6 +126,15 @@ func keysStoragePath() string {
 		home = "."
 	}
 	return filepath.Join(home, ".mixa", "data", "keys")
+}
+
+// pulseStoragePath returns the directory where PULSE stores its database.
+func pulseStoragePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	return filepath.Join(home, ".mixa", "data", "pulse")
 }
 
 // costStoragePath returns the directory where COST stores its database.
