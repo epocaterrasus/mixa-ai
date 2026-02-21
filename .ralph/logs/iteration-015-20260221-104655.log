@@ -1,0 +1,20 @@
+**MIXA-009 complete.** Committed as `55c9111`.
+
+**Summary:** Most of MIXA-009's acceptance criteria were already implemented in prior iterations:
+- Navigation buttons (back/forward/reload/stop) in `Toolbar.tsx`
+- Keyboard shortcuts (Cmd+[/], Cmd+R, Esc) in `useTabShortcuts.ts`
+- Browsing history (10,000 entries, localStorage) in `stores/history.ts`
+- History in omnibar suggestions in `Omnibar.tsx`
+- Window.open → new tab handling in `TabManager`
+- Downloads via Electron's download manager in `TabManager`
+- Title/favicon extraction in `TabManager` + `useTabEvents.ts`
+
+The only missing piece was the **FindBar UI component** (`FindBar.tsx`) — the store, IPC, keyboard shortcuts, and main process handlers all existed but nothing rendered visually. The new `FindBar.tsx` provides:
+- Incremental search as you type
+- Match count display ("3 of 12" / "No matches")
+- Next/Previous navigation buttons
+- Keyboard controls (Enter/Shift+Enter for next/prev, Escape to close)
+- Proper ARIA labels and `role="search"` for accessibility
+- Auto-focus on open, auto-cleanup on close
+
+All backpressure gates passed (typecheck, lint, test, build, go vet, go test).
