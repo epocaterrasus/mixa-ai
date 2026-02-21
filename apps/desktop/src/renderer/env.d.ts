@@ -8,6 +8,9 @@ interface ElectronTabsAPI {
   readonly goBack: (tabId: string) => Promise<void>;
   readonly goForward: (tabId: string) => Promise<void>;
   readonly reload: (tabId: string) => Promise<void>;
+  readonly stop: (tabId: string) => Promise<void>;
+  readonly findInPage: (tabId: string, text: string, forward: boolean) => Promise<void>;
+  readonly stopFindInPage: (tabId: string) => Promise<void>;
   readonly hideActiveView: () => Promise<void>;
   readonly showActiveView: () => Promise<void>;
 
@@ -16,6 +19,10 @@ interface ElectronTabsAPI {
   readonly onTitleUpdated: (callback: (data: { tabId: string; title: string }) => void) => () => void;
   readonly onFaviconUpdated: (callback: (data: { tabId: string; faviconUrl: string | null }) => void) => () => void;
   readonly onUrlUpdated: (callback: (data: { tabId: string; url: string; canGoBack: boolean; canGoForward: boolean }) => void) => () => void;
+  readonly onNewTabRequest: (callback: (data: { url: string }) => void) => () => void;
+  readonly onFindResult: (callback: (data: { tabId: string; activeMatchOrdinal: number; matches: number; finalUpdate: boolean }) => void) => () => void;
+  readonly onDownloadStarted: (callback: (data: { filename: string; totalBytes: number }) => void) => () => void;
+  readonly onDownloadCompleted: (callback: (data: { filename: string; state: string }) => void) => () => void;
 }
 
 interface ElectronSidebarAPI {

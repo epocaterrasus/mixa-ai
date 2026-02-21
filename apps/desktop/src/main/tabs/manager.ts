@@ -26,6 +26,7 @@ export class TabManager {
   private activeTabId: string | null = null;
   private mainWindow: BrowserWindow | null = null;
   private sidebarWidth = 0;
+  private downloadSessionSetup = false;
 
   attach(window: BrowserWindow): void {
     this.mainWindow = window;
@@ -112,12 +113,38 @@ export class TabManager {
       this.sendNavigationState(tabId, wc);
     });
 
-    // Handle new window requests (open in same tab or external browser)
+    // Handle new window requests — open target=_blank / window.open in a new tab
     wc.setWindowOpenHandler(({ url: targetUrl }) => {
-      // Navigate the current view instead of opening a new window
-      void wc.loadURL(targetUrl);
+      this.sendToRenderer("tab:new-tab-request", { url: targetUrl });
       return { action: "deny" };
     });
+
+    // Find-in-page result events
+    wc.on("found-in-page", (_event, result) => {
+      this.sendToRenderer("tab:find-result", {
+        tabId,
+        activeMatchOrdinal: result.activeMatchOrdinal,
+        matches: result.matches,
+        finalUpdate: result.finalUpdate,
+      });
+    });
+
+    // Set up download handler once (all views share the default session)
+    if (!this.downloadSessionSetup) {
+      this.downloadSessionSetup = true;
+      wc.session.on("will-download", (_event, item) => {
+        // Electron shows save dialog by default since we don't call setSavePath()
+        const filename = item.getFilename();
+        this.sendToRenderer("tab:download-started", {
+          filename,
+          totalBytes: item.getTotalBytes(),
+        });
+
+        item.on("done", (_e, state) => {
+          this.sendToRenderer("tab:download-completed", { filename, state });
+        });
+      });
+    }
 
     this.views.set(tabId, { view, tabId });
 
@@ -191,6 +218,27 @@ export class TabManager {
     const info = this.views.get(tabId);
     if (info) {
       info.view.webContents.reload();
+    }
+  }
+
+  stop(tabId: string): void {
+    const info = this.views.get(tabId);
+    if (info) {
+      info.view.webContents.stop();
+    }
+  }
+
+  findInPage(tabId: string, text: string, forward: boolean): void {
+    const info = this.views.get(tabId);
+    if (info && text) {
+      info.view.webContents.findInPage(text, { forward });
+    }
+  }
+
+  stopFindInPage(tabId: string): void {
+    const info = this.views.get(tabId);
+    if (info) {
+      info.view.webContents.stopFindInPage("clearSelection");
     }
   }
 
@@ -269,6 +317,18 @@ export class TabManager {
       this.reload(tabId);
     });
 
+    ipcMain.handle("tab:stop", (_event, tabId: string) => {
+      this.stop(tabId);
+    });
+
+    ipcMain.handle("tab:find-in-page", (_event, tabId: string, text: string, forward: boolean) => {
+      this.findInPage(tabId, text, forward);
+    });
+
+    ipcMain.handle("tab:stop-find-in-page", (_event, tabId: string) => {
+      this.stopFindInPage(tabId);
+    });
+
     ipcMain.handle("tab:hide-active-view", () => {
       this.hideActiveView();
     });
@@ -294,6 +354,9 @@ export class TabManager {
     ipcMain.removeHandler("tab:go-back");
     ipcMain.removeHandler("tab:go-forward");
     ipcMain.removeHandler("tab:reload");
+    ipcMain.removeHandler("tab:stop");
+    ipcMain.removeHandler("tab:find-in-page");
+    ipcMain.removeHandler("tab:stop-find-in-page");
     ipcMain.removeHandler("tab:hide-active-view");
     ipcMain.removeHandler("tab:show-active-view");
     ipcMain.removeHandler("sidebar:set-width");

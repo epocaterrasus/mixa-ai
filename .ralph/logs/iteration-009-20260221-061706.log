@@ -1,0 +1,21 @@
+**MIXA-008 complete.** Here's what was built:
+
+### Sidebar with Navigation and Tab Tree
+
+**New file:** `apps/desktop/src/renderer/components/Sidebar.tsx` (440 lines)
+
+**Features implemented:**
+- **Tab tree** grouped by type (Web, Terminal, Knowledge, Chat, Dashboard, Settings) with item counts
+- **Quick-access buttons** at the bottom: Terminal, Knowledge, Chat, Settings — each opens a new tab of that type
+- **Collapse/expand** via button or **Cmd+B** keyboard shortcut
+- **Collapsed state** shows only icons (48px wide) for open tabs and quick actions
+- **Active tab highlighting** in sidebar (distinct background color)
+- **Click tab** in sidebar to activate it
+- **Right-click context menu** on tabs: Close Tab, Close Other Tabs
+- **Drag-to-resize** sidebar edge (160px–400px range), with keyboard arrow key support
+- **State persists** across restarts via localStorage (collapse state + width)
+- **IPC integration** — sidebar width changes notify main process via `sidebar:set-width`, so BrowserView content bounds adjust correctly
+
+**Modified:** `App.tsx` — layout changed from vertical column to horizontal row (Sidebar + main column with TabBar/Toolbar/Content)
+
+**All backpressure gates passed:** typecheck, lint, test, build, go vet, go test.

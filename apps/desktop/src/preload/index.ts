@@ -30,6 +30,12 @@ const electronAPI = {
       ipcRenderer.invoke("tab:go-forward", tabId),
     reload: (tabId: string): Promise<void> =>
       ipcRenderer.invoke("tab:reload", tabId),
+    stop: (tabId: string): Promise<void> =>
+      ipcRenderer.invoke("tab:stop", tabId),
+    findInPage: (tabId: string, text: string, forward: boolean): Promise<void> =>
+      ipcRenderer.invoke("tab:find-in-page", tabId, text, forward),
+    stopFindInPage: (tabId: string): Promise<void> =>
+      ipcRenderer.invoke("tab:stop-find-in-page", tabId),
     hideActiveView: (): Promise<void> =>
       ipcRenderer.invoke("tab:hide-active-view"),
     showActiveView: (): Promise<void> =>
@@ -70,6 +76,34 @@ const electronAPI = {
       };
       ipcRenderer.on("tab:url-updated", handler);
       return () => ipcRenderer.removeListener("tab:url-updated", handler);
+    },
+    onNewTabRequest: (callback: (data: { url: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: { url: string }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("tab:new-tab-request", handler);
+      return () => ipcRenderer.removeListener("tab:new-tab-request", handler);
+    },
+    onFindResult: (callback: (data: { tabId: string; activeMatchOrdinal: number; matches: number; finalUpdate: boolean }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: { tabId: string; activeMatchOrdinal: number; matches: number; finalUpdate: boolean }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("tab:find-result", handler);
+      return () => ipcRenderer.removeListener("tab:find-result", handler);
+    },
+    onDownloadStarted: (callback: (data: { filename: string; totalBytes: number }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: { filename: string; totalBytes: number }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("tab:download-started", handler);
+      return () => ipcRenderer.removeListener("tab:download-started", handler);
+    },
+    onDownloadCompleted: (callback: (data: { filename: string; state: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: { filename: string; state: string }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("tab:download-completed", handler);
+      return () => ipcRenderer.removeListener("tab:download-completed", handler);
     },
   },
 
