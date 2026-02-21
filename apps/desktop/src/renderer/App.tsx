@@ -1,6 +1,7 @@
 import { TabBar } from "./components/TabBar";
 import { Toolbar } from "./components/Toolbar";
 import { TabContent } from "./components/TabContent";
+import { FindBar } from "./components/FindBar";
 import { Sidebar } from "./components/Sidebar";
 import { useTabEvents } from "./hooks/useTabEvents";
 import { useTabShortcuts } from "./hooks/useTabShortcuts";
@@ -88,6 +89,7 @@ export function App(): React.ReactElement {
         <TabBar />
         <Toolbar />
         <div style={styles.content}>
+          <FindBar />
           {activeTab ? (
             <TabContent type={activeTab.type} hasUrl={!!activeTab.url} />
           ) : hasTabs ? null : (

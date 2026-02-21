@@ -15,7 +15,7 @@
 | 7 | MIXA-006 | Tab system with Chromium webviews | 🟢 DONE | 005 | ELECTRON-ENGINEER |
 | 8 | MIXA-007 | Omnibar (URL + commands + search) | 🟢 DONE | 006 | ELECTRON-ENGINEER |
 | 9 | MIXA-008 | Sidebar with tab tree | 🟢 DONE | 006 | ELECTRON-ENGINEER |
-| 10 | MIXA-009 | Browser navigation + history | 🔴 TODO | 006 | ELECTRON-ENGINEER |
+| 10 | MIXA-009 | Browser navigation + history | 🟢 DONE | 006 | ELECTRON-ENGINEER |
 | 11 | MIXA-010 | Go engine lifecycle (Electron ↔ Go) | 🔴 TODO | 004, 005 | ELECTRON-ENGINEER |
 | 12 | MIXA-034 | GitHub Actions CI | 🔴 TODO | 001, 004 | DEVOPS-ENGINEER |
 | 13 | MIXA-033 | Theming system | 🔴 TODO | 005 | FRONTEND-ENGINEER |
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 9
-- Remaining: 42
+- Completed: 10
+- Remaining: 41
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes
