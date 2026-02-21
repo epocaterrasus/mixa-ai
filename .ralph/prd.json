@@ -512,7 +512,7 @@
       "dependencies": [
         "MIXA-004"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "MIXA-021",
@@ -963,7 +963,7 @@
         "MIXA-016",
         "MIXA-006"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "MIXA-039",

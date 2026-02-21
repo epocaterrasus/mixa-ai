@@ -34,13 +34,13 @@
 | 21 | MIXA-018 | Chat tab UI | 🟢 DONE | 017, 006 | KNOWLEDGE-ENGINEER |
 | 22 | MIXA-019 | Knowledge browse/search tab | 🟢 DONE | 016, 011, 006 | FRONTEND-ENGINEER |
 | 23 | MIXA-032 | Settings tab | 🟢 DONE | 013, 006 | FRONTEND-ENGINEER |
-| 24 | MIXA-038 | Augmented browsing indicator | 🔴 TODO | 016, 006 | KNOWLEDGE-ENGINEER |
+| 24 | MIXA-038 | Augmented browsing indicator | 🟢 DONE | 016, 006 | KNOWLEDGE-ENGINEER |
 
 ### Sprint 3 — Terminal Renderer + Engine Modules
 
 | # | Task ID | Title | Status | Dependencies | Agent |
 |---|---------|-------|--------|--------------|-------|
-| 25 | MIXA-020 | Fenix UI protocol (protobuf) | 🔴 TODO | 004 | TERMINAL-ENGINEER |
+| 25 | MIXA-020 | Fenix UI protocol (protobuf) | 🟢 DONE | 004 | TERMINAL-ENGINEER |
 | 26 | MIXA-021 | Terminal renderer React components | 🔴 TODO | 020, 002 | TERMINAL-ENGINEER |
 | 27 | MIXA-022 | Terminal tab + gRPC streaming | 🔴 TODO | 021, 010 | TERMINAL-ENGINEER |
 | 28 | MIXA-023 | GUARD module (secrets) | 🔴 TODO | 020 | TERMINAL-ENGINEER |
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 23
-- Remaining: 28
+- Completed: 25
+- Remaining: 26
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes
