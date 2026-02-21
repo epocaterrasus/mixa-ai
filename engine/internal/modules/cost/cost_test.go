@@ -1,6 +1,7 @@
 package cost
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -437,6 +438,25 @@ func TestBudgetAlertsProjectScope(t *testing.T) {
 	}
 }
 
+func TestBudgetAlertsSortedByUtilization(t *testing.T) {
+	mod := newTestModule(t)
+
+	mod.AddEntry("aws", "EC2", 900.0, thisMonthDay(1), "", "")
+	mod.AddEntry("digitalocean", "Droplets", 400.0, thisMonthDay(2), "", "")
+
+	mod.SetBudget("total", 2000.0)           // ~65% utilization
+	mod.SetBudget("provider:aws", 1000.0)    // 90% utilization
+
+	alerts := mod.BudgetAlerts()
+	if len(alerts) != 2 {
+		t.Fatalf("expected 2 alerts, got %d", len(alerts))
+	}
+	// Higher utilization should be first
+	if alerts[0].Utilization < alerts[1].Utilization {
+		t.Fatal("expected alerts sorted by utilization descending")
+	}
+}
+
 // --- Export ---
 
 func TestExportCSV(t *testing.T) {
@@ -868,4 +888,390 @@ func TestUniqueEntryIDs(t *testing.T) {
 	if len(ids) != 3 {
 		t.Fatalf("expected 3 unique IDs, got %d", len(ids))
 	}
+}
+
+// --- Provider adapter tests ---
+
+type mockAdapter struct {
+	id      string
+	name    string
+	entries []CostEntry
+	err     error
+}
+
+func (a *mockAdapter) ID() string   { return a.id }
+func (a *mockAdapter) Name() string { return a.name }
+func (a *mockAdapter) FetchCosts(_ context.Context, _ string, _, _ time.Time) ([]CostEntry, error) {
+	return a.entries, a.err
+}
+
+func TestManualAdapterInterface(t *testing.T) {
+	adapter := &ManualAdapter{}
+	if adapter.ID() != "manual" {
+		t.Fatalf("expected ID 'manual', got %q", adapter.ID())
+	}
+	if adapter.Name() == "" {
+		t.Fatal("expected non-empty name")
+	}
+
+	entries, err := adapter.FetchCosts(context.Background(), "", time.Now(), time.Now())
+	if err != nil {
+		t.Fatalf("FetchCosts: %v", err)
+	}
+	if entries != nil {
+		t.Fatal("expected nil entries from manual adapter")
+	}
+}
+
+func TestDigitalOceanAdapterInterface(t *testing.T) {
+	adapter := &DigitalOceanAdapter{}
+	if adapter.ID() != "digitalocean" {
+		t.Fatalf("expected ID 'digitalocean', got %q", adapter.ID())
+	}
+	if adapter.Name() == "" {
+		t.Fatal("expected non-empty name")
+	}
+
+	// Without API key should return error
+	_, err := adapter.FetchCosts(context.Background(), "", time.Now(), time.Now())
+	if err == nil {
+		t.Fatal("expected error without API key")
+	}
+
+	// With API key should return nil entries (stub)
+	entries, err := adapter.FetchCosts(context.Background(), "test-key", time.Now(), time.Now())
+	if err != nil {
+		t.Fatalf("FetchCosts with key: %v", err)
+	}
+	if entries != nil {
+		t.Fatal("expected nil entries from stub")
+	}
+}
+
+func TestAWSAdapterInterface(t *testing.T) {
+	adapter := &AWSAdapter{}
+	if adapter.ID() != "aws" {
+		t.Fatalf("expected ID 'aws', got %q", adapter.ID())
+	}
+	if adapter.Name() == "" {
+		t.Fatal("expected non-empty name")
+	}
+
+	_, err := adapter.FetchCosts(context.Background(), "", time.Now(), time.Now())
+	if err == nil {
+		t.Fatal("expected error without API key")
+	}
+}
+
+func TestRegisterAdapter(t *testing.T) {
+	dir := t.TempDir()
+	mod := New(filepath.Join(dir, "test.db"), testKey)
+
+	if len(mod.adapters) != 3 {
+		t.Fatalf("expected 3 built-in adapters, got %d", len(mod.adapters))
+	}
+
+	custom := &mockAdapter{id: "custom", name: "Custom"}
+	mod.RegisterAdapter(custom)
+
+	if len(mod.adapters) != 4 {
+		t.Fatalf("expected 4 adapters, got %d", len(mod.adapters))
+	}
+}
+
+func TestAdapterInterfaceCompliance(t *testing.T) {
+	var _ ProviderAdapter = (*ManualAdapter)(nil)
+	var _ ProviderAdapter = (*DigitalOceanAdapter)(nil)
+	var _ ProviderAdapter = (*AWSAdapter)(nil)
+}
+
+// --- Provider configuration tests ---
+
+func TestDefaultProviders(t *testing.T) {
+	dir := t.TempDir()
+	mod := New(filepath.Join(dir, "test.db"), testKey)
+
+	providers := mod.Providers()
+	if len(providers) != 3 {
+		t.Fatalf("expected 3 default providers, got %d", len(providers))
+	}
+
+	ids := make(map[string]bool)
+	for _, p := range providers {
+		ids[p.ProviderID] = true
+	}
+	for _, expected := range []string{"manual", "digitalocean", "aws"} {
+		if !ids[expected] {
+			t.Fatalf("expected provider %q in defaults", expected)
+		}
+	}
+}
+
+func TestManualProviderEnabledByDefault(t *testing.T) {
+	dir := t.TempDir()
+	mod := New(filepath.Join(dir, "test.db"), testKey)
+
+	for _, p := range mod.Providers() {
+		if p.ProviderID == "manual" && !p.Enabled {
+			t.Fatal("expected manual provider to be enabled by default")
+		}
+		if p.ProviderID != "manual" && p.Enabled {
+			t.Fatalf("expected %q to be disabled by default", p.ProviderID)
+		}
+	}
+}
+
+func TestConfigureProvider(t *testing.T) {
+	mod := newTestModule(t)
+
+	if err := mod.ConfigureProvider("digitalocean", "do-key-123", true); err != nil {
+		t.Fatalf("ConfigureProvider: %v", err)
+	}
+
+	providers := mod.Providers()
+	for _, p := range providers {
+		if p.ProviderID == "digitalocean" {
+			if p.APIKey != "do-key-123" {
+				t.Fatalf("expected API key 'do-key-123', got %q", p.APIKey)
+			}
+			if !p.Enabled {
+				t.Fatal("expected provider to be enabled")
+			}
+			return
+		}
+	}
+	t.Fatal("digitalocean provider not found")
+}
+
+func TestConfigureProviderNotFound(t *testing.T) {
+	mod := newTestModule(t)
+	err := mod.ConfigureProvider("nonexistent", "key", true)
+	if err == nil {
+		t.Fatal("expected error for nonexistent provider")
+	}
+}
+
+func TestProviderConfigPersistence(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "persist.db")
+
+	mod1 := New(dbPath, testKey)
+	if err := mod1.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	mod1.ConfigureProvider("digitalocean", "test-api-key", true)
+	mod1.SetSchedule(PollHourly)
+	mod1.Stop()
+
+	mod2 := New(dbPath, testKey)
+	if err := mod2.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer mod2.Stop()
+
+	for _, p := range mod2.Providers() {
+		if p.ProviderID == "digitalocean" {
+			if p.APIKey != "test-api-key" || !p.Enabled {
+				t.Fatal("expected provider config to persist")
+			}
+		}
+	}
+
+	if mod2.Schedule() != PollHourly {
+		t.Fatalf("expected schedule 'hourly', got %q", mod2.Schedule())
+	}
+}
+
+// --- Schedule tests ---
+
+func TestDefaultSchedule(t *testing.T) {
+	dir := t.TempDir()
+	mod := New(filepath.Join(dir, "test.db"), testKey)
+	if mod.Schedule() != PollDaily {
+		t.Fatalf("expected default schedule 'daily', got %q", mod.Schedule())
+	}
+}
+
+func TestSetSchedule(t *testing.T) {
+	mod := newTestModule(t)
+
+	if err := mod.SetSchedule(PollHourly); err != nil {
+		t.Fatalf("SetSchedule: %v", err)
+	}
+	if mod.Schedule() != PollHourly {
+		t.Fatalf("expected schedule 'hourly', got %q", mod.Schedule())
+	}
+}
+
+func TestPollInterval(t *testing.T) {
+	dir := t.TempDir()
+	mod := New(filepath.Join(dir, "test.db"), testKey)
+
+	mod.schedule = PollDaily
+	if mod.pollInterval() != 24*time.Hour {
+		t.Fatal("expected 24h for daily schedule")
+	}
+
+	mod.schedule = PollHourly
+	if mod.pollInterval() != time.Hour {
+		t.Fatal("expected 1h for hourly schedule")
+	}
+}
+
+// --- Merge entries tests ---
+
+func TestMergeFetchedEntriesUpdate(t *testing.T) {
+	mod := newTestModule(t)
+	date := thisMonthDay(1)
+
+	mod.AddEntry("aws", "EC2", 100.0, date, "", "")
+
+	mod.mu.Lock()
+	mod.mergeFetchedEntries([]CostEntry{
+		{Provider: "aws", Service: "EC2", Amount: 120.0, Currency: "USD", Date: date},
+	})
+	mod.mu.Unlock()
+
+	entries := mod.ListEntries()
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 entry after merge update, got %d", len(entries))
+	}
+	if entries[0].Amount != 120.0 {
+		t.Fatalf("expected updated amount 120.0, got %f", entries[0].Amount)
+	}
+}
+
+func TestMergeFetchedEntriesNew(t *testing.T) {
+	mod := newTestModule(t)
+
+	mod.AddEntry("aws", "EC2", 100.0, thisMonthDay(1), "", "")
+
+	mod.mu.Lock()
+	mod.mergeFetchedEntries([]CostEntry{
+		{Provider: "aws", Service: "S3", Amount: 30.0, Currency: "USD", Date: thisMonthDay(2)},
+	})
+	mod.mu.Unlock()
+
+	entries := mod.ListEntries()
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries after merge new, got %d", len(entries))
+	}
+}
+
+func TestMergeFetchedEntriesAssignsID(t *testing.T) {
+	mod := newTestModule(t)
+
+	mod.mu.Lock()
+	mod.mergeFetchedEntries([]CostEntry{
+		{Provider: "aws", Service: "EC2", Amount: 50.0, Currency: "USD", Date: thisMonthDay(1)},
+	})
+	mod.mu.Unlock()
+
+	entries := mod.ListEntries()
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(entries))
+	}
+	if entries[0].ID == "" {
+		t.Fatal("expected merged entry to have an ID assigned")
+	}
+}
+
+// --- HandleEvent for new actions ---
+
+func TestHandleDeleteBudgetEvent(t *testing.T) {
+	mod := newTestModule(t)
+	mod.SetBudget("total", 500.0)
+
+	actionID := "delete-budget"
+	err := mod.HandleEvent(&pb.UIEventRequest{
+		Module:    "cost",
+		ActionId:  &actionID,
+		EventType: "click",
+		Data:      map[string]string{"scope": "total"},
+	})
+	if err != nil {
+		t.Fatalf("HandleEvent delete-budget: %v", err)
+	}
+
+	_, ok := mod.GetBudget("total")
+	if ok {
+		t.Fatal("expected budget to be deleted via event")
+	}
+}
+
+func TestHandleConfigureProviderEvent(t *testing.T) {
+	mod := newTestModule(t)
+
+	actionID := "configure-provider"
+	err := mod.HandleEvent(&pb.UIEventRequest{
+		Module:    "cost",
+		ActionId:  &actionID,
+		EventType: "click",
+		Data: map[string]string{
+			"provider_id": "digitalocean",
+			"api_key":     "do-test-key",
+			"enabled":     "true",
+		},
+	})
+	if err != nil {
+		t.Fatalf("HandleEvent configure-provider: %v", err)
+	}
+
+	for _, p := range mod.Providers() {
+		if p.ProviderID == "digitalocean" {
+			if p.APIKey != "do-test-key" || !p.Enabled {
+				t.Fatal("expected provider configured via event")
+			}
+			return
+		}
+	}
+	t.Fatal("digitalocean provider not found")
+}
+
+func TestHandleSetScheduleEvent(t *testing.T) {
+	mod := newTestModule(t)
+
+	actionID := "set-schedule"
+	err := mod.HandleEvent(&pb.UIEventRequest{
+		Module:    "cost",
+		ActionId:  &actionID,
+		EventType: "click",
+		Data:      map[string]string{"schedule": "hourly"},
+	})
+	if err != nil {
+		t.Fatalf("HandleEvent set-schedule: %v", err)
+	}
+	if mod.Schedule() != PollHourly {
+		t.Fatalf("expected schedule 'hourly', got %q", mod.Schedule())
+	}
+}
+
+func TestHandleSetScheduleInvalid(t *testing.T) {
+	mod := newTestModule(t)
+
+	actionID := "set-schedule"
+	err := mod.HandleEvent(&pb.UIEventRequest{
+		Module:    "cost",
+		ActionId:  &actionID,
+		EventType: "click",
+		Data:      map[string]string{"schedule": "invalid"},
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid schedule")
+	}
+}
+
+func TestStatusBarShowsSchedule(t *testing.T) {
+	mod := newTestModule(t)
+
+	view := mod.CurrentView()
+	for _, c := range view.Components {
+		if c.Type == "status_bar" && c.Content != nil {
+			if !strings.Contains(*c.Content, string(PollDaily)) {
+				t.Fatalf("expected status bar to show poll schedule, got %q", *c.Content)
+			}
+			return
+		}
+	}
+	t.Fatal("status_bar component not found")
 }

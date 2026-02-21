@@ -1,6 +1,9 @@
 package pulse
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -739,5 +742,301 @@ func TestSSLTrend(t *testing.T) {
 	}
 	if sslTrend(3) != "up" {
 		t.Fatal("expected up for warnings")
+	}
+}
+
+// --- HTTP health checking (integration with httptest) ---
+
+func TestCheckEndpointUp(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	mod := newTestModule(t)
+
+	ep, _ := mod.AddEndpoint("Test Server", srv.URL, "GET", 60)
+	result, err := mod.CheckEndpoint(ep.ID)
+	if err != nil {
+		t.Fatalf("CheckEndpoint: %v", err)
+	}
+
+	if !result.IsUp {
+		t.Fatal("expected endpoint to be up")
+	}
+	if result.StatusCode != 200 {
+		t.Fatalf("expected status 200, got %d", result.StatusCode)
+	}
+	if result.ResponseMs < 0 {
+		t.Fatal("expected non-negative response time")
+	}
+	if result.ErrorMessage != "" {
+		t.Fatalf("expected no error message, got %q", result.ErrorMessage)
+	}
+}
+
+func TestCheckEndpointDown(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	mod := newTestModule(t)
+
+	ep, _ := mod.AddEndpoint("Down Server", srv.URL, "GET", 60)
+	result, err := mod.CheckEndpoint(ep.ID)
+	if err != nil {
+		t.Fatalf("CheckEndpoint: %v", err)
+	}
+
+	if result.IsUp {
+		t.Fatal("expected endpoint to be down")
+	}
+	if result.StatusCode != 500 {
+		t.Fatalf("expected status 500, got %d", result.StatusCode)
+	}
+}
+
+func TestCheckEndpointNotFound(t *testing.T) {
+	mod := newTestModule(t)
+
+	_, err := mod.CheckEndpoint("nonexistent")
+	if err == nil {
+		t.Fatal("expected error for nonexistent endpoint")
+	}
+}
+
+func TestCheckEndpointHead(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "HEAD" {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	mod := newTestModule(t)
+
+	ep, _ := mod.AddEndpoint("HEAD Server", srv.URL, "HEAD", 60)
+	result, err := mod.CheckEndpoint(ep.ID)
+	if err != nil {
+		t.Fatalf("CheckEndpoint: %v", err)
+	}
+
+	if !result.IsUp {
+		t.Fatal("expected endpoint to be up for HEAD request")
+	}
+}
+
+func TestCheckEndpointConnectionError(t *testing.T) {
+	mod := newTestModule(t)
+
+	ep, _ := mod.AddEndpoint("Bad Server", "http://127.0.0.1:1", "GET", 60)
+	result, err := mod.CheckEndpoint(ep.ID)
+	if err != nil {
+		t.Fatalf("CheckEndpoint: %v", err)
+	}
+
+	if result.IsUp {
+		t.Fatal("expected endpoint to be down on connection error")
+	}
+	if result.ErrorMessage == "" {
+		t.Fatal("expected error message for connection failure")
+	}
+}
+
+func TestCheckEndpointCreatesIncident(t *testing.T) {
+	upSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer upSrv.Close()
+
+	downSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer downSrv.Close()
+
+	mod := newTestModule(t)
+
+	// First check up against up server
+	ep, _ := mod.AddEndpoint("Test", upSrv.URL, "GET", 60)
+	mod.CheckEndpoint(ep.ID)
+
+	// Change URL to down server and check again
+	mod.mu.Lock()
+	mod.endpoints[ep.ID].URL = downSrv.URL
+	mod.mu.Unlock()
+	mod.CheckEndpoint(ep.ID)
+
+	incidents := mod.ListIncidents()
+	if len(incidents) != 1 {
+		t.Fatalf("expected 1 incident, got %d", len(incidents))
+	}
+	if incidents[0].Type != "down" {
+		t.Fatalf("expected incident type 'down', got %q", incidents[0].Type)
+	}
+}
+
+// --- Max results cap ---
+
+func TestMaxResultsCap(t *testing.T) {
+	mod := newTestModule(t)
+
+	ep, _ := mod.AddEndpoint("Test", "https://example.com", "GET", 60)
+
+	now := time.Now().UTC()
+	for i := 0; i < maxResultsPerEndpoint+50; i++ {
+		mod.RecordCheckResult(&CheckResult{
+			EndpointID: ep.ID,
+			Timestamp:  now.Add(-time.Duration(i) * time.Second).Format(time.RFC3339),
+			IsUp:       true,
+			StatusCode: 200,
+			ResponseMs: float64(i),
+		})
+	}
+
+	mod.mu.RLock()
+	count := len(mod.results[ep.ID])
+	mod.mu.RUnlock()
+
+	if count > maxResultsPerEndpoint {
+		t.Fatalf("expected at most %d results, got %d", maxResultsPerEndpoint, count)
+	}
+}
+
+// --- SSL validation ---
+
+func TestCheckSSLRequiresHTTPS(t *testing.T) {
+	mod := newTestModule(t)
+
+	ep, _ := mod.AddEndpoint("HTTP Only", "http://example.com", "GET", 60)
+	_, err := mod.CheckSSL(ep.ID)
+	if err == nil {
+		t.Fatal("expected error for non-HTTPS URL")
+	}
+	if !strings.Contains(err.Error(), "HTTPS") {
+		t.Fatalf("expected error about HTTPS, got %q", err.Error())
+	}
+}
+
+func TestCheckSSLNotFound(t *testing.T) {
+	mod := newTestModule(t)
+
+	_, err := mod.CheckSSL("nonexistent")
+	if err == nil {
+		t.Fatal("expected error for nonexistent endpoint")
+	}
+}
+
+// --- Polling ---
+
+func TestShortestInterval(t *testing.T) {
+	mod := newTestModule(t)
+
+	// No endpoints — default 60s
+	interval := mod.shortestInterval()
+	if interval != 60*time.Second {
+		t.Fatalf("expected 60s default, got %v", interval)
+	}
+
+	mod.AddEndpoint("Fast", "https://fast.example.com", "GET", 10)
+	mod.AddEndpoint("Slow", "https://slow.example.com", "GET", 300)
+
+	interval = mod.shortestInterval()
+	if interval != 10*time.Second {
+		t.Fatalf("expected 10s (shortest), got %v", interval)
+	}
+}
+
+// --- Unique IDs ---
+
+func TestUniqueEndpointIDs(t *testing.T) {
+	mod := newTestModule(t)
+
+	ep1, _ := mod.AddEndpoint("A", "https://a.example.com", "GET", 60)
+	ep2, _ := mod.AddEndpoint("B", "https://b.example.com", "GET", 60)
+	ep3, _ := mod.AddEndpoint("C", "https://c.example.com", "GET", 60)
+
+	ids := map[string]bool{ep1.ID: true, ep2.ID: true, ep3.ID: true}
+	if len(ids) != 3 {
+		t.Fatalf("expected 3 unique IDs, got %d", len(ids))
+	}
+}
+
+// --- SSL alert levels (30/14/7 day thresholds) ---
+
+func TestSSLAlertLevelThresholds(t *testing.T) {
+	mod := newTestModule(t)
+
+	tests := []struct {
+		daysLeft int
+		want     string
+	}{
+		{60, "ok"},
+		{31, "ok"},
+		{30, "caution"},
+		{14, "warning"},
+		{7, "critical"},
+		{1, "critical"},
+	}
+
+	for _, tt := range tests {
+		name := fmt.Sprintf("SSL-%ddays", tt.daysLeft)
+		ep, _ := mod.AddEndpoint(name, "https://example.com", "GET", 60)
+		mod.SetSSLInfo(&SSLInfo{EndpointID: ep.ID, DaysLeft: tt.daysLeft})
+	}
+
+	view := mod.CurrentView()
+	for _, c := range view.Components {
+		if c.Id != "pulse-ssl-table" {
+			continue
+		}
+		for _, row := range c.Rows {
+			name := row.Values["name"]
+			alert := row.Values["alert"]
+
+			var expected string
+			for _, tt := range tests {
+				if name == fmt.Sprintf("SSL-%ddays", tt.daysLeft) {
+					expected = tt.want
+					break
+				}
+			}
+
+			if alert != expected {
+				t.Errorf("%s: expected alert %q, got %q", name, expected, alert)
+			}
+		}
+		return
+	}
+	t.Fatal("SSL table not found")
+}
+
+// --- Status bar content ---
+
+func TestStatusBarContent(t *testing.T) {
+	mod := newTestModule(t)
+
+	mod.AddEndpoint("A", "https://a.example.com", "GET", 60)
+	mod.AddEndpoint("B", "https://b.example.com", "GET", 60)
+
+	view := mod.CurrentView()
+
+	var statusBar *pb.UIComponent
+	for _, c := range view.Components {
+		if c.Type == "status_bar" {
+			statusBar = c
+			break
+		}
+	}
+	if statusBar == nil {
+		t.Fatal("expected status_bar component")
+	}
+	if statusBar.Content == nil {
+		t.Fatal("expected status bar content")
+	}
+	if !strings.Contains(*statusBar.Content, "2 endpoints") {
+		t.Fatalf("expected '2 endpoints' in status bar, got %q", *statusBar.Content)
 	}
 }
