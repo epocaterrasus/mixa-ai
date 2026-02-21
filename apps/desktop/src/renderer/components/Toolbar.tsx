@@ -96,7 +96,7 @@ export function Toolbar(): React.ReactElement {
   }, [activeTab, addToast]);
 
   const isLoading = activeTab?.state === "loading";
-  const canCapture = activeTab?.type === "web" && !!activeTab.url && !isCapturing;
+  const canCapture = (activeTab?.type === "web" || activeTab?.type === "app") && !!activeTab.url && !isCapturing;
 
   return (
     <div style={styles.container}>

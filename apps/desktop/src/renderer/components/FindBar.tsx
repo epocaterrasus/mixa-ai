@@ -102,7 +102,7 @@ export function FindBar(): React.ReactElement | null {
   }, [query, isOpen, activeTabId, activeTab?.type, resetResult]);
 
   const handleClose = useCallback(() => {
-    if (activeTabId && activeTab?.type === "web") {
+    if (activeTabId && (activeTab?.type === "web" || activeTab?.type === "app")) {
       void window.electronAPI.tabs.stopFindInPage(activeTabId);
     }
     closeFindBar();

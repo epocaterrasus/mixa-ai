@@ -14,6 +14,11 @@ import { useFindBarStore } from "../stores/findBar";
  * - Cmd+F / Ctrl+F: Find in page
  * - Cmd+` / Ctrl+`: Open new shell tab
  */
+/** Check if a tab type uses a WebContentsView (web and app tabs) */
+function isWebViewTab(type: string | undefined): boolean {
+  return type === "web" || type === "app";
+}
+
 export function useTabShortcuts(): void {
   const addTab = useTabStore((s) => s.addTab);
   const closeTab = useTabStore((s) => s.closeTab);
@@ -36,15 +41,15 @@ export function useTabShortcuts(): void {
           // Also stop the find highlight in the web view
           const currentTabId = useTabStore.getState().activeTabId;
           const currentTab = useTabStore.getState().tabs.find((t) => t.id === currentTabId);
-          if (currentTab?.type === "web" && currentTabId) {
+          if (isWebViewTab(currentTab?.type) && currentTabId) {
             void window.electronAPI.tabs.stopFindInPage(currentTabId);
           }
           return;
         }
-        // Stop loading the current web tab
+        // Stop loading the current web/app tab
         const currentTabId = useTabStore.getState().activeTabId;
         const currentTab = useTabStore.getState().tabs.find((t) => t.id === currentTabId);
-        if (currentTab?.type === "web" && currentTab.state === "loading" && currentTabId) {
+        if (isWebViewTab(currentTab?.type) && currentTab?.state === "loading" && currentTabId) {
           e.preventDefault();
           void window.electronAPI.tabs.stop(currentTabId);
         }
@@ -74,7 +79,7 @@ export function useTabShortcuts(): void {
         const currentTab = useTabStore.getState().tabs.find(
           (t) => t.id === useTabStore.getState().activeTabId,
         );
-        if (currentTab?.type === "web" && currentTab.canGoBack) {
+        if (isWebViewTab(currentTab?.type) && currentTab?.canGoBack) {
           e.preventDefault();
           void window.electronAPI.tabs.goBack(currentTab.id);
         }
@@ -86,7 +91,7 @@ export function useTabShortcuts(): void {
         const currentTab = useTabStore.getState().tabs.find(
           (t) => t.id === useTabStore.getState().activeTabId,
         );
-        if (currentTab?.type === "web" && currentTab.canGoForward) {
+        if (isWebViewTab(currentTab?.type) && currentTab?.canGoForward) {
           e.preventDefault();
           void window.electronAPI.tabs.goForward(currentTab.id);
         }
@@ -97,7 +102,7 @@ export function useTabShortcuts(): void {
       if (e.key === "r" && !e.shiftKey && !e.altKey) {
         const currentTabId = useTabStore.getState().activeTabId;
         const currentTab = useTabStore.getState().tabs.find((t) => t.id === currentTabId);
-        if (currentTab?.type === "web" && currentTabId) {
+        if (isWebViewTab(currentTab?.type) && currentTabId) {
           e.preventDefault();
           void window.electronAPI.tabs.reload(currentTabId);
         }
@@ -109,7 +114,7 @@ export function useTabShortcuts(): void {
         const currentTab = useTabStore.getState().tabs.find(
           (t) => t.id === useTabStore.getState().activeTabId,
         );
-        if (currentTab?.type === "web") {
+        if (isWebViewTab(currentTab?.type)) {
           e.preventDefault();
           findBarToggle();
         }

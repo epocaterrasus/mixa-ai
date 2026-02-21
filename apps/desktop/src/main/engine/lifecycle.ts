@@ -11,13 +11,26 @@ const GRACEFUL_SHUTDOWN_TIMEOUT_MS = 5_000;
 const MAX_LOG_LINES = 1000;
 const GRPC_CONNECT_MAX_RETRIES = 5;
 
+function resolveMonorepoRoot(): string {
+  // In dev mode, app.getAppPath() → apps/desktop/out/main
+  // We need to walk up to the monorepo root where engine/ lives
+  let dir = app.getAppPath();
+  for (let i = 0; i < 6; i++) {
+    if (existsSync(join(dir, "engine", "bin"))) {
+      return dir;
+    }
+    dir = join(dir, "..");
+  }
+  return join(app.getAppPath(), "..", "..");
+}
+
 function resolveEngineBinary(): string {
   if (app.isPackaged) {
     const name = process.platform === "win32" ? "fenix.exe" : "fenix";
     return join(process.resourcesPath, "engine", name);
   }
 
-  const root = join(app.getAppPath(), "..", "..");
+  const root = resolveMonorepoRoot();
   const arch = process.arch === "arm64" ? "arm64" : "amd64";
   const platform = process.platform === "darwin" ? "darwin" : "linux";
   const platformBinary = join(root, "engine", "bin", `fenix-${platform}-${arch}`);
@@ -31,7 +44,7 @@ function resolveProtoPath(): string {
   if (app.isPackaged) {
     return join(process.resourcesPath, "proto", "fenix.proto");
   }
-  const root = join(app.getAppPath(), "..", "..");
+  const root = resolveMonorepoRoot();
   return join(root, "engine", "api", "proto", "fenix.proto");
 }
 

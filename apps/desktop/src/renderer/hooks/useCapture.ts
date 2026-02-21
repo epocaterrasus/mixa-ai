@@ -67,7 +67,7 @@ export function useCapture(): void {
       if (e.key === "s" && !e.shiftKey && !e.altKey) {
         const state = useTabStore.getState();
         const activeTab = state.tabs.find((t) => t.id === state.activeTabId);
-        if (activeTab?.type === "web") {
+        if (activeTab?.type === "web" || activeTab?.type === "app") {
           e.preventDefault();
           void captureCurrentTab();
         }

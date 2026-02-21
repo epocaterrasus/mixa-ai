@@ -311,8 +311,8 @@ export function Omnibar(): React.ReactElement {
   const activateTab = useTabStore((s) => s.activateTab);
   const searchHistory = useHistoryStore((s) => s.search);
 
-  // Derived state
-  const isWebTab = activeTab?.type === "web";
+  // Derived state — app tabs also show their URL in the omnibar
+  const isWebTab = activeTab?.type === "web" || activeTab?.type === "app";
   const url = activeTab?.url ?? "";
   const isHttps = url.startsWith("https://");
   const isLoading = activeTab?.state === "loading";
