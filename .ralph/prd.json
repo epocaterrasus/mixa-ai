@@ -460,7 +460,7 @@
         "MIXA-017",
         "MIXA-006"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "MIXA-019",

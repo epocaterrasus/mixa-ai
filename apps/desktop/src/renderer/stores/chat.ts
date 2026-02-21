@@ -102,7 +102,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         scope: ChatScope | null;
         createdAt: string;
         updatedAt: string;
-        messages: ChatMessage[];
+        messages: Array<{
+          id: string;
+          conversationId: string;
+          role: "user" | "assistant";
+          content: string;
+          citations: Citation[];
+          modelUsed: string | null;
+          tokenCount: number | null;
+          createdAt: string;
+        }>;
       };
 
       const messages: ChatMessage[] = result.messages.map((m) => ({
