@@ -1,4 +1,31 @@
 // @mixa-ai/terminal-renderer — Web-based terminal renderer
-// Implementation will be added in later tasks
+// Renders Fenix UI protocol components as interactive React elements
 
-export {};
+export { UIViewRenderer } from "./UIViewRenderer.js";
+export type { UIViewRendererProps } from "./UIViewRenderer.js";
+
+export {
+  Header,
+  TextBlock,
+  Table,
+  Card,
+  Chart,
+  MetricRow,
+  List,
+  Form,
+  ActionBar,
+  StatusBar,
+} from "./components/index.js";
+
+export type {
+  HeaderProps,
+  TextBlockProps,
+  TableProps,
+  CardProps,
+  ChartProps,
+  MetricRowProps,
+  ListProps,
+  FormProps,
+  ActionBarProps,
+  StatusBarProps,
+} from "./components/index.js";

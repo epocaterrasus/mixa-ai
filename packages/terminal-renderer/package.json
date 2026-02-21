@@ -17,16 +17,23 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint src/",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@mixa-ai/types": "workspace:*"
+    "@mixa-ai/types": "workspace:*",
+    "@mixa-ai/ui": "workspace:*",
+    "recharts": "^3.7.0"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/jest-dom": "^6.6.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "jsdom": "^25.0.0",
     "react": "^19.0.0",
-    "recharts": "^3.7.0",
+    "react-dom": "^19.0.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"
   },
