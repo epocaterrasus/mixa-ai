@@ -294,6 +294,16 @@ export class TabManager {
     return title || null;
   }
 
+  /** Get the meta description of the page in a web tab */
+  async getPageMetaDescription(tabId: string): Promise<string | null> {
+    const info = this.views.get(tabId);
+    if (!info || info.view.webContents.isDestroyed()) return null;
+    const description = await info.view.webContents.executeJavaScript(
+      "(document.querySelector('meta[name=\"description\"]')?.content || document.querySelector('meta[property=\"og:description\"]')?.content || '')",
+    ) as string;
+    return description || null;
+  }
+
   /** Get the currently selected text in a web tab */
   async getSelectedText(tabId: string): Promise<string | null> {
     const info = this.views.get(tabId);

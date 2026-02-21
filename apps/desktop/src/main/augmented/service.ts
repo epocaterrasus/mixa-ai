@@ -30,6 +30,16 @@ const RESTRICTED_PREFIXES = [
   "file://",
 ];
 
+/** Common English stopwords to filter from word matching */
+const STOPWORDS = new Set([
+  "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
+  "of", "with", "by", "from", "is", "it", "its", "this", "that", "are",
+  "was", "were", "be", "been", "has", "have", "had", "do", "does", "did",
+  "will", "can", "could", "should", "would", "may", "not", "no", "all",
+  "how", "what", "when", "where", "who", "which", "why", "new", "you",
+  "your", "we", "our", "they", "their", "about", "into", "just", "also",
+]);
+
 function isRestrictedUrl(url: string): boolean {
   return RESTRICTED_PREFIXES.some((prefix) => url.startsWith(prefix));
 }
@@ -42,40 +52,66 @@ function extractDomain(url: string): string | null {
   }
 }
 
+function extractPathSegments(url: string): string[] {
+  try {
+    const parsed = new URL(url);
+    return parsed.pathname
+      .split("/")
+      .filter((seg) => seg.length > 2)
+      .map((seg) => seg.toLowerCase().replace(/[^a-z0-9]/g, " ").trim())
+      .filter((seg) => seg.length > 2);
+  } catch {
+    return [];
+  }
+}
+
 function extractWords(text: string): Set<string> {
   return new Set(
     text
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, " ")
       .split(/\s+/)
-      .filter((w) => w.length > 2),
+      .filter((w) => w.length > 2 && !STOPWORDS.has(w)),
   );
+}
+
+/** Page metadata used for finding related items */
+export interface PageContext {
+  url: string;
+  title: string;
+  description: string;
 }
 
 /**
  * Score how related a captured item is to the current page.
  * Returns 0 if not related, up to 1.0 for exact URL match.
+ *
+ * Scoring factors:
+ * - Exact URL match: 1.0
+ * - Same domain: +0.3
+ * - Title word overlap (ignoring stopwords): up to +0.35
+ * - Description similarity: up to +0.2
+ * - URL path segment overlap: up to +0.15
  */
 function scoreRelevance(
   item: CapturedItem,
-  pageUrl: string,
-  pageDomain: string | null,
-  pageTitle: string,
+  context: PageContext,
 ): number {
   // Exact URL match
-  if (item.url === pageUrl) {
+  if (item.url === context.url) {
     return 1.0;
   }
 
   let score = 0;
+  const pageDomain = extractDomain(context.url);
 
   // Same domain bonus
   if (pageDomain && item.domain === pageDomain) {
-    score += 0.4;
+    score += 0.3;
   }
 
-  // Title word overlap
-  const pageWords = extractWords(pageTitle);
+  // Title word overlap (ignoring stopwords)
+  const pageWords = extractWords(context.title);
   const itemWords = extractWords(item.title);
   if (pageWords.size > 0 && itemWords.size > 0) {
     let overlap = 0;
@@ -85,15 +121,55 @@ function scoreRelevance(
       }
     }
     const overlapRatio = overlap / Math.max(pageWords.size, itemWords.size);
-    score += overlapRatio * 0.5;
+    score += overlapRatio * 0.35;
   }
 
-  // Content overlap with page title
-  if (item.contentText) {
+  // Description/content similarity
+  if (context.description.length > 10) {
+    const descWords = extractWords(context.description);
+    if (descWords.size > 0) {
+      // Check against item title and description
+      const itemTextWords = new Set<string>();
+      for (const w of itemWords) itemTextWords.add(w);
+      if (item.description) {
+        for (const w of extractWords(item.description)) itemTextWords.add(w);
+      }
+
+      if (itemTextWords.size > 0) {
+        let descOverlap = 0;
+        for (const word of descWords) {
+          if (itemTextWords.has(word)) {
+            descOverlap += 1;
+          }
+        }
+        const descRatio = descOverlap / Math.max(descWords.size, itemTextWords.size);
+        score += descRatio * 0.2;
+      }
+    }
+  }
+
+  // Content overlap with page title (check if item content mentions the page topic)
+  if (item.contentText && context.title.length > 5) {
     const contentLower = item.contentText.toLowerCase();
-    const titleLower = pageTitle.toLowerCase();
-    if (titleLower.length > 5 && contentLower.includes(titleLower)) {
-      score += 0.3;
+    const titleLower = context.title.toLowerCase();
+    if (contentLower.includes(titleLower)) {
+      score += 0.15;
+    }
+  }
+
+  // URL path segment overlap
+  const pageSegments = extractPathSegments(context.url);
+  if (pageSegments.length > 0 && item.url) {
+    const itemSegments = extractPathSegments(item.url);
+    if (itemSegments.length > 0) {
+      let segOverlap = 0;
+      for (const seg of pageSegments) {
+        if (itemSegments.some((is) => is.includes(seg) || seg.includes(is))) {
+          segOverlap += 1;
+        }
+      }
+      const segRatio = segOverlap / Math.max(pageSegments.length, itemSegments.length);
+      score += segRatio * 0.15;
     }
   }
 
@@ -118,20 +194,17 @@ function toRelatedItem(item: CapturedItem, score: number): RelatedItem {
  * Find items in the knowledge base related to the given page.
  */
 export function findRelatedItems(
-  pageUrl: string,
-  pageTitle: string,
+  context: PageContext,
   limit: number = 10,
   minScore: number = 0.2,
 ): RelatedItem[] {
   const allItems = captureStore.getAll();
   if (allItems.length === 0) return [];
 
-  const pageDomain = extractDomain(pageUrl);
-
   const scored: Array<{ item: CapturedItem; score: number }> = [];
 
   for (const item of allItems) {
-    const score = scoreRelevance(item, pageUrl, pageDomain, pageTitle);
+    const score = scoreRelevance(item, context);
     if (score >= minScore) {
       scored.push({ item, score });
     }
@@ -146,6 +219,7 @@ export function findRelatedItems(
 /**
  * Augmented Browsing Service.
  * Monitors tab navigation and checks for related items in the knowledge base.
+ * When related items are found, sends them to the renderer to show an indicator.
  */
 export class AugmentedBrowsingService {
   private mainWindow: BrowserWindow | null = null;
@@ -212,15 +286,27 @@ export class AugmentedBrowsingService {
       return;
     }
 
-    // Extract page title via executeJavaScript on the web view
+    // Extract page title and meta description for better matching
     let pageTitle = "";
+    let pageDescription = "";
     try {
       pageTitle = await tabManager.getPageTitle(tabId) ?? "";
     } catch {
       pageTitle = "";
     }
+    try {
+      pageDescription = await tabManager.getPageMetaDescription(tabId) ?? "";
+    } catch {
+      pageDescription = "";
+    }
 
-    const relatedItems = findRelatedItems(url, pageTitle);
+    const context: PageContext = {
+      url,
+      title: pageTitle,
+      description: pageDescription,
+    };
+
+    const relatedItems = findRelatedItems(context);
     this.sendResult({ tabId, relatedItems });
   }
 

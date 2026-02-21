@@ -9,6 +9,7 @@ import {
   deleteApiKey,
   getApiKeyStatus,
 } from "../../settings/keychain.js";
+import { augmentedBrowsingService } from "../../augmented/index.js";
 
 const llmProviderNameSchema = z.enum([
   "openai",
@@ -95,7 +96,7 @@ const defaultSettings: UserSettings = {
   defaultSearchEngine: "https://www.google.com/search?q=",
 };
 
-function loadSettings(): UserSettings {
+export function loadSettings(): UserSettings {
   try {
     if (existsSync(SETTINGS_FILE)) {
       const raw = readFileSync(SETTINGS_FILE, "utf-8");
@@ -205,6 +206,7 @@ export const settingsRouter = router({
       }
       if (input.augmentedBrowsingEnabled !== undefined) {
         current.augmentedBrowsingEnabled = input.augmentedBrowsingEnabled;
+        augmentedBrowsingService.setEnabled(input.augmentedBrowsingEnabled);
       }
       if (input.defaultSearchEngine !== undefined) {
         current.defaultSearchEngine = input.defaultSearchEngine;

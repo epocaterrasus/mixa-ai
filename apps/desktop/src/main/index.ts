@@ -6,6 +6,7 @@ import { engineLifecycle } from "./engine/index.js";
 import { setupCaptureHandlers } from "./capture/index.js";
 import { setupChatHandlers } from "./chat/handler.js";
 import { augmentedBrowsingService } from "./augmented/index.js";
+import { loadSettings } from "./trpc/routers/settings.js";
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -63,6 +64,9 @@ void app.whenReady().then(() => {
   setupCaptureHandlers(mainWindow);
 
   // Set up augmented browsing (related items indicator)
+  // Sync initial enabled state from saved settings
+  const savedSettings = loadSettings();
+  augmentedBrowsingService.setEnabled(savedSettings.augmentedBrowsingEnabled);
   augmentedBrowsingService.attach(mainWindow);
   tabManager.onPageLoaded((tabId) => augmentedBrowsingService.onPageLoaded(tabId));
   tabManager.onTabDestroyed((tabId) => augmentedBrowsingService.onTabDestroyed(tabId));
