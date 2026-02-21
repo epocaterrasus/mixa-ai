@@ -1,7 +1,6 @@
 // General settings section — auto-capture, browsing, search engine
 
 import { useSettingsStore } from "../../stores/settings";
-import { useUpdaterStore } from "../../stores/updater";
 
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: "18px",
@@ -112,115 +111,6 @@ function ToggleSwitch({
   );
 }
 
-function UpdateSection(): React.ReactElement {
-  const {
-    status,
-    version,
-    currentVersion,
-    error,
-    downloadProgress,
-    checkForUpdates,
-    downloadUpdate,
-    installUpdate,
-  } = useUpdaterStore();
-
-  const statusLabel = (): string => {
-    switch (status) {
-      case "idle":
-      case "not-available":
-        return "Up to date";
-      case "checking":
-        return "Checking for updates...";
-      case "available":
-        return `Version ${version ?? "?"} available`;
-      case "downloading":
-        return `Downloading ${Math.round(downloadProgress ?? 0)}%`;
-      case "ready":
-        return `Version ${version ?? "?"} ready to install`;
-      case "error":
-        return `Update error: ${error ?? "unknown"}`;
-    }
-  };
-
-  const actionBtnStyle: React.CSSProperties = {
-    padding: "4px 12px",
-    borderRadius: 6,
-    border: "1px solid var(--mixa-border-default)",
-    backgroundColor: "var(--mixa-bg-elevated)",
-    color: "var(--mixa-text-primary)",
-    fontSize: 12,
-    cursor: "pointer",
-    fontFamily: "inherit",
-  };
-
-  return (
-    <div style={groupStyle}>
-      <div style={groupTitleStyle}>About</div>
-      <div style={toggleRowStyle}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: "13px", fontWeight: 500 }}>
-            Mixa v{currentVersion || "0.1.0"}
-          </div>
-          <div style={{ fontSize: "12px", color: "var(--mixa-text-muted)", marginTop: 2 }}>
-            {statusLabel()}
-          </div>
-          {status === "downloading" && (
-            <div
-              style={{
-                width: "100%",
-                maxWidth: 200,
-                height: 3,
-                borderRadius: 2,
-                backgroundColor: "var(--mixa-bg-active)",
-                marginTop: 6,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  width: `${downloadProgress ?? 0}%`,
-                  height: "100%",
-                  backgroundColor: "var(--mixa-accent-primary)",
-                  transition: "width 0.3s ease",
-                }}
-              />
-            </div>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          {(status === "idle" || status === "not-available" || status === "error") && (
-            <button
-              type="button"
-              style={actionBtnStyle}
-              onClick={() => void checkForUpdates()}
-            >
-              Check for Updates
-            </button>
-          )}
-          {status === "available" && (
-            <button
-              type="button"
-              style={actionBtnStyle}
-              onClick={() => void downloadUpdate()}
-            >
-              Download
-            </button>
-          )}
-          {status === "ready" && (
-            <button
-              type="button"
-              style={actionBtnStyle}
-              onClick={() => void installUpdate()}
-            >
-              Restart to Update
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function GeneralSection(): React.ReactElement {
   const {
     settings,
@@ -238,8 +128,6 @@ export function GeneralSection(): React.ReactElement {
       <div style={sectionDescStyle}>
         Configure browsing behavior, content capture, and search preferences.
       </div>
-
-      <UpdateSection />
 
       {/* Auto Capture */}
       <div style={groupStyle}>
