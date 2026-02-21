@@ -231,6 +231,37 @@ const electronAPI = {
     },
   },
 
+  // Shell (xterm.js + node-pty) IPC
+  shell: {
+    create: (shellId: string, cols: number, rows: number): Promise<void> =>
+      ipcRenderer.invoke("shell:create", { shellId, cols, rows }),
+
+    write: (shellId: string, data: string): Promise<void> =>
+      ipcRenderer.invoke("shell:write", { shellId, data }),
+
+    resize: (shellId: string, cols: number, rows: number): Promise<void> =>
+      ipcRenderer.invoke("shell:resize", { shellId, cols, rows }),
+
+    destroy: (shellId: string): Promise<void> =>
+      ipcRenderer.invoke("shell:destroy", { shellId }),
+
+    onData: (callback: (data: { shellId: string; data: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: { shellId: string; data: string }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("shell:data", handler);
+      return () => ipcRenderer.removeListener("shell:data", handler);
+    },
+
+    onExit: (callback: (data: { shellId: string; exitCode: number; signal: number }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: { shellId: string; exitCode: number; signal: number }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("shell:exit", handler);
+      return () => ipcRenderer.removeListener("shell:exit", handler);
+    },
+  },
+
   // Terminal gRPC streaming IPC
   terminal: {
     startStream: (streamId: string, module: string): Promise<void> =>
