@@ -1,7 +1,7 @@
 // Terminal tab — renders Fenix UI protocol views streamed from the Go engine
 
-import { useCallback, useEffect, useState } from "react";
-import type { UIEvent, EngineModule } from "@mixa-ai/types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { UIEvent, UIAction, EngineModule } from "@mixa-ai/types";
 import { UIViewRenderer } from "@mixa-ai/terminal-renderer";
 import { useTabStore } from "../../stores/tabs";
 import { useEngineStore } from "../../stores/engine";
@@ -14,6 +14,7 @@ const containerStyle: React.CSSProperties = {
   backgroundColor: "var(--mixa-bg-base)",
   color: "var(--mixa-text-primary)",
   fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  outline: "none",
 };
 
 const toolbarStyle: React.CSSProperties = {
@@ -49,6 +50,7 @@ const statusDotStyle = (state: TerminalStreamState): React.CSSProperties => ({
         : state === "error"
           ? "#ef4444"
           : "var(--mixa-text-muted)",
+  transition: "background-color 200ms ease",
 });
 
 const statusTextStyle: React.CSSProperties = {
@@ -59,6 +61,7 @@ const statusTextStyle: React.CSSProperties = {
 const contentStyle: React.CSSProperties = {
   flex: 1,
   overflow: "auto",
+  transition: "opacity 150ms ease",
 };
 
 const centerStyle: React.CSSProperties = {
@@ -118,6 +121,26 @@ function getStatusLabel(state: TerminalStreamState): string {
   }
 }
 
+/**
+ * Normalize a keyboard event into a shortcut string matching the format
+ * used by UIAction.shortcut (e.g., "Ctrl+R", "Ctrl+Shift+F").
+ */
+function keyboardEventToShortcut(e: React.KeyboardEvent): string | null {
+  if (e.key === "Shift" || e.key === "Control" || e.key === "Alt" || e.key === "Meta") {
+    return null;
+  }
+
+  const parts: string[] = [];
+  if (e.ctrlKey || e.metaKey) parts.push("Ctrl");
+  if (e.shiftKey) parts.push("Shift");
+  if (e.altKey) parts.push("Alt");
+
+  const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+  parts.push(key);
+
+  return parts.join("+");
+}
+
 export function TerminalTab(): React.ReactElement {
   const activeTabId = useTabStore((s) => s.activeTabId);
   const updateTab = useTabStore((s) => s.updateTab);
@@ -125,6 +148,7 @@ export function TerminalTab(): React.ReactElement {
   const engineModules = useEngineStore((s) => s.modules);
 
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const streamId = activeTabId ?? "terminal-default";
   const { view, state, error, sendEvent, reconnect } = useTerminalStream(
@@ -147,6 +171,34 @@ export function TerminalTab(): React.ReactElement {
     [sendEvent],
   );
 
+  // Capture keyboard shortcuts and forward matching ones as UIEvents
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!selectedModule || !view) return;
+
+      const shortcut = keyboardEventToShortcut(e);
+      if (!shortcut) return;
+
+      // Check if any action has a matching shortcut
+      const matchingAction = view.actions.find(
+        (a: UIAction) => a.enabled && a.shortcut === shortcut,
+      );
+
+      if (matchingAction) {
+        e.preventDefault();
+        e.stopPropagation();
+        sendEvent({
+          module: selectedModule,
+          actionId: matchingAction.id,
+          componentId: null,
+          eventType: "shortcut",
+          data: { shortcut },
+        });
+      }
+    },
+    [selectedModule, view, sendEvent],
+  );
+
   const enabledModules = engineModules.filter((m: EngineModule) => m.enabled);
 
   // Update tab title when module changes
@@ -158,6 +210,13 @@ export function TerminalTab(): React.ReactElement {
       : "Terminal";
     updateTab(activeTabId, { title });
   }, [activeTabId, activeModule, updateTab]);
+
+  // Focus container when streaming starts to enable keyboard shortcut capture
+  useEffect(() => {
+    if (state === "streaming" && containerRef.current) {
+      containerRef.current.focus();
+    }
+  }, [state]);
 
   // Not connected to engine
   if (!engineConnected) {
@@ -175,7 +234,14 @@ export function TerminalTab(): React.ReactElement {
   }
 
   return (
-    <div style={containerStyle}>
+    <div
+      ref={containerRef}
+      style={containerStyle}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      role="region"
+      aria-label="Terminal module view"
+    >
       <div style={toolbarStyle}>
         <span style={moduleLabelStyle}>Module:</span>
         <select
