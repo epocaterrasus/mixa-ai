@@ -41,6 +41,39 @@
   --mixa-shadow-overlay: 0 4px 16px rgba(0,0,0,0.4);
   --mixa-shadow-float: 0 2px 8px rgba(0,0,0,0.4);
 
+  /* Spacing scale */
+  --mixa-space-0: 0px;
+  --mixa-space-1: 4px;
+  --mixa-space-2: 8px;
+  --mixa-space-3: 12px;
+  --mixa-space-4: 16px;
+  --mixa-space-5: 20px;
+  --mixa-space-6: 24px;
+  --mixa-space-8: 32px;
+  --mixa-space-10: 40px;
+  --mixa-space-12: 48px;
+  --mixa-space-16: 64px;
+
+  /* Typography */
+  --mixa-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mixa-font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace;
+  --mixa-text-xs: 11px;
+  --mixa-text-sm: 12px;
+  --mixa-text-base: 13px;
+  --mixa-text-md: 14px;
+  --mixa-text-lg: 16px;
+  --mixa-text-xl: 18px;
+  --mixa-text-2xl: 24px;
+  --mixa-text-3xl: 30px;
+
+  /* Border radii */
+  --mixa-radius-none: 0px;
+  --mixa-radius-sm: 4px;
+  --mixa-radius-md: 6px;
+  --mixa-radius-lg: 8px;
+  --mixa-radius-xl: 12px;
+  --mixa-radius-full: 9999px;
+
   color-scheme: dark;
 }
 

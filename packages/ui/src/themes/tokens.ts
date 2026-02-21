@@ -1,10 +1,11 @@
 // @mixa-ai/ui — Theme token definitions
-// These define the semantic color tokens used throughout the app.
-// Each theme (dark/light) provides values for these tokens via CSS custom properties.
+// These define the semantic design tokens used throughout the app.
+// Color tokens vary per theme (dark/light) via CSS custom properties.
+// Spacing, typography, and radii tokens are constant across themes.
 
 import type { ThemeMode } from "@mixa-ai/types";
 
-/** All semantic CSS variable names used by the theme system */
+/** All semantic CSS variable names for color tokens (theme-dependent) */
 export const themeTokens = {
   // Backgrounds
   bgBase: "--mixa-bg-base",
@@ -43,6 +44,60 @@ export const themeTokens = {
   shadowDropdown: "--mixa-shadow-dropdown",
   shadowOverlay: "--mixa-shadow-overlay",
   shadowFloat: "--mixa-shadow-float",
+} as const;
+
+/** Spacing scale (in px) — consistent across themes */
+export const spacing = {
+  0: "0px",
+  1: "4px",
+  2: "8px",
+  3: "12px",
+  4: "16px",
+  5: "20px",
+  6: "24px",
+  8: "32px",
+  10: "40px",
+  12: "48px",
+  16: "64px",
+} as const;
+
+/** Typography scale — consistent across themes */
+export const typography = {
+  fontFamily: {
+    sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    mono: "'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
+  },
+  fontSize: {
+    xs: "11px",
+    sm: "12px",
+    base: "13px",
+    md: "14px",
+    lg: "16px",
+    xl: "18px",
+    "2xl": "24px",
+    "3xl": "30px",
+  },
+  fontWeight: {
+    normal: "400",
+    medium: "500",
+    semibold: "600",
+    bold: "700",
+  },
+  lineHeight: {
+    tight: "1.2",
+    normal: "1.5",
+    relaxed: "1.75",
+  },
+} as const;
+
+/** Border radius scale — consistent across themes */
+export const radii = {
+  none: "0px",
+  sm: "4px",
+  md: "6px",
+  lg: "8px",
+  xl: "12px",
+  full: "9999px",
 } as const;
 
 /** Type for theme token keys */
@@ -185,4 +240,42 @@ export function accentToLight(hex: string): string {
   const lg = lighten(g).toString(16).padStart(2, "0");
   const lb = lighten(b).toString(16).padStart(2, "0");
   return `#${lr}${lg}${lb}`;
+}
+
+/** Validate a hex color string (e.g. "#6366f1") */
+export function isValidHexColor(value: string): boolean {
+  return /^#[0-9a-fA-F]{6}$/.test(value);
+}
+
+/** Theme-aware chart color palettes for dashboard visualizations */
+export const chartPalette = {
+  dark: [
+    "#6366f1", // Indigo
+    "#3b82f6", // Blue
+    "#06b6d4", // Cyan
+    "#22c55e", // Green
+    "#f59e0b", // Amber
+    "#ef4444", // Red
+    "#a855f7", // Purple
+    "#ec4899", // Pink
+    "#f97316", // Orange
+    "#14b8a6", // Teal
+  ],
+  light: [
+    "#4f46e5", // Indigo (deeper for light bg)
+    "#2563eb", // Blue
+    "#0891b2", // Cyan
+    "#16a34a", // Green
+    "#d97706", // Amber
+    "#dc2626", // Red
+    "#9333ea", // Purple
+    "#db2777", // Pink
+    "#ea580c", // Orange
+    "#0d9488", // Teal
+  ],
+} as const;
+
+/** Get chart palette for the resolved theme mode */
+export function getChartPalette(mode: Exclude<ThemeMode, "system">): readonly string[] {
+  return chartPalette[mode];
 }

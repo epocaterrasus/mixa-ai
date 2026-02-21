@@ -7,6 +7,12 @@ import {
   getColorsForTheme,
   accentPresets,
   accentToLight,
+  isValidHexColor,
+  spacing,
+  typography,
+  radii,
+  chartPalette,
+  getChartPalette,
 } from "./tokens";
 
 describe("themeTokens", () => {
@@ -140,5 +146,98 @@ describe("accentToLight", () => {
     expect(r).toBeGreaterThan(0);
     expect(g).toBeGreaterThan(0);
     expect(b).toBeGreaterThan(0);
+  });
+});
+
+describe("isValidHexColor", () => {
+  it("accepts valid 6-digit hex colors", () => {
+    expect(isValidHexColor("#6366f1")).toBe(true);
+    expect(isValidHexColor("#000000")).toBe(true);
+    expect(isValidHexColor("#ffffff")).toBe(true);
+    expect(isValidHexColor("#AABBCC")).toBe(true);
+  });
+
+  it("rejects invalid inputs", () => {
+    expect(isValidHexColor("")).toBe(false);
+    expect(isValidHexColor("#fff")).toBe(false);
+    expect(isValidHexColor("6366f1")).toBe(false);
+    expect(isValidHexColor("#gggggg")).toBe(false);
+    expect(isValidHexColor("#6366f1ff")).toBe(false);
+    expect(isValidHexColor("not a color")).toBe(false);
+  });
+});
+
+describe("spacing", () => {
+  it("has expected scale values", () => {
+    expect(spacing[0]).toBe("0px");
+    expect(spacing[1]).toBe("4px");
+    expect(spacing[2]).toBe("8px");
+    expect(spacing[4]).toBe("16px");
+    expect(spacing[8]).toBe("32px");
+    expect(spacing[16]).toBe("64px");
+  });
+
+  it("all values end with px", () => {
+    for (const value of Object.values(spacing)) {
+      expect(value).toMatch(/^\d+px$/);
+    }
+  });
+});
+
+describe("typography", () => {
+  it("has sans and mono font families", () => {
+    expect(typography.fontFamily.sans).toContain("sans-serif");
+    expect(typography.fontFamily.mono).toContain("monospace");
+  });
+
+  it("has font size scale", () => {
+    expect(typography.fontSize.xs).toBe("11px");
+    expect(typography.fontSize.base).toBe("13px");
+    expect(typography.fontSize["3xl"]).toBe("30px");
+  });
+
+  it("has font weights", () => {
+    expect(typography.fontWeight.normal).toBe("400");
+    expect(typography.fontWeight.bold).toBe("700");
+  });
+
+  it("has line heights", () => {
+    expect(typography.lineHeight.tight).toBe("1.2");
+    expect(typography.lineHeight.normal).toBe("1.5");
+  });
+});
+
+describe("radii", () => {
+  it("has expected scale values", () => {
+    expect(radii.none).toBe("0px");
+    expect(radii.sm).toBe("4px");
+    expect(radii.md).toBe("6px");
+    expect(radii.lg).toBe("8px");
+    expect(radii.xl).toBe("12px");
+    expect(radii.full).toBe("9999px");
+  });
+});
+
+describe("chartPalette", () => {
+  it("has 10 colors for dark theme", () => {
+    expect(chartPalette.dark).toHaveLength(10);
+  });
+
+  it("has 10 colors for light theme", () => {
+    expect(chartPalette.light).toHaveLength(10);
+  });
+
+  it("all chart colors are valid hex", () => {
+    for (const color of chartPalette.dark) {
+      expect(isValidHexColor(color)).toBe(true);
+    }
+    for (const color of chartPalette.light) {
+      expect(isValidHexColor(color)).toBe(true);
+    }
+  });
+
+  it("getChartPalette returns correct palette", () => {
+    expect(getChartPalette("dark")).toBe(chartPalette.dark);
+    expect(getChartPalette("light")).toBe(chartPalette.light);
   });
 });

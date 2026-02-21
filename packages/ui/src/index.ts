@@ -8,6 +8,12 @@ export {
   getColorsForTheme,
   accentPresets,
   accentToLight,
+  isValidHexColor,
+  spacing,
+  typography,
+  radii,
+  chartPalette,
+  getChartPalette,
 } from "./themes";
 
 export type { ThemeToken, ThemeColors } from "./themes";
