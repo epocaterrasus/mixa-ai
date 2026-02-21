@@ -640,7 +640,7 @@
       "dependencies": [
         "MIXA-020"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "MIXA-026",

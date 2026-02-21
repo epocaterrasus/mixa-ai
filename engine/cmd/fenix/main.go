@@ -15,6 +15,7 @@ import (
 	"github.com/mixa-ai/engine/internal/module"
 	"github.com/mixa-ai/engine/internal/modules/forge"
 	"github.com/mixa-ai/engine/internal/modules/guard"
+	"github.com/mixa-ai/engine/internal/modules/keys"
 	"github.com/mixa-ai/engine/internal/modules/system"
 )
 
@@ -55,6 +56,13 @@ func main() {
 		log.Fatalf("Failed to register forge module: %v", err)
 	}
 
+	// KEYS module — keyboard shortcuts & command palette.
+	keysDataDir := keysStoragePath()
+	keysMod := keys.New(filepath.Join(keysDataDir, "keys.db"), guardKey)
+	if err := registry.Register(keysMod); err != nil {
+		log.Fatalf("Failed to register keys module: %v", err)
+	}
+
 	if err := registry.StartAll(); err != nil {
 		log.Fatalf("Failed to start modules: %v", err)
 	}
@@ -93,6 +101,15 @@ func guardStoragePath() string {
 		home = "."
 	}
 	return filepath.Join(home, ".mixa", "data", "guard")
+}
+
+// keysStoragePath returns the directory where KEYS stores its database.
+func keysStoragePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	return filepath.Join(home, ".mixa", "data", "keys")
 }
 
 // deriveGuardKey creates a deterministic 32-byte AES-256 key from the machine hostname.
