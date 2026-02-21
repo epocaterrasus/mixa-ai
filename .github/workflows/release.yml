@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build & Release (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: mac-arm64
+            os: macos-14
+            goos: darwin
+            goarch: arm64
+            electron_args: "--mac --arm64"
+          - platform: mac-x64
+            os: macos-13
+            goos: darwin
+            goarch: amd64
+            electron_args: "--mac --x64"
+          - platform: linux-x64
+            os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            electron_args: "--linux --x64"
+          - platform: win-x64
+            os: windows-latest
+            goos: windows
+            goarch: amd64
+            electron_args: "--win --x64"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --- Go engine build ---
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: engine/go.mod
+          cache-dependency-path: engine/go.sum
+
+      - name: Build Go engine
+        working-directory: engine
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            go build -ldflags "-X main.Version=${VERSION}" -o bin/fenix.exe ./cmd/fenix
+          else
+            go build -ldflags "-X main.Version=${VERSION}" -o bin/fenix ./cmd/fenix
+          fi
+        shell: bash
+
+      - name: Stage engine binary
+        shell: bash
+        run: |
+          mkdir -p apps/desktop/resources/engine
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            cp engine/bin/fenix.exe apps/desktop/resources/engine/fenix.exe
+          else
+            cp engine/bin/fenix apps/desktop/resources/engine/fenix
+          fi
+
+      # --- Node.js / Electron build ---
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build TypeScript packages
+        run: pnpm turbo build
+
+      - name: Package Electron app
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS code signing (set secrets in repo settings when ready):
+          # CSC_LINK: ${{ secrets.CSC_LINK }}
+          # CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Windows code signing:
+          # WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: pnpm electron-builder ${{ matrix.electron_args }} --publish always
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.yml
+            apps/desktop/release/*.yaml
+          if-no-files-found: warn

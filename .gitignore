@@ -44,5 +44,8 @@ release/
 *.exe
 *.AppImage
 
+# Staged engine binaries for packaging
+apps/desktop/resources/engine/
+
 # Misc
 *.tsbuildinfo

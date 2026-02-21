@@ -1,14 +1,47 @@
 appId: com.mixa.ai
 productName: Mixa
+copyright: Copyright © 2025 Mixa AI
+
 directories:
   buildResources: resources
   output: release
+
 files:
   - out/**/*
+  - "!out/**/*.map"
+
+# Go engine binary and proto file are copied by build/afterPack.js
+# which auto-selects the correct binary for the target platform/arch.
+# The lifecycle.ts resolver expects:
+#   packaged: {resourcesPath}/engine/fenix (or fenix.exe)
+#   packaged: {resourcesPath}/proto/fenix.proto
+afterPack: build/afterPack.js
+
+# --- macOS ---
 mac:
   target:
-    - dmg
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+    - target: zip
+      arch:
+        - arm64
+        - x64
   category: public.app-category.developer-tools
+  icon: resources/icon.icns
+  darkModeSupport: true
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: resources/entitlements.mac.plist
+  entitlementsInherit: resources/entitlements.mac.inherit.plist
+  # Code signing — set these env vars in CI or locally:
+  #   CSC_LINK: path to .p12 certificate
+  #   CSC_KEY_PASSWORD: certificate password
+  #   APPLE_ID: Apple ID for notarization
+  #   APPLE_APP_SPECIFIC_PASSWORD: app-specific password
+  #   APPLE_TEAM_ID: Apple Developer Team ID
+
 dmg:
   contents:
     - x: 130
@@ -17,3 +50,38 @@ dmg:
       y: 220
       type: link
       path: /Applications
+
+# --- Linux ---
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  category: Development
+  icon: resources/icon.png
+
+# --- Windows ---
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  deleteAppDataOnUninstall: false
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+# macOS notarization (skips gracefully if env vars not set)
+afterSign: build/notarize.js
+
+# Publish to GitHub Releases
+publish:
+  provider: github
+  owner: mixa-ai
+  repo: mixa-ai
+  releaseType: release

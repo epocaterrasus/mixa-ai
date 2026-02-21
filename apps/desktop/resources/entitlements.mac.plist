@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Required for Electron / Chromium JIT compilation -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <!-- Required for V8 and WebAssembly -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <!-- Required for spawning Go engine child process -->
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+    <!-- Network access for web browsing and gRPC -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <!-- gRPC server listens on localhost -->
+    <key>com.apple.security.network.server</key>
+    <true/>
+</dict>
+</plist>

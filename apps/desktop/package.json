@@ -10,7 +10,12 @@
     "test": "vitest run --passWithNoTests",
     "lint": "eslint src/",
     "clean": "rm -rf out release",
-    "preview": "electron-vite preview"
+    "preview": "electron-vite preview",
+    "package": "electron-builder --publish never",
+    "package:mac": "electron-builder --mac --publish never",
+    "package:linux": "electron-builder --linux --publish never",
+    "package:win": "electron-builder --win --publish never",
+    "package:publish": "electron-builder --publish always"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.14.3",
@@ -32,11 +37,13 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@electron/notarize": "^3.1.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
     "electron": "^33.0.0",
+    "electron-builder": "^25.1.0",
     "electron-vite": "^5.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
