@@ -1,6 +1,7 @@
 import type { TabType } from "@mixa-ai/types";
 import { ChatTab } from "./chat/ChatTab";
 import { KnowledgeTab } from "./knowledge/KnowledgeTab";
+import { SettingsTab } from "./settings/SettingsTab";
 
 const styles = {
   container: {
@@ -35,7 +36,7 @@ interface PlaceholderContent {
   subtitle: string;
 }
 
-const placeholders: Record<Exclude<TabType, "web" | "chat" | "knowledge">, PlaceholderContent> = {
+const placeholders: Record<Exclude<TabType, "web" | "chat" | "knowledge" | "settings">, PlaceholderContent> = {
   terminal: {
     icon: "\u{25B6}\uFE0F",
     title: "Terminal",
@@ -45,11 +46,6 @@ const placeholders: Record<Exclude<TabType, "web" | "chat" | "knowledge">, Place
     icon: "\u{1F4CA}",
     title: "Dashboard",
     subtitle: "Dashboards coming in Sprint 4",
-  },
-  settings: {
-    icon: "\u{2699}\uFE0F",
-    title: "Settings",
-    subtitle: "Settings panel coming in Sprint 2",
   },
 };
 
@@ -90,6 +86,11 @@ export function TabContent({
   // Knowledge tab renders the knowledge browse/search UI
   if (type === "knowledge") {
     return <KnowledgeTab />;
+  }
+
+  // Settings tab renders the full settings panel
+  if (type === "settings") {
+    return <SettingsTab />;
   }
 
   const content = placeholders[type];
