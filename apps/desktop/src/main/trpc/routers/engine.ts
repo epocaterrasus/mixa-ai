@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { EngineStatus, EngineModule } from "@mixa-ai/types";
 import { router, publicProcedure, TRPCError } from "../trpc.js";
+import { engineLifecycle } from "../../engine/index.js";
 
 const engineModuleNameSchema = z.enum([
   "guard",
@@ -64,23 +65,24 @@ const defaultModules: EngineModule[] = [
 ];
 
 export const engineRouter = router({
-  status: publicProcedure.query(async (): Promise<EngineStatus> => {
-    // TODO: Connect to actual Go engine via gRPC (MIXA-010)
-    return {
-      connected: false,
-      status: "stopped",
-      modules: defaultModules,
-      uptime: 0,
-      version: "0.0.0",
-    };
+  status: publicProcedure.query((): EngineStatus => {
+    const status = engineLifecycle.getStatus();
+    // Use default modules when engine has none registered yet
+    if (status.modules.length === 0) {
+      return { ...status, modules: defaultModules };
+    }
+    return status;
   }),
 
-  listModules: publicProcedure.query(
-    async (): Promise<{ modules: EngineModule[] }> => {
-      // TODO: Query actual engine modules (MIXA-010)
-      return { modules: defaultModules };
-    },
-  ),
+  listModules: publicProcedure.query((): { modules: EngineModule[] } => {
+    const status = engineLifecycle.getStatus();
+    const modules = status.modules.length > 0 ? status.modules : defaultModules;
+    return { modules };
+  }),
+
+  logs: publicProcedure.query((): { logs: string[] } => {
+    return { logs: engineLifecycle.getLogs() };
+  }),
 
   sendCommand: publicProcedure
     .input(
@@ -90,11 +92,18 @@ export const engineRouter = router({
         params: z.record(z.unknown()).default({}),
       }),
     )
-    .mutation(async ({ input }) => {
-      // TODO: Forward command to Go engine via gRPC (MIXA-010)
+    .mutation(({ input }) => {
+      const status = engineLifecycle.getStatus();
+      if (!status.connected) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Engine not connected. Cannot send ${input.action} to ${input.module}`,
+        });
+      }
+      // Commands will be forwarded via gRPC in later tasks (MIXA-022+)
       throw new TRPCError({
         code: "NOT_IMPLEMENTED",
-        message: `Engine not connected. Cannot send ${input.action} to ${input.module}`,
+        message: `Command forwarding not yet implemented for ${input.module}.${input.action}`,
       });
     }),
 });

@@ -12,6 +12,8 @@
     "preview": "electron-vite preview"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.3",
+    "@grpc/proto-loader": "^0.8.0",
     "@mixa-ai/types": "workspace:*",
     "@mixa-ai/ui": "workspace:*",
     "@trpc/client": "^11.10.0",
