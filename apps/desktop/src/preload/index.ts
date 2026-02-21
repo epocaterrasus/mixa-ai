@@ -194,6 +194,43 @@ const electronAPI = {
     },
   },
 
+  // Augmented browsing IPC (related items indicator)
+  augmented: {
+    onRelatedItems: (callback: (data: {
+      tabId: string;
+      relatedItems: Array<{
+        id: string;
+        title: string;
+        url: string | null;
+        domain: string | null;
+        summary: string | null;
+        score: number;
+        capturedAt: string;
+        itemType: string;
+        faviconUrl: string | null;
+      }>;
+    }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: {
+        tabId: string;
+        relatedItems: Array<{
+          id: string;
+          title: string;
+          url: string | null;
+          domain: string | null;
+          summary: string | null;
+          score: number;
+          capturedAt: string;
+          itemType: string;
+          faviconUrl: string | null;
+        }>;
+      }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("augmented:related-items", handler);
+      return () => ipcRenderer.removeListener("augmented:related-items", handler);
+    },
+  },
+
   // Engine lifecycle events from main → renderer
   engine: {
     onStatusChanged: (callback: (data: {

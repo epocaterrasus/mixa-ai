@@ -3,6 +3,7 @@ import { useTabStore } from "../stores/tabs";
 import { useCaptureStore } from "../stores/capture";
 import { Omnibar } from "./Omnibar";
 import { EngineStatusIndicator } from "./EngineStatusIndicator";
+import { AugmentedIndicator } from "./AugmentedIndicator";
 
 const styles = {
   container: {
@@ -154,6 +155,9 @@ export function Toolbar(): React.ReactElement {
       >
         {isCapturing ? "\u22EF" : "\u2B07"}
       </button>
+
+      {/* Augmented browsing indicator (related items in knowledge base) */}
+      <AugmentedIndicator />
 
       {/* Engine health indicator */}
       <EngineStatusIndicator />

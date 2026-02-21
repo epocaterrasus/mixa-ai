@@ -9,6 +9,8 @@ import { useTabShortcuts } from "./hooks/useTabShortcuts";
 import { useTabLifecycle } from "./hooks/useTabLifecycle";
 import { useEngineStatus } from "./hooks/useEngineStatus";
 import { useCapture } from "./hooks/useCapture";
+import { useAugmentedBrowsing } from "./hooks/useAugmentedBrowsing";
+import { RelatedItemsPanel } from "./components/RelatedItemsPanel";
 import { useTabStore } from "./stores/tabs";
 
 const styles = {
@@ -80,6 +82,7 @@ export function App(): React.ReactElement {
   useTabLifecycle();
   useEngineStatus();
   useCapture();
+  useAugmentedBrowsing();
 
   const activeTab = useTabStore((s) => {
     const id = s.activeTabId;
@@ -102,6 +105,7 @@ export function App(): React.ReactElement {
           )}
         </div>
       </div>
+      <RelatedItemsPanel />
       <CaptureToast />
     </div>
   );

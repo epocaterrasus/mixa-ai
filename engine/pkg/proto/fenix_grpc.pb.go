@@ -26,8 +26,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// HealthCheck service for engine status
+// HealthService reports engine liveness and version info.
 type HealthServiceClient interface {
+	// Check returns the engine's current health status.
 	Check(ctx context.Context, in *HealthCheckRequest, opts ...grpc.CallOption) (*HealthCheckResponse, error)
 }
 
@@ -53,8 +54,9 @@ func (c *healthServiceClient) Check(ctx context.Context, in *HealthCheckRequest,
 // All implementations must embed UnimplementedHealthServiceServer
 // for forward compatibility.
 //
-// HealthCheck service for engine status
+// HealthService reports engine liveness and version info.
 type HealthServiceServer interface {
+	// Check returns the engine's current health status.
 	Check(context.Context, *HealthCheckRequest) (*HealthCheckResponse, error)
 	mustEmbedUnimplementedHealthServiceServer()
 }
@@ -133,9 +135,11 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// Module management service
+// ModuleService provides introspection into registered engine modules.
 type ModuleServiceClient interface {
+	// ListModules returns the status of all registered modules.
 	ListModules(ctx context.Context, in *ListModulesRequest, opts ...grpc.CallOption) (*ListModulesResponse, error)
+	// GetModuleStatus returns the status of a single module by name.
 	GetModuleStatus(ctx context.Context, in *GetModuleStatusRequest, opts ...grpc.CallOption) (*ModuleStatus, error)
 }
 
@@ -171,9 +175,11 @@ func (c *moduleServiceClient) GetModuleStatus(ctx context.Context, in *GetModule
 // All implementations must embed UnimplementedModuleServiceServer
 // for forward compatibility.
 //
-// Module management service
+// ModuleService provides introspection into registered engine modules.
 type ModuleServiceServer interface {
+	// ListModules returns the status of all registered modules.
 	ListModules(context.Context, *ListModulesRequest) (*ListModulesResponse, error)
+	// GetModuleStatus returns the status of a single module by name.
 	GetModuleStatus(context.Context, *GetModuleStatusRequest) (*ModuleStatus, error)
 	mustEmbedUnimplementedModuleServiceServer()
 }
@@ -277,11 +283,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// UI streaming service for Fenix terminal renderer
+// UIStreamService is the core of the Fenix UI protocol. It allows engine
+// modules to push structured UI updates to the renderer and receive user
+// interaction events back.
 type UIStreamServiceClient interface {
-	// Server-side stream: engine pushes UI updates to renderer
+	// StreamUI opens a server-side stream. The engine pushes UIViewUpdate
+	// messages whenever the active module's view changes.
 	StreamUI(ctx context.Context, in *UIStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[UIViewUpdate], error)
-	// Client sends user interactions back to engine
+	// SendEvent delivers a user interaction (click, input, shortcut, scroll)
+	// from the renderer back to the engine.
 	SendEvent(ctx context.Context, in *UIEventRequest, opts ...grpc.CallOption) (*UIEventResponse, error)
 }
 
@@ -326,11 +336,15 @@ func (c *uIStreamServiceClient) SendEvent(ctx context.Context, in *UIEventReques
 // All implementations must embed UnimplementedUIStreamServiceServer
 // for forward compatibility.
 //
-// UI streaming service for Fenix terminal renderer
+// UIStreamService is the core of the Fenix UI protocol. It allows engine
+// modules to push structured UI updates to the renderer and receive user
+// interaction events back.
 type UIStreamServiceServer interface {
-	// Server-side stream: engine pushes UI updates to renderer
+	// StreamUI opens a server-side stream. The engine pushes UIViewUpdate
+	// messages whenever the active module's view changes.
 	StreamUI(*UIStreamRequest, grpc.ServerStreamingServer[UIViewUpdate]) error
-	// Client sends user interactions back to engine
+	// SendEvent delivers a user interaction (click, input, shortcut, scroll)
+	// from the renderer back to the engine.
 	SendEvent(context.Context, *UIEventRequest) (*UIEventResponse, error)
 	mustEmbedUnimplementedUIStreamServiceServer()
 }

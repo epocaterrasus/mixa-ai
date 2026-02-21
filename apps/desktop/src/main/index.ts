@@ -5,6 +5,7 @@ import { tabManager } from "./tabs/manager.js";
 import { engineLifecycle } from "./engine/index.js";
 import { setupCaptureHandlers } from "./capture/index.js";
 import { setupChatHandlers } from "./chat/handler.js";
+import { augmentedBrowsingService } from "./augmented/index.js";
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -61,6 +62,11 @@ void app.whenReady().then(() => {
   // Set up content capture IPC handlers
   setupCaptureHandlers(mainWindow);
 
+  // Set up augmented browsing (related items indicator)
+  augmentedBrowsingService.attach(mainWindow);
+  tabManager.onPageLoaded((tabId) => augmentedBrowsingService.onPageLoaded(tabId));
+  tabManager.onTabDestroyed((tabId) => augmentedBrowsingService.onTabDestroyed(tabId));
+
   // Start the Go engine as a child process
   void engineLifecycle.start();
 
@@ -68,6 +74,7 @@ void app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) {
       const newWindow = createWindow();
       setupCaptureHandlers(newWindow);
+      augmentedBrowsingService.attach(newWindow);
     }
   });
 });

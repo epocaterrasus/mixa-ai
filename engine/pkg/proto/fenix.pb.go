@@ -21,6 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// HealthCheckRequest is an empty request for the health check endpoint.
 type HealthCheckRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -57,12 +58,17 @@ func (*HealthCheckRequest) Descriptor() ([]byte, []int) {
 	return file_fenix_proto_rawDescGZIP(), []int{0}
 }
 
+// HealthCheckResponse contains the engine's current status.
 type HealthCheckResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Healthy       bool                   `protobuf:"varint,1,opt,name=healthy,proto3" json:"healthy,omitempty"`
-	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"` // "running", "stopped", "error", "starting"
-	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
-	UptimeSeconds int64                  `protobuf:"varint,4,opt,name=uptime_seconds,json=uptimeSeconds,proto3" json:"uptime_seconds,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether the engine considers itself healthy and ready to serve.
+	Healthy bool `protobuf:"varint,1,opt,name=healthy,proto3" json:"healthy,omitempty"`
+	// Human-readable status: "running", "stopped", "error", or "starting".
+	Status string `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	// Engine version string (set at build time via ldflags).
+	Version string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	// Seconds since the engine process started.
+	UptimeSeconds int64 `protobuf:"varint,4,opt,name=uptime_seconds,json=uptimeSeconds,proto3" json:"uptime_seconds,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -125,6 +131,7 @@ func (x *HealthCheckResponse) GetUptimeSeconds() int64 {
 	return 0
 }
 
+// ListModulesRequest is an empty request to list all modules.
 type ListModulesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -161,6 +168,7 @@ func (*ListModulesRequest) Descriptor() ([]byte, []int) {
 	return file_fenix_proto_rawDescGZIP(), []int{2}
 }
 
+// ListModulesResponse contains the status of every registered module.
 type ListModulesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Modules       []*ModuleStatus        `protobuf:"bytes,1,rep,name=modules,proto3" json:"modules,omitempty"`
@@ -205,9 +213,11 @@ func (x *ListModulesResponse) GetModules() []*ModuleStatus {
 	return nil
 }
 
+// GetModuleStatusRequest identifies a module by its unique name.
 type GetModuleStatusRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Module identifier (e.g., "guard", "forge", "cost", "pulse").
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -249,14 +259,21 @@ func (x *GetModuleStatusRequest) GetName() string {
 	return ""
 }
 
+// ModuleStatus describes the runtime state of a single engine module.
 type ModuleStatus struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Enabled       bool                   `protobuf:"varint,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	Status        string                 `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"` // "running", "stopped", "error", "starting"
-	ErrorMessage  string                 `protobuf:"bytes,6,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Unique module identifier (e.g., "guard").
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Human-readable display name (e.g., "GUARD — Secrets Manager").
+	DisplayName string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	// Short description of the module's purpose.
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// Whether the module is enabled in the engine configuration.
+	Enabled bool `protobuf:"varint,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// Runtime status: "running", "stopped", "error", or "starting".
+	Status string `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
+	// Error details if status is "error"; empty otherwise.
+	ErrorMessage  string `protobuf:"bytes,6,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -333,9 +350,11 @@ func (x *ModuleStatus) GetErrorMessage() string {
 	return ""
 }
 
+// UIStreamRequest identifies which module's UI to stream.
 type UIStreamRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Module        string                 `protobuf:"bytes,1,opt,name=module,proto3" json:"module,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The module whose UI view should be streamed (e.g., "guard", "forge").
+	Module        string `protobuf:"bytes,1,opt,name=module,proto3" json:"module,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -377,11 +396,16 @@ func (x *UIStreamRequest) GetModule() string {
 	return ""
 }
 
+// UIViewUpdate is a complete UI snapshot pushed from the engine to the
+// renderer. Each update replaces the previously rendered view.
 type UIViewUpdate struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Module        string                 `protobuf:"bytes,1,opt,name=module,proto3" json:"module,omitempty"`
-	Components    []*UIComponent         `protobuf:"bytes,2,rep,name=components,proto3" json:"components,omitempty"`
-	Actions       []*UIAction            `protobuf:"bytes,3,rep,name=actions,proto3" json:"actions,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The module that produced this view.
+	Module string `protobuf:"bytes,1,opt,name=module,proto3" json:"module,omitempty"`
+	// Ordered list of UI components to render.
+	Components []*UIComponent `protobuf:"bytes,2,rep,name=components,proto3" json:"components,omitempty"`
+	// Available actions the user can trigger (shown in action bar / context menu).
+	Actions       []*UIAction `protobuf:"bytes,3,rep,name=actions,proto3" json:"actions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -437,20 +461,43 @@ func (x *UIViewUpdate) GetActions() []*UIAction {
 	return nil
 }
 
+// UIComponent is a single visual element in a UIView. The `type` field
+// determines which sub-fields are relevant. Unused fields are omitted.
 type UIComponent struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"` // "header", "text_block", "table", "card", "metric_row", "chart", "list", "form", "action_bar", "status_bar"
-	Level         *int32                 `protobuf:"varint,3,opt,name=level,proto3,oneof" json:"level,omitempty"`
-	Content       *string                `protobuf:"bytes,4,opt,name=content,proto3,oneof" json:"content,omitempty"`
-	Preformatted  *bool                  `protobuf:"varint,5,opt,name=preformatted,proto3,oneof" json:"preformatted,omitempty"`
-	Columns       []*TableColumn         `protobuf:"bytes,6,rep,name=columns,proto3" json:"columns,omitempty"`
-	Rows          []*RowData             `protobuf:"bytes,7,rep,name=rows,proto3" json:"rows,omitempty"`
-	Metrics       []*Metric              `protobuf:"bytes,8,rep,name=metrics,proto3" json:"metrics,omitempty"`
-	ChartType     *string                `protobuf:"bytes,9,opt,name=chart_type,json=chartType,proto3,oneof" json:"chart_type,omitempty"` // "area", "bar", "line", "pie"
-	ChartData     []*ChartDataPoint      `protobuf:"bytes,10,rep,name=chart_data,json=chartData,proto3" json:"chart_data,omitempty"`
-	Items         []string               `protobuf:"bytes,11,rep,name=items,proto3" json:"items,omitempty"`
-	Fields        []*FormField           `protobuf:"bytes,12,rep,name=fields,proto3" json:"fields,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Unique identifier for this component instance.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Component type. One of: "header", "text_block", "table", "card",
+	// "metric_row", "chart", "list", "form", "action_bar", "status_bar".
+	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	// --- Header fields ---
+	// Heading level (1–6). Only used when type = "header".
+	Level *int32 `protobuf:"varint,3,opt,name=level,proto3,oneof" json:"level,omitempty"`
+	// --- Shared text fields ---
+	// Text or HTML content. Used by: header, text_block, card, status_bar.
+	Content *string `protobuf:"bytes,4,opt,name=content,proto3,oneof" json:"content,omitempty"`
+	// If true, content should be rendered in a monospace/preformatted block.
+	Preformatted *bool `protobuf:"varint,5,opt,name=preformatted,proto3,oneof" json:"preformatted,omitempty"`
+	// --- Table fields ---
+	// Column definitions. Used when type = "table".
+	Columns []*TableColumn `protobuf:"bytes,6,rep,name=columns,proto3" json:"columns,omitempty"`
+	// Row data. Each row maps column keys to string values.
+	// Used when type = "table".
+	Rows []*RowData `protobuf:"bytes,7,rep,name=rows,proto3" json:"rows,omitempty"`
+	// --- Metric fields ---
+	// Metric cards. Used when type = "metric_row".
+	Metrics []*Metric `protobuf:"bytes,8,rep,name=metrics,proto3" json:"metrics,omitempty"`
+	// --- Chart fields ---
+	// Chart variant: "area", "bar", "line", or "pie". Used when type = "chart".
+	ChartType *string `protobuf:"bytes,9,opt,name=chart_type,json=chartType,proto3,oneof" json:"chart_type,omitempty"`
+	// Data points for the chart. Each point maps axis/series keys to values.
+	ChartData []*ChartDataPoint `protobuf:"bytes,10,rep,name=chart_data,json=chartData,proto3" json:"chart_data,omitempty"`
+	// --- List fields ---
+	// Simple text items. Used when type = "list".
+	Items []string `protobuf:"bytes,11,rep,name=items,proto3" json:"items,omitempty"`
+	// --- Form fields ---
+	// Form field definitions. Used when type = "form".
+	Fields        []*FormField `protobuf:"bytes,12,rep,name=fields,proto3" json:"fields,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -569,12 +616,17 @@ func (x *UIComponent) GetFields() []*FormField {
 	return nil
 }
 
+// TableColumn defines a column in a table component.
 type TableColumn struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
-	Sortable      bool                   `protobuf:"varint,3,opt,name=sortable,proto3" json:"sortable,omitempty"`
-	Width         *int32                 `protobuf:"varint,4,opt,name=width,proto3,oneof" json:"width,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Column identifier, used as a key in RowData.values.
+	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	// Human-readable column header label.
+	Label string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	// Whether the column can be sorted by clicking the header.
+	Sortable bool `protobuf:"varint,3,opt,name=sortable,proto3" json:"sortable,omitempty"`
+	// Optional fixed width in pixels. If absent, column auto-sizes.
+	Width         *int32 `protobuf:"varint,4,opt,name=width,proto3,oneof" json:"width,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -637,9 +689,11 @@ func (x *TableColumn) GetWidth() int32 {
 	return 0
 }
 
+// RowData represents a single row in a table, mapping column keys to values.
 type RowData struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Values        map[string]string      `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Column key → cell value.
+	Values        map[string]string `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -681,12 +735,17 @@ func (x *RowData) GetValues() map[string]string {
 	return nil
 }
 
+// Metric represents a single metric card in a metric_row component.
 type Metric struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Label         string                 `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
-	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-	Trend         string                 `protobuf:"bytes,3,opt,name=trend,proto3" json:"trend,omitempty"` // "up", "down", "flat"
-	ChangePercent float64                `protobuf:"fixed64,4,opt,name=change_percent,json=changePercent,proto3" json:"change_percent,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Metric label (e.g., "Total Spend", "Uptime", "Response Time").
+	Label string `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
+	// Formatted display value (e.g., "$1,234", "99.9%", "42ms").
+	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	// Trend direction: "up", "down", or "flat".
+	Trend string `protobuf:"bytes,3,opt,name=trend,proto3" json:"trend,omitempty"`
+	// Percentage change from previous period (e.g., 5.2 means +5.2%).
+	ChangePercent float64 `protobuf:"fixed64,4,opt,name=change_percent,json=changePercent,proto3" json:"change_percent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -749,9 +808,11 @@ func (x *Metric) GetChangePercent() float64 {
 	return 0
 }
 
+// ChartDataPoint represents a single data point in a chart component.
 type ChartDataPoint struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Values        map[string]string      `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Axis/series key → value. For example: {"date": "2025-01-15", "cost": "42.50"}.
+	Values        map[string]string `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -793,14 +854,21 @@ func (x *ChartDataPoint) GetValues() map[string]string {
 	return nil
 }
 
+// FormField defines a single input field in a form component.
 type FormField struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
-	FieldType     string                 `protobuf:"bytes,3,opt,name=field_type,json=fieldType,proto3" json:"field_type,omitempty"` // "text", "number", "select", "checkbox", "password"
-	Placeholder   *string                `protobuf:"bytes,4,opt,name=placeholder,proto3,oneof" json:"placeholder,omitempty"`
-	Required      bool                   `protobuf:"varint,5,opt,name=required,proto3" json:"required,omitempty"`
-	Options       []string               `protobuf:"bytes,6,rep,name=options,proto3" json:"options,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Unique field identifier (used in UIEvent data to report field values).
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Human-readable label displayed above or beside the input.
+	Label string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	// Input type: "text", "number", "select", "checkbox", or "password".
+	FieldType string `protobuf:"bytes,3,opt,name=field_type,json=fieldType,proto3" json:"field_type,omitempty"`
+	// Placeholder text shown when the input is empty.
+	Placeholder *string `protobuf:"bytes,4,opt,name=placeholder,proto3,oneof" json:"placeholder,omitempty"`
+	// Whether the field must be filled before form submission.
+	Required bool `protobuf:"varint,5,opt,name=required,proto3" json:"required,omitempty"`
+	// Options for "select" field type. Empty for other types.
+	Options       []string `protobuf:"bytes,6,rep,name=options,proto3" json:"options,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -877,12 +945,18 @@ func (x *FormField) GetOptions() []string {
 	return nil
 }
 
+// UIAction represents an action the user can trigger from the UI.
+// Actions appear in action bars, context menus, and the command palette.
 type UIAction struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
-	Shortcut      *string                `protobuf:"bytes,3,opt,name=shortcut,proto3,oneof" json:"shortcut,omitempty"`
-	Enabled       bool                   `protobuf:"varint,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Unique action identifier (e.g., "add-secret", "refresh", "export-csv").
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Human-readable label (e.g., "Add Secret", "Refresh", "Export CSV").
+	Label string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	// Optional keyboard shortcut (e.g., "Cmd+N", "Ctrl+R").
+	Shortcut *string `protobuf:"bytes,3,opt,name=shortcut,proto3,oneof" json:"shortcut,omitempty"`
+	// Whether the action is currently available. Disabled actions are grayed out.
+	Enabled       bool `protobuf:"varint,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -945,13 +1019,20 @@ func (x *UIAction) GetEnabled() bool {
 	return false
 }
 
+// UIEventRequest delivers a user interaction from the renderer to the engine.
 type UIEventRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Module        string                 `protobuf:"bytes,1,opt,name=module,proto3" json:"module,omitempty"`
-	ActionId      *string                `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3,oneof" json:"action_id,omitempty"`
-	ComponentId   *string                `protobuf:"bytes,3,opt,name=component_id,json=componentId,proto3,oneof" json:"component_id,omitempty"`
-	EventType     string                 `protobuf:"bytes,4,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"` // "click", "input", "shortcut", "scroll"
-	Data          map[string]string      `protobuf:"bytes,5,rep,name=data,proto3" json:"data,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The module this event is targeted at.
+	Module string `protobuf:"bytes,1,opt,name=module,proto3" json:"module,omitempty"`
+	// The action ID if this event was triggered by clicking an action button.
+	ActionId *string `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3,oneof" json:"action_id,omitempty"`
+	// The component ID if this event originated from a specific component.
+	ComponentId *string `protobuf:"bytes,3,opt,name=component_id,json=componentId,proto3,oneof" json:"component_id,omitempty"`
+	// Event type: "click", "input", "shortcut", or "scroll".
+	EventType string `protobuf:"bytes,4,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"`
+	// Event-specific key-value data. For "input" events, contains field values.
+	// For "shortcut" events, contains the key combination.
+	Data          map[string]string `protobuf:"bytes,5,rep,name=data,proto3" json:"data,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1021,9 +1102,11 @@ func (x *UIEventRequest) GetData() map[string]string {
 	return nil
 }
 
+// UIEventResponse acknowledges receipt of a UI event.
 type UIEventResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Accepted      bool                   `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether the engine accepted and processed the event.
+	Accepted      bool `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

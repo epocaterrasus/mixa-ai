@@ -21,12 +21,19 @@ interface ContentBounds {
 // Height of the browser chrome (tab bar + toolbar)
 const CHROME_HEIGHT = 74;
 
+/** Callback invoked when a web tab finishes loading */
+export type PageLoadedCallback = (tabId: string) => void;
+/** Callback invoked when a web tab is destroyed */
+export type TabDestroyedCallback = (tabId: string) => void;
+
 export class TabManager {
   private views = new Map<string, WebViewInfo>();
   private activeTabId: string | null = null;
   private mainWindow: BrowserWindow | null = null;
   private sidebarWidth = 0;
   private downloadSessionSetup = false;
+  private pageLoadedCallbacks: PageLoadedCallback[] = [];
+  private tabDestroyedCallbacks: TabDestroyedCallback[] = [];
 
   attach(window: BrowserWindow): void {
     this.mainWindow = window;
@@ -36,6 +43,16 @@ export class TabManager {
     });
 
     this.registerIPC();
+  }
+
+  /** Register a callback for when a page finishes loading */
+  onPageLoaded(callback: PageLoadedCallback): void {
+    this.pageLoadedCallbacks.push(callback);
+  }
+
+  /** Register a callback for when a tab is destroyed */
+  onTabDestroyed(callback: TabDestroyedCallback): void {
+    this.tabDestroyedCallbacks.push(callback);
   }
 
   setSidebarWidth(width: number): void {
@@ -85,6 +102,10 @@ export class TabManager {
 
     wc.on("did-finish-load", () => {
       this.sendToRenderer("tab:state-changed", { tabId, state: "complete" as const });
+      // Notify augmented browsing and other listeners
+      for (const cb of this.pageLoadedCallbacks) {
+        cb(tabId);
+      }
     });
 
     wc.on("did-fail-load", (_event, errorCode, errorDescription) => {
@@ -192,6 +213,11 @@ export class TabManager {
     if (this.activeTabId === tabId) {
       this.activeTabId = null;
     }
+
+    // Notify listeners that this tab was destroyed
+    for (const cb of this.tabDestroyedCallbacks) {
+      cb(tabId);
+    }
   }
 
   navigateTo(tabId: string, url: string): void {
@@ -256,6 +282,16 @@ export class TabManager {
       "document.documentElement.outerHTML",
     ) as string;
     return html;
+  }
+
+  /** Get the title of the page in a web tab */
+  async getPageTitle(tabId: string): Promise<string | null> {
+    const info = this.views.get(tabId);
+    if (!info || info.view.webContents.isDestroyed()) return null;
+    const title = await info.view.webContents.executeJavaScript(
+      "document.title || ''",
+    ) as string;
+    return title || null;
   }
 
   /** Get the currently selected text in a web tab */

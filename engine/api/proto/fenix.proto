@@ -4,130 +4,267 @@ package fenix;
 
 option go_package = "github.com/mixa-ai/engine/pkg/proto";
 
-// HealthCheck service for engine status
+// =============================================================================
+// Fenix Engine Protocol — Mixa AI
+//
+// This file defines the gRPC services and messages for communication between
+// the Electron main process and the Go engine sidecar. It covers:
+//   1. Health checking (engine liveness)
+//   2. Module management (list, inspect engine modules)
+//   3. Fenix UI protocol (streaming UI views + user interaction events)
+//
+// The UI protocol enables engine modules (GUARD, FORGE, COST, PULSE, etc.)
+// to declaratively describe their UI as structured data. The Electron renderer
+// converts these messages into interactive React components.
+// =============================================================================
+
+// HealthService reports engine liveness and version info.
 service HealthService {
+  // Check returns the engine's current health status.
   rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
 }
 
-// Module management service
+// ModuleService provides introspection into registered engine modules.
 service ModuleService {
+  // ListModules returns the status of all registered modules.
   rpc ListModules(ListModulesRequest) returns (ListModulesResponse);
+  // GetModuleStatus returns the status of a single module by name.
   rpc GetModuleStatus(GetModuleStatusRequest) returns (ModuleStatus);
 }
 
-// UI streaming service for Fenix terminal renderer
+// UIStreamService is the core of the Fenix UI protocol. It allows engine
+// modules to push structured UI updates to the renderer and receive user
+// interaction events back.
 service UIStreamService {
-  // Server-side stream: engine pushes UI updates to renderer
+  // StreamUI opens a server-side stream. The engine pushes UIViewUpdate
+  // messages whenever the active module's view changes.
   rpc StreamUI(UIStreamRequest) returns (stream UIViewUpdate);
-  // Client sends user interactions back to engine
+  // SendEvent delivers a user interaction (click, input, shortcut, scroll)
+  // from the renderer back to the engine.
   rpc SendEvent(UIEventRequest) returns (UIEventResponse);
 }
 
-// --- HealthCheck ---
+// =============================================================================
+// Health Check Messages
+// =============================================================================
 
+// HealthCheckRequest is an empty request for the health check endpoint.
 message HealthCheckRequest {}
 
+// HealthCheckResponse contains the engine's current status.
 message HealthCheckResponse {
+  // Whether the engine considers itself healthy and ready to serve.
   bool healthy = 1;
-  string status = 2; // "running", "stopped", "error", "starting"
+  // Human-readable status: "running", "stopped", "error", or "starting".
+  string status = 2;
+  // Engine version string (set at build time via ldflags).
   string version = 3;
+  // Seconds since the engine process started.
   int64 uptime_seconds = 4;
 }
 
-// --- Module ---
+// =============================================================================
+// Module Messages
+// =============================================================================
 
+// ListModulesRequest is an empty request to list all modules.
 message ListModulesRequest {}
 
+// ListModulesResponse contains the status of every registered module.
 message ListModulesResponse {
   repeated ModuleStatus modules = 1;
 }
 
+// GetModuleStatusRequest identifies a module by its unique name.
 message GetModuleStatusRequest {
+  // Module identifier (e.g., "guard", "forge", "cost", "pulse").
   string name = 1;
 }
 
+// ModuleStatus describes the runtime state of a single engine module.
 message ModuleStatus {
+  // Unique module identifier (e.g., "guard").
   string name = 1;
+  // Human-readable display name (e.g., "GUARD — Secrets Manager").
   string display_name = 2;
+  // Short description of the module's purpose.
   string description = 3;
+  // Whether the module is enabled in the engine configuration.
   bool enabled = 4;
-  string status = 5; // "running", "stopped", "error", "starting"
+  // Runtime status: "running", "stopped", "error", or "starting".
+  string status = 5;
+  // Error details if status is "error"; empty otherwise.
   string error_message = 6;
 }
 
-// --- UI Protocol (Fenix) ---
+// =============================================================================
+// Fenix UI Protocol Messages
+//
+// The UI protocol uses a component-based model. Engine modules build a UIView
+// (UIViewUpdate) composed of typed UIComponents. The renderer maps each
+// component type to a React component for display.
+//
+// Supported component types:
+//   - header:      Section heading with configurable level (h1–h6)
+//   - text_block:  Paragraph or preformatted text block
+//   - table:       Sortable, filterable data table with columns and rows
+//   - card:        Info card with content and optional actions
+//   - metric_row:  Row of metric cards with values, trends, and change %
+//   - chart:       Area, bar, line, or pie chart with data points
+//   - list:        Selectable list of items with keyboard navigation
+//   - form:        Input form with typed fields (text, number, select, etc.)
+//   - action_bar:  Horizontal bar of action buttons with keyboard shortcuts
+//   - status_bar:  Bottom status bar with contextual information
+// =============================================================================
 
+// UIStreamRequest identifies which module's UI to stream.
 message UIStreamRequest {
+  // The module whose UI view should be streamed (e.g., "guard", "forge").
   string module = 1;
 }
 
+// UIViewUpdate is a complete UI snapshot pushed from the engine to the
+// renderer. Each update replaces the previously rendered view.
 message UIViewUpdate {
+  // The module that produced this view.
   string module = 1;
+  // Ordered list of UI components to render.
   repeated UIComponent components = 2;
+  // Available actions the user can trigger (shown in action bar / context menu).
   repeated UIAction actions = 3;
 }
 
+// UIComponent is a single visual element in a UIView. The `type` field
+// determines which sub-fields are relevant. Unused fields are omitted.
 message UIComponent {
+  // Unique identifier for this component instance.
   string id = 1;
-  string type = 2; // "header", "text_block", "table", "card", "metric_row", "chart", "list", "form", "action_bar", "status_bar"
+  // Component type. One of: "header", "text_block", "table", "card",
+  // "metric_row", "chart", "list", "form", "action_bar", "status_bar".
+  string type = 2;
+
+  // --- Header fields ---
+  // Heading level (1–6). Only used when type = "header".
   optional int32 level = 3;
+
+  // --- Shared text fields ---
+  // Text or HTML content. Used by: header, text_block, card, status_bar.
   optional string content = 4;
+  // If true, content should be rendered in a monospace/preformatted block.
   optional bool preformatted = 5;
+
+  // --- Table fields ---
+  // Column definitions. Used when type = "table".
   repeated TableColumn columns = 6;
+  // Row data. Each row maps column keys to string values.
+  // Used when type = "table".
   repeated RowData rows = 7;
+
+  // --- Metric fields ---
+  // Metric cards. Used when type = "metric_row".
   repeated Metric metrics = 8;
-  optional string chart_type = 9; // "area", "bar", "line", "pie"
+
+  // --- Chart fields ---
+  // Chart variant: "area", "bar", "line", or "pie". Used when type = "chart".
+  optional string chart_type = 9;
+  // Data points for the chart. Each point maps axis/series keys to values.
   repeated ChartDataPoint chart_data = 10;
+
+  // --- List fields ---
+  // Simple text items. Used when type = "list".
   repeated string items = 11;
+
+  // --- Form fields ---
+  // Form field definitions. Used when type = "form".
   repeated FormField fields = 12;
 }
 
+// TableColumn defines a column in a table component.
 message TableColumn {
+  // Column identifier, used as a key in RowData.values.
   string key = 1;
+  // Human-readable column header label.
   string label = 2;
+  // Whether the column can be sorted by clicking the header.
   bool sortable = 3;
+  // Optional fixed width in pixels. If absent, column auto-sizes.
   optional int32 width = 4;
 }
 
+// RowData represents a single row in a table, mapping column keys to values.
 message RowData {
+  // Column key → cell value.
   map<string, string> values = 1;
 }
 
+// Metric represents a single metric card in a metric_row component.
 message Metric {
+  // Metric label (e.g., "Total Spend", "Uptime", "Response Time").
   string label = 1;
+  // Formatted display value (e.g., "$1,234", "99.9%", "42ms").
   string value = 2;
-  string trend = 3; // "up", "down", "flat"
+  // Trend direction: "up", "down", or "flat".
+  string trend = 3;
+  // Percentage change from previous period (e.g., 5.2 means +5.2%).
   double change_percent = 4;
 }
 
+// ChartDataPoint represents a single data point in a chart component.
 message ChartDataPoint {
+  // Axis/series key → value. For example: {"date": "2025-01-15", "cost": "42.50"}.
   map<string, string> values = 1;
 }
 
+// FormField defines a single input field in a form component.
 message FormField {
+  // Unique field identifier (used in UIEvent data to report field values).
   string id = 1;
+  // Human-readable label displayed above or beside the input.
   string label = 2;
-  string field_type = 3; // "text", "number", "select", "checkbox", "password"
+  // Input type: "text", "number", "select", "checkbox", or "password".
+  string field_type = 3;
+  // Placeholder text shown when the input is empty.
   optional string placeholder = 4;
+  // Whether the field must be filled before form submission.
   bool required = 5;
+  // Options for "select" field type. Empty for other types.
   repeated string options = 6;
 }
 
+// UIAction represents an action the user can trigger from the UI.
+// Actions appear in action bars, context menus, and the command palette.
 message UIAction {
+  // Unique action identifier (e.g., "add-secret", "refresh", "export-csv").
   string id = 1;
+  // Human-readable label (e.g., "Add Secret", "Refresh", "Export CSV").
   string label = 2;
+  // Optional keyboard shortcut (e.g., "Cmd+N", "Ctrl+R").
   optional string shortcut = 3;
+  // Whether the action is currently available. Disabled actions are grayed out.
   bool enabled = 4;
 }
 
+// =============================================================================
+// UI Event Messages (Renderer → Engine)
+// =============================================================================
+
+// UIEventRequest delivers a user interaction from the renderer to the engine.
 message UIEventRequest {
+  // The module this event is targeted at.
   string module = 1;
+  // The action ID if this event was triggered by clicking an action button.
   optional string action_id = 2;
+  // The component ID if this event originated from a specific component.
   optional string component_id = 3;
-  string event_type = 4; // "click", "input", "shortcut", "scroll"
+  // Event type: "click", "input", "shortcut", or "scroll".
+  string event_type = 4;
+  // Event-specific key-value data. For "input" events, contains field values.
+  // For "shortcut" events, contains the key combination.
   map<string, string> data = 5;
 }
 
+// UIEventResponse acknowledges receipt of a UI event.
 message UIEventResponse {
+  // Whether the engine accepted and processed the event.
   bool accepted = 1;
 }
