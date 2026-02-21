@@ -42,7 +42,7 @@
 |---|---------|-------|--------|--------------|-------|
 | 25 | MIXA-020 | Fenix UI protocol (protobuf) | 🟢 DONE | 004 | TERMINAL-ENGINEER |
 | 26 | MIXA-021 | Terminal renderer React components | 🟢 DONE | 020, 002 | TERMINAL-ENGINEER |
-| 27 | MIXA-022 | Terminal tab + gRPC streaming | 🔴 TODO | 021, 010 | TERMINAL-ENGINEER |
+| 27 | MIXA-022 | Terminal tab + gRPC streaming | 🟢 DONE | 021, 010 | TERMINAL-ENGINEER |
 | 28 | MIXA-023 | GUARD module (secrets) | 🔴 TODO | 020 | TERMINAL-ENGINEER |
 | 29 | MIXA-024 | FORGE module (Git/GitHub) | 🔴 TODO | 020 | TERMINAL-ENGINEER |
 | 30 | MIXA-025 | KEYS module (shortcuts) | 🔴 TODO | 020 | TERMINAL-ENGINEER |
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 26
-- Remaining: 25
+- Completed: 27
+- Remaining: 24
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes
