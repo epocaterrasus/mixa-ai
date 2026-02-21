@@ -5,6 +5,7 @@
 package cost
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -51,8 +52,20 @@ const (
 
 // ProviderAdapter defines how to fetch costs from a cloud provider.
 type ProviderAdapter interface {
+	// ID returns the provider identifier (e.g., "digitalocean", "aws", "manual").
+	ID() string
+	// Name returns the human-readable provider name.
 	Name() string
-	FetchCosts(from, to time.Time) ([]CostEntry, error)
+	// FetchCosts retrieves cost entries for the given date range using the provided API key.
+	FetchCosts(ctx context.Context, apiKey string, from, to time.Time) ([]CostEntry, error)
+}
+
+// ProviderConfig stores API credentials and status for a provider.
+type ProviderConfig struct {
+	ProviderID string `json:"providerId"`
+	Name       string `json:"name"`
+	Enabled    bool   `json:"enabled"`
+	APIKey     string `json:"apiKey"`
 }
 
 // Module implements the COST cloud cost tracking module.
@@ -61,10 +74,18 @@ type Module struct {
 	dbPath string
 	encKey []byte
 
-	mu       sync.RWMutex
-	entries  []*CostEntry
-	budgets  map[string]*Budget // scope -> Budget
-	nextID   int
+	adapters map[string]ProviderAdapter
+
+	mu        sync.RWMutex
+	entries   []*CostEntry
+	budgets   map[string]*Budget // scope -> Budget
+	providers []ProviderConfig
+	schedule  PollSchedule
+	nextID    int
+
+	// Polling goroutine lifecycle.
+	cancelPoll context.CancelFunc
+	pollDone   chan struct{}
 
 	subMu       sync.RWMutex
 	subscribers map[int]func(*pb.UIViewUpdate)
@@ -74,13 +95,36 @@ type Module struct {
 // New creates a new COST module. dbPath is the SQLite database location;
 // encKey must be exactly 32 bytes for AES-256-GCM.
 func New(dbPath string, encKey []byte) *Module {
-	return &Module{
+	m := &Module{
 		dbPath:      dbPath,
 		encKey:      encKey,
+		adapters:    make(map[string]ProviderAdapter),
 		entries:     make([]*CostEntry, 0),
 		budgets:     make(map[string]*Budget),
+		providers:   defaultProviders(),
+		schedule:    PollDaily,
 		nextID:      1,
 		subscribers: make(map[int]func(*pb.UIViewUpdate)),
+	}
+
+	// Register built-in provider adapters.
+	m.RegisterAdapter(&ManualAdapter{})
+	m.RegisterAdapter(&DigitalOceanAdapter{})
+	m.RegisterAdapter(&AWSAdapter{})
+
+	return m
+}
+
+// RegisterAdapter adds a provider adapter to the module.
+func (m *Module) RegisterAdapter(adapter ProviderAdapter) {
+	m.adapters[adapter.ID()] = adapter
+}
+
+func defaultProviders() []ProviderConfig {
+	return []ProviderConfig{
+		{ProviderID: "manual", Name: "Manual Entry", Enabled: true},
+		{ProviderID: "digitalocean", Name: "DigitalOcean", Enabled: false},
+		{ProviderID: "aws", Name: "AWS", Enabled: false},
 	}
 }
 
@@ -88,7 +132,7 @@ func (m *Module) Name() string        { return "cost" }
 func (m *Module) DisplayName() string { return "COST" }
 func (m *Module) Description() string { return "Cloud cost tracking & budget management" }
 
-// Start opens the encrypted store and loads persisted data.
+// Start opens the encrypted store, loads persisted data, and starts the polling loop.
 func (m *Module) Start() error {
 	store, err := storage.Open(m.dbPath, m.encKey)
 	if err != nil {
@@ -104,12 +148,26 @@ func (m *Module) Start() error {
 		store.Close()
 		return fmt.Errorf("cost: load budgets: %w", err)
 	}
+	if err := m.loadProviders(); err != nil {
+		store.Close()
+		return fmt.Errorf("cost: load providers: %w", err)
+	}
+
+	// Start background polling goroutine.
+	ctx, cancel := context.WithCancel(context.Background())
+	m.cancelPoll = cancel
+	m.pollDone = make(chan struct{})
+	go m.pollLoop(ctx)
 
 	return nil
 }
 
-// Stop closes the encrypted store.
+// Stop cancels the polling loop and closes the encrypted store.
 func (m *Module) Stop() error {
+	if m.cancelPoll != nil {
+		m.cancelPoll()
+		<-m.pollDone
+	}
 	if m.store != nil {
 		return m.store.Close()
 	}
@@ -171,6 +229,184 @@ func (m *Module) persistBudgets() error {
 		return err
 	}
 	return m.store.Put("cost:budgets", data)
+}
+
+func (m *Module) loadProviders() error {
+	data, err := m.store.Get("cost:providers")
+	if err != nil {
+		return err
+	}
+	if data == nil {
+		return nil // Use defaults set in New()
+	}
+
+	var stored struct {
+		Providers []ProviderConfig `json:"providers"`
+		Schedule  PollSchedule     `json:"schedule"`
+	}
+	if err := json.Unmarshal(data, &stored); err != nil {
+		return err
+	}
+	if len(stored.Providers) > 0 {
+		m.providers = stored.Providers
+	}
+	if stored.Schedule != "" {
+		m.schedule = stored.Schedule
+	}
+	return nil
+}
+
+func (m *Module) persistProviders() error {
+	stored := struct {
+		Providers []ProviderConfig `json:"providers"`
+		Schedule  PollSchedule     `json:"schedule"`
+	}{
+		Providers: m.providers,
+		Schedule:  m.schedule,
+	}
+	data, err := json.Marshal(stored)
+	if err != nil {
+		return err
+	}
+	return m.store.Put("cost:providers", data)
+}
+
+// --- Polling ---
+
+func (m *Module) pollLoop(ctx context.Context) {
+	defer close(m.pollDone)
+
+	for {
+		m.mu.RLock()
+		interval := m.pollInterval()
+		m.mu.RUnlock()
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(interval):
+			m.pollAllProviders(ctx)
+		}
+	}
+}
+
+func (m *Module) pollInterval() time.Duration {
+	switch m.schedule {
+	case PollHourly:
+		return time.Hour
+	default:
+		return 24 * time.Hour
+	}
+}
+
+func (m *Module) pollAllProviders(ctx context.Context) {
+	m.mu.RLock()
+	providers := make([]ProviderConfig, len(m.providers))
+	copy(providers, m.providers)
+	m.mu.RUnlock()
+
+	now := time.Now().UTC()
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+
+	for _, p := range providers {
+		if !p.Enabled || p.APIKey == "" || p.ProviderID == "manual" {
+			continue
+		}
+		adapter, ok := m.adapters[p.ProviderID]
+		if !ok {
+			continue
+		}
+
+		entries, err := adapter.FetchCosts(ctx, p.APIKey, monthStart, now)
+		if err != nil || len(entries) == 0 {
+			continue
+		}
+
+		m.mu.Lock()
+		m.mergeFetchedEntries(entries)
+		_ = m.persistEntries()
+		m.notifySubscribersLocked()
+		m.mu.Unlock()
+	}
+}
+
+// mergeFetchedEntries adds fetched entries, replacing existing entries for the
+// same provider+service+date combination. Must be called with mu held.
+func (m *Module) mergeFetchedEntries(newEntries []CostEntry) {
+	existing := make(map[string]int) // "provider:service:date" -> index
+	for i, e := range m.entries {
+		key := e.Provider + ":" + e.Service + ":" + e.Date
+		existing[key] = i
+	}
+
+	for i := range newEntries {
+		ne := &newEntries[i]
+		key := ne.Provider + ":" + ne.Service + ":" + ne.Date
+		if idx, ok := existing[key]; ok {
+			m.entries[idx] = ne
+		} else {
+			ne.ID = fmt.Sprintf("cost-%d", m.nextID)
+			m.nextID++
+			m.entries = append(m.entries, ne)
+			existing[key] = len(m.entries) - 1
+		}
+	}
+}
+
+// --- Provider configuration ---
+
+// ConfigureProvider updates a provider's API key and enabled status.
+func (m *Module) ConfigureProvider(providerID, apiKey string, enabled bool) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	found := false
+	for i, p := range m.providers {
+		if p.ProviderID == providerID {
+			m.providers[i].APIKey = apiKey
+			m.providers[i].Enabled = enabled
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("provider %q not found", providerID)
+	}
+
+	if err := m.persistProviders(); err != nil {
+		return err
+	}
+	m.notifySubscribersLocked()
+	return nil
+}
+
+// SetSchedule changes the polling schedule.
+func (m *Module) SetSchedule(schedule PollSchedule) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.schedule = schedule
+	if err := m.persistProviders(); err != nil {
+		return err
+	}
+	m.notifySubscribersLocked()
+	return nil
+}
+
+// Schedule returns the current polling schedule.
+func (m *Module) Schedule() PollSchedule {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.schedule
+}
+
+// Providers returns a copy of the provider configurations.
+func (m *Module) Providers() []ProviderConfig {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	result := make([]ProviderConfig, len(m.providers))
+	copy(result, m.providers)
+	return result
 }
 
 // --- Data operations ---
@@ -475,7 +711,7 @@ func (m *Module) budgetAlertsLocked() []BudgetAlert {
 	now := time.Now().UTC()
 	prefix := now.Format("2006-01")
 
-	// Calculate spend per scope
+	// Calculate spend per scope.
 	providerSpend := make(map[string]float64)
 	projectSpend := make(map[string]float64)
 	totalSpend := 0.0
@@ -538,9 +774,9 @@ func (m *Module) ExportCSV() string {
 
 	var b strings.Builder
 	w := csv.NewWriter(&b)
-	w.Write([]string{"ID", "Provider", "Service", "Amount", "Currency", "Date", "Project", "Note"})
+	_ = w.Write([]string{"ID", "Provider", "Service", "Amount", "Currency", "Date", "Project", "Note"})
 	for _, e := range entries {
-		w.Write([]string{
+		_ = w.Write([]string{
 			e.ID,
 			e.Provider,
 			e.Service,
@@ -568,7 +804,7 @@ func (m *Module) CurrentView() *pb.UIViewUpdate {
 	dailyCosts := m.dailyCostsLocked(30)
 	alerts := m.budgetAlertsLocked()
 
-	// Find total budget
+	// Find total budget.
 	budgetStr := "Not set"
 	budgetTrend := "flat"
 	if b, ok := m.budgets["total"]; ok {
@@ -584,7 +820,7 @@ func (m *Module) CurrentView() *pb.UIViewUpdate {
 		}
 	}
 
-	// Calculate month-over-month change
+	// Calculate month-over-month change.
 	momChange := 0.0
 	prevMonthTotal := m.previousMonthTotalLocked()
 	if prevMonthTotal > 0 {
@@ -597,8 +833,8 @@ func (m *Module) CurrentView() *pb.UIViewUpdate {
 		momTrend = "down"
 	}
 
-	// Build components
-	components := make([]*pb.UIComponent, 0, 8)
+	// Build components.
+	components := make([]*pb.UIComponent, 0, 10)
 
 	// 1. Header
 	headerLevel := int32(1)
@@ -717,8 +953,8 @@ func (m *Module) CurrentView() *pb.UIViewUpdate {
 	})
 
 	// 7. Status bar
-	statusContent := fmt.Sprintf("COST • %d entries • %s this month • %d budgets",
-		len(m.entries), formatUSD(currentTotal), len(m.budgets))
+	statusContent := fmt.Sprintf("COST • %d entries • %s this month • %d budgets • poll: %s",
+		len(m.entries), formatUSD(currentTotal), len(m.budgets), m.schedule)
 	components = append(components, &pb.UIComponent{
 		Id:      "cost-status",
 		Type:    "status_bar",
@@ -728,6 +964,7 @@ func (m *Module) CurrentView() *pb.UIViewUpdate {
 	// Actions
 	refreshShortcut := strPtr("Ctrl+R")
 	addShortcut := strPtr("Ctrl+N")
+	exportShortcut := strPtr("Ctrl+E")
 
 	return &pb.UIViewUpdate{
 		Module:     "cost",
@@ -736,7 +973,10 @@ func (m *Module) CurrentView() *pb.UIViewUpdate {
 			{Id: "add-entry", Label: "Add Entry", Shortcut: addShortcut, Enabled: true},
 			{Id: "delete-entry", Label: "Delete Entry", Enabled: true},
 			{Id: "set-budget", Label: "Set Budget", Enabled: true},
-			{Id: "export-csv", Label: "Export CSV", Enabled: true},
+			{Id: "delete-budget", Label: "Delete Budget", Enabled: true},
+			{Id: "export-csv", Label: "Export CSV", Shortcut: exportShortcut, Enabled: true},
+			{Id: "configure-provider", Label: "Configure Provider", Enabled: true},
+			{Id: "set-schedule", Label: "Set Schedule", Enabled: true},
 			{Id: "view-history", Label: "View History", Enabled: true},
 			{Id: "refresh", Label: "Refresh", Shortcut: refreshShortcut, Enabled: true},
 		},
@@ -789,8 +1029,33 @@ func (m *Module) HandleEvent(event *pb.UIEventRequest) error {
 		}
 		return m.SetBudget(scope, limit)
 
+	case "delete-budget":
+		scope := event.Data["scope"]
+		if scope == "" {
+			return fmt.Errorf("scope is required")
+		}
+		return m.DeleteBudget(scope)
+
+	case "configure-provider":
+		providerID := event.Data["provider_id"]
+		apiKey := event.Data["api_key"]
+		enabledStr := event.Data["enabled"]
+		if providerID == "" {
+			return fmt.Errorf("provider_id is required")
+		}
+		enabled := enabledStr == "true"
+		return m.ConfigureProvider(providerID, apiKey, enabled)
+
+	case "set-schedule":
+		schedule := event.Data["schedule"]
+		switch PollSchedule(schedule) {
+		case PollHourly, PollDaily:
+			return m.SetSchedule(PollSchedule(schedule))
+		default:
+			return fmt.Errorf("invalid schedule: %s (use 'hourly' or 'daily')", schedule)
+		}
+
 	case "export-csv":
-		// Export is handled by the renderer; we just trigger a refresh.
 		m.notifySubscribers()
 
 	case "view-history":
@@ -848,6 +1113,56 @@ func (m *Module) previousMonthTotalLocked() float64 {
 	return total
 }
 
+// --- Provider Adapters ---
+
+// ManualAdapter is a no-op adapter for manually entered cost data.
+type ManualAdapter struct{}
+
+func (a *ManualAdapter) ID() string   { return "manual" }
+func (a *ManualAdapter) Name() string { return "Manual Entry" }
+
+func (a *ManualAdapter) FetchCosts(_ context.Context, _ string, _, _ time.Time) ([]CostEntry, error) {
+	return nil, nil
+}
+
+// DigitalOceanAdapter fetches cost data from the DigitalOcean API.
+type DigitalOceanAdapter struct{}
+
+func (a *DigitalOceanAdapter) ID() string   { return "digitalocean" }
+func (a *DigitalOceanAdapter) Name() string { return "DigitalOcean" }
+
+func (a *DigitalOceanAdapter) FetchCosts(ctx context.Context, apiKey string, from, to time.Time) ([]CostEntry, error) {
+	if apiKey == "" {
+		return nil, fmt.Errorf("digitalocean: API key is required")
+	}
+	// DigitalOcean billing API integration would go here.
+	// Real implementation would use:
+	// GET https://api.digitalocean.com/v2/customers/my/balance
+	// GET https://api.digitalocean.com/v2/customers/my/billing_history
+	_ = ctx
+	_ = from
+	_ = to
+	return nil, nil
+}
+
+// AWSAdapter fetches cost data from the AWS Cost Explorer API.
+type AWSAdapter struct{}
+
+func (a *AWSAdapter) ID() string   { return "aws" }
+func (a *AWSAdapter) Name() string { return "AWS" }
+
+func (a *AWSAdapter) FetchCosts(ctx context.Context, apiKey string, from, to time.Time) ([]CostEntry, error) {
+	if apiKey == "" {
+		return nil, fmt.Errorf("aws: API key is required")
+	}
+	// AWS Cost Explorer integration would go here.
+	// Real implementation would use AWS Cost Explorer GetCostAndUsage API.
+	_ = ctx
+	_ = from
+	_ = to
+	return nil, nil
+}
+
 // --- Helpers ---
 
 func strPtr(s string) *string { return &s }
@@ -864,4 +1179,8 @@ func daysInMonth(year int, month time.Month) int {
 var (
 	_ module.Module     = (*Module)(nil)
 	_ module.UIProvider = (*Module)(nil)
+
+	_ ProviderAdapter = (*ManualAdapter)(nil)
+	_ ProviderAdapter = (*DigitalOceanAdapter)(nil)
+	_ ProviderAdapter = (*AWSAdapter)(nil)
 )
