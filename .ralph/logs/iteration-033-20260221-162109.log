@@ -1,0 +1,18 @@
+## Ralph Iteration 33 Complete
+
+**Task**: MIXA-011 — Content capture from web tabs
+**Status**: Verified complete and committed (`3d5f205`)
+
+**What was verified:**
+- Full capture pipeline: `captureTab()` and `captureSelection()` in `apps/desktop/src/main/capture/service.ts`
+- IPC handlers with context menu integration in `capture/ipc.ts`
+- Renderer hook `useCapture()` with Cmd+S shortcut
+- Toast notification system (`CaptureToast.tsx` + Zustand store)
+- Content extraction via `@mixa-ai/content-processor` (Readability, thumbnail, sanitizer)
+- Duplicate URL detection with update-on-recapture
+- Restricted URL rejection (chrome://, about:, etc.)
+- 15 tests all passing
+
+**Backpressure**: All 6 gates pass (typecheck, lint, test, build, go vet, go test)
+
+**Next task**: MIXA-014 (Text chunking + embeddings) — deps MIXA-003 ✅, MIXA-013 ✅
