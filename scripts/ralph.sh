@@ -13,7 +13,7 @@
 # UNKILLABLE: no set -e, no pipefail, trap all signals
 set +e
 set +o pipefail 2>/dev/null || true
-trap '' PIPE          # Ignore SIGPIPE — this is what kills us on EPIPE
+trap '' PIPE HUP      # Ignore SIGPIPE and SIGHUP (terminal close)
 trap 'echo ""; echo "[ralph] Ctrl+C detected. Stopping..."; exit 130' INT
 
 MAX_ITERATIONS="${1:-0}"
@@ -21,6 +21,7 @@ MODE="${2:-build}"
 ITERATION=0
 CONSECUTIVE_FAILURES=0
 MAX_CONSECUTIVE_FAILURES=5
+MAX_BACKOFF=60
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
@@ -95,7 +96,7 @@ run_claude_streaming() {
 
   # Run in a subshell so SIGPIPE/EPIPE can't kill our main loop
   (
-    trap '' PIPE
+    trap '' PIPE HUP
     cat "$prompt_file" | claude -p \
       --dangerously-skip-permissions \
       --verbose \
@@ -103,9 +104,10 @@ run_claude_streaming() {
     python3 -u -c "
 import sys, json, signal
 
-# Ignore SIGPIPE in python too
-signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+# Ignore SIGPIPE in python — SIG_IGN, NOT SIG_DFL (which terminates)
+signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 
+got_result = False
 try:
   for line in sys.stdin:
     line = line.strip()
@@ -129,15 +131,33 @@ try:
           elif nm == 'Read': print(f'[ralph] Reading: {inp.get(\"file_path\",inp.get(\"path\",\"\"))}', flush=True)
           else: print(f'[ralph] Tool: {nm}', flush=True)
     elif t == 'result':
+      got_result = True
       r = d.get('result',''); c = d.get('total_cost_usd',0); dur = d.get('duration_ms',0); n = d.get('num_turns',0)
-      s = 'ERROR' if d.get('is_error') else 'Done'
+      is_err = d.get('is_error', False)
+      s = 'ERROR' if is_err else 'Done'
       print(f'\n[ralph] {s}. {n} turns, {dur/1000:.1f}s, \${c:.4f}', flush=True)
       try:
-        with open('$log_file','w') as f: f.write(r or '')
+        with open('$log_file','w') as f:
+          if is_err:
+            f.write('API Error: ' + (r or 'unknown'))
+          else:
+            f.write(r or '')
       except: pass
     elif t == 'error':
-      print(f'[ralph] API ERROR: {d.get(\"message\",d.get(\"error\",\"?\"))}', flush=True)
-except: pass
+      msg = d.get('message', d.get('error', '?'))
+      print(f'[ralph] API ERROR: {msg}', flush=True)
+      try:
+        with open('$log_file','w') as f: f.write('API Error: ' + str(msg))
+      except: pass
+except Exception as e:
+  print(f'[ralph] Python stream error: {e}', flush=True)
+
+if not got_result:
+  try:
+    with open('$log_file','a') as f:
+      if f.tell() == 0:
+        f.write('API Error: No result received')
+  except: pass
 " 2>/dev/null
   ) 2>/dev/null
   return $?
@@ -204,14 +224,25 @@ while true; do
   CLAUDE_EXIT=$?
 
   # Track consecutive failures for backoff
-  if [ "$CLAUDE_EXIT" -ne 0 ] || [ ! -s "$LOG_FILE" ]; then
+  # Check exit code, empty log, OR log content starting with "API Error"
+  IS_FAILURE=false
+  if [ "$CLAUDE_EXIT" -ne 0 ]; then
+    IS_FAILURE=true
+  elif [ ! -s "$LOG_FILE" ]; then
+    IS_FAILURE=true
+  elif command grep -q '^API Error' "$LOG_FILE" 2>/dev/null; then
+    IS_FAILURE=true
+  fi
+
+  if [ "$IS_FAILURE" = true ]; then
     CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
     echo ""
     echo "[ralph] Iteration failed (exit=$CLAUDE_EXIT, consecutive=$CONSECUTIVE_FAILURES)"
 
     if [ "$CONSECUTIVE_FAILURES" -ge "$MAX_CONSECUTIVE_FAILURES" ]; then
-      BACKOFF=$((CONSECUTIVE_FAILURES * 30))
-      echo "[ralph] $CONSECUTIVE_FAILURES consecutive failures. Backing off ${BACKOFF}s..."
+      BACKOFF=$((CONSECUTIVE_FAILURES * 10))
+      [ "$BACKOFF" -gt "$MAX_BACKOFF" ] && BACKOFF="$MAX_BACKOFF"
+      echo "[ralph] $CONSECUTIVE_FAILURES consecutive failures. Backing off ${BACKOFF}s (max ${MAX_BACKOFF}s)..."
       echo "[ralph] (API might be rate-limited or down. Will auto-retry.)"
       sleep "$BACKOFF"
     else
