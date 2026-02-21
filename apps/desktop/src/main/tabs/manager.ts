@@ -248,6 +248,26 @@ export class TabManager {
     return info.view.webContents.getURL();
   }
 
+  /** Extract the full HTML of the page in a web tab */
+  async getPageHTML(tabId: string): Promise<string | null> {
+    const info = this.views.get(tabId);
+    if (!info || info.view.webContents.isDestroyed()) return null;
+    const html = await info.view.webContents.executeJavaScript(
+      "document.documentElement.outerHTML",
+    ) as string;
+    return html;
+  }
+
+  /** Get the currently selected text in a web tab */
+  async getSelectedText(tabId: string): Promise<string | null> {
+    const info = this.views.get(tabId);
+    if (!info || info.view.webContents.isDestroyed()) return null;
+    const text = await info.view.webContents.executeJavaScript(
+      "window.getSelection()?.toString() ?? ''",
+    ) as string;
+    return text || null;
+  }
+
   hideActiveView(): void {
     if (!this.mainWindow || !this.activeTabId) return;
     const info = this.views.get(this.activeTabId);

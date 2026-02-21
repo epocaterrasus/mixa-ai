@@ -25,6 +25,38 @@ interface ElectronTabsAPI {
   readonly onDownloadCompleted: (callback: (data: { filename: string; state: string }) => void) => () => void;
 }
 
+interface CaptureResultData {
+  readonly id: string;
+  readonly title: string;
+  readonly url: string | null;
+  readonly itemType: string;
+  readonly domain: string | null;
+  readonly wordCount: number | null;
+  readonly readingTime: number | null;
+}
+
+interface CaptureResponse {
+  readonly success: boolean;
+  readonly data?: CaptureResultData;
+  readonly error?: string;
+  readonly isDuplicate?: boolean;
+}
+
+interface CaptureCompletedEvent {
+  readonly success: boolean;
+  readonly data?: CaptureResultData;
+  readonly error?: string;
+  readonly type: string;
+}
+
+interface ElectronCaptureAPI {
+  readonly captureTab: (tabId: string, faviconUrl?: string | null) => Promise<CaptureResponse>;
+  readonly captureSelection: (tabId: string, selectedText: string, faviconUrl?: string | null) => Promise<CaptureResponse>;
+  readonly getSelection: (tabId: string) => Promise<string | null>;
+  readonly showContextMenu: (tabId: string, hasSelection: boolean, faviconUrl?: string | null) => Promise<void>;
+  readonly onCompleted: (callback: (data: CaptureCompletedEvent) => void) => () => void;
+}
+
 interface ElectronSidebarAPI {
   readonly setWidth: (width: number) => Promise<void>;
 }
@@ -63,6 +95,7 @@ interface ElectronAPI {
     | { error: { code: string; message: string } }
   >;
   readonly tabs: ElectronTabsAPI;
+  readonly capture: ElectronCaptureAPI;
   readonly sidebar: ElectronSidebarAPI;
   readonly engine: ElectronEngineAPI;
 }

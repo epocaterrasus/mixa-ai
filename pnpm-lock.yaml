@@ -38,6 +38,12 @@ importers:
       '@grpc/proto-loader':
         specifier: ^0.8.0
         version: 0.8.0
+      '@mixa-ai/content-processor':
+        specifier: workspace:^
+        version: link:../../packages/content-processor
+      '@mixa-ai/db':
+        specifier: workspace:^
+        version: link:../../packages/db
       '@mixa-ai/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -87,6 +93,9 @@ importers:
       vite:
         specifier: ^5.4.0
         version: 5.4.21(@types/node@22.19.11)
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.19.11)(jsdom@25.0.1)
 
   apps/web:
     dependencies:

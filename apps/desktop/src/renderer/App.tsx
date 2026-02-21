@@ -3,10 +3,12 @@ import { Toolbar } from "./components/Toolbar";
 import { TabContent } from "./components/TabContent";
 import { FindBar } from "./components/FindBar";
 import { Sidebar } from "./components/Sidebar";
+import { CaptureToast } from "./components/CaptureToast";
 import { useTabEvents } from "./hooks/useTabEvents";
 import { useTabShortcuts } from "./hooks/useTabShortcuts";
 import { useTabLifecycle } from "./hooks/useTabLifecycle";
 import { useEngineStatus } from "./hooks/useEngineStatus";
+import { useCapture } from "./hooks/useCapture";
 import { useTabStore } from "./stores/tabs";
 
 const styles = {
@@ -77,6 +79,7 @@ export function App(): React.ReactElement {
   useTabShortcuts();
   useTabLifecycle();
   useEngineStatus();
+  useCapture();
 
   const activeTab = useTabStore((s) => {
     const id = s.activeTabId;
@@ -99,6 +102,7 @@ export function App(): React.ReactElement {
           )}
         </div>
       </div>
+      <CaptureToast />
     </div>
   );
 }

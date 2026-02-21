@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useTabStore } from "../stores/tabs";
+import { useCaptureStore } from "../stores/capture";
 import { Omnibar } from "./Omnibar";
 import { EngineStatusIndicator } from "./EngineStatusIndicator";
 
@@ -61,7 +62,40 @@ export function Toolbar(): React.ReactElement {
     }
   }, [activeTab]);
 
+  const isCapturing = useCaptureStore((s) => s.isCapturing);
+  const addToast = useCaptureStore((s) => s.addToast);
+
+  const handleCapture = useCallback(async () => {
+    if (!activeTab || activeTab.type !== "web" || !activeTab.url) return;
+    useCaptureStore.getState().setCapturing(true);
+    try {
+      const result = await window.electronAPI.capture.captureTab(
+        activeTab.id,
+        activeTab.faviconUrl,
+      );
+      if (result.success && result.data) {
+        addToast({
+          type: result.isDuplicate ? "duplicate" : "success",
+          title: result.isDuplicate ? "Updated existing save" : "Saved to Mixa",
+          message: result.data.title,
+        });
+      } else {
+        addToast({
+          type: "error",
+          title: "Capture failed",
+          message: result.error ?? "Unknown error",
+        });
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Capture failed";
+      addToast({ type: "error", title: "Capture failed", message });
+    } finally {
+      useCaptureStore.getState().setCapturing(false);
+    }
+  }, [activeTab, addToast]);
+
   const isLoading = activeTab?.state === "loading";
+  const canCapture = activeTab?.type === "web" && !!activeTab.url && !isCapturing;
 
   return (
     <div style={styles.container}>
@@ -105,6 +139,21 @@ export function Toolbar(): React.ReactElement {
 
       {/* Omnibar (URL + command palette + search) */}
       <Omnibar />
+
+      {/* Save to Mixa button */}
+      <button
+        type="button"
+        style={{
+          ...styles.navButton,
+          ...(canCapture ? {} : styles.navButtonDisabled),
+        }}
+        onClick={() => void handleCapture()}
+        disabled={!canCapture}
+        aria-label="Save page to Mixa"
+        title="Save to Mixa (Cmd+S)"
+      >
+        {isCapturing ? "\u22EF" : "\u2B07"}
+      </button>
 
       {/* Engine health indicator */}
       <EngineStatusIndicator />

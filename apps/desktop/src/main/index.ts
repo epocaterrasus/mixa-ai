@@ -3,8 +3,9 @@ import { join } from "node:path";
 import { setupTRPCHandler } from "./trpc/index.js";
 import { tabManager } from "./tabs/manager.js";
 import { engineLifecycle } from "./engine/index.js";
+import { setupCaptureHandlers } from "./capture/index.js";
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -47,18 +48,24 @@ function createWindow(): void {
   } else {
     void mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
   }
+
+  return mainWindow;
 }
 
 void app.whenReady().then(() => {
   setupTRPCHandler();
-  createWindow();
+  const mainWindow = createWindow();
+
+  // Set up content capture IPC handlers
+  setupCaptureHandlers(mainWindow);
 
   // Start the Go engine as a child process
   void engineLifecycle.start();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      const newWindow = createWindow();
+      setupCaptureHandlers(newWindow);
     }
   });
 });

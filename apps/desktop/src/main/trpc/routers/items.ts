@@ -1,5 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { router, publicProcedure, TRPCError } from "../trpc.js";
+import { captureStore, type CapturedItem } from "../../capture/service.js";
 
 const itemTypeSchema = z.enum([
   "article",
@@ -18,6 +20,29 @@ const sourceTypeSchema = z.enum([
   "terminal",
 ]);
 
+function toItemResponse(item: CapturedItem): Record<string, unknown> {
+  return {
+    id: item.id,
+    url: item.url,
+    title: item.title,
+    description: item.description,
+    contentText: item.contentText,
+    contentHtml: item.contentHtml,
+    itemType: item.itemType,
+    sourceType: item.sourceType,
+    thumbnailUrl: item.thumbnailUrl,
+    faviconUrl: item.faviconUrl,
+    domain: item.domain,
+    wordCount: item.wordCount,
+    readingTime: item.readingTime,
+    isArchived: item.isArchived,
+    isFavorite: item.isFavorite,
+    capturedAt: item.capturedAt,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
 export const itemsRouter = router({
   create: publicProcedure
     .input(
@@ -35,11 +60,32 @@ export const itemsRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      // TODO: Implement with PGlite (MIXA-046)
-      throw new TRPCError({
-        code: "NOT_IMPLEMENTED",
-        message: `items.create not yet connected to database: ${input.title}`,
-      });
+      const now = new Date().toISOString();
+      const item: CapturedItem = {
+        id: randomUUID(),
+        url: input.url ?? null,
+        title: input.title,
+        description: input.description ?? null,
+        contentText: input.contentText ?? null,
+        contentHtml: input.contentHtml ?? null,
+        itemType: input.itemType,
+        sourceType: input.sourceType,
+        thumbnailUrl: input.thumbnailUrl ?? null,
+        faviconUrl: input.faviconUrl ?? null,
+        domain: input.domain ?? null,
+        wordCount: input.contentText
+          ? input.contentText.split(/\s+/).filter((w) => w.length > 0).length
+          : null,
+        readingTime: null,
+        isArchived: false,
+        isFavorite: false,
+        capturedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      captureStore.add(item);
+      return toItemResponse(item);
     }),
 
   list: publicProcedure
@@ -56,19 +102,48 @@ export const itemsRouter = router({
         sortOrder: z.enum(["asc", "desc"]).default("desc"),
       }),
     )
-    .query(async ({ input: _input }) => {
-      // TODO: Implement with PGlite (MIXA-046)
-      return { items: [], total: 0 };
+    .query(async ({ input }) => {
+      let items = captureStore.getAll();
+
+      // Filter
+      if (input.itemType) {
+        items = items.filter((i) => i.itemType === input.itemType);
+      }
+      if (input.isFavorite !== undefined) {
+        items = items.filter((i) => i.isFavorite === input.isFavorite);
+      }
+      if (input.isArchived !== undefined) {
+        items = items.filter((i) => i.isArchived === input.isArchived);
+      }
+
+      // Sort
+      const sortDir = input.sortOrder === "asc" ? 1 : -1;
+      items.sort((a, b) => {
+        const aVal = a[input.sortBy] ?? "";
+        const bVal = b[input.sortBy] ?? "";
+        return aVal < bVal ? -sortDir : aVal > bVal ? sortDir : 0;
+      });
+
+      const total = items.length;
+      const sliced = items.slice(input.offset, input.offset + input.limit);
+
+      return {
+        items: sliced.map(toItemResponse),
+        total,
+      };
     }),
 
   get: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
-      // TODO: Implement with PGlite (MIXA-046)
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: `Item not found: ${input.id}`,
-      });
+      const item = captureStore.getById(input.id);
+      if (!item) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Item not found: ${input.id}`,
+        });
+      }
+      return toItemResponse(item);
     }),
 
   update: publicProcedure
@@ -83,21 +158,28 @@ export const itemsRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      // TODO: Implement with PGlite (MIXA-046)
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: `Item not found: ${input.id}`,
-      });
+      const { id, ...updates } = input;
+      const updated = captureStore.update(id, updates);
+      if (!updated) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Item not found: ${id}`,
+        });
+      }
+      return toItemResponse(updated);
     }),
 
   delete: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
-      // TODO: Implement with PGlite (MIXA-046)
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: `Item not found: ${input.id}`,
-      });
+      const deleted = captureStore.delete(input.id);
+      if (!deleted) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Item not found: ${input.id}`,
+        });
+      }
+      return { success: true };
     }),
 
   search: publicProcedure
@@ -108,8 +190,22 @@ export const itemsRouter = router({
         itemType: itemTypeSchema.optional(),
       }),
     )
-    .query(async ({ input: _input }) => {
-      // TODO: Implement with hybrid search (MIXA-016)
-      return { items: [], total: 0 };
+    .query(async ({ input }) => {
+      const query = input.query.toLowerCase();
+      let items = captureStore.getAll().filter((item) => {
+        const titleMatch = item.title.toLowerCase().includes(query);
+        const contentMatch = item.contentText?.toLowerCase().includes(query) ?? false;
+        const domainMatch = item.domain?.toLowerCase().includes(query) ?? false;
+        return titleMatch || contentMatch || domainMatch;
+      });
+
+      if (input.itemType) {
+        items = items.filter((i) => i.itemType === input.itemType);
+      }
+
+      return {
+        items: items.slice(0, input.limit).map(toItemResponse),
+        total: items.length,
+      };
     }),
 });

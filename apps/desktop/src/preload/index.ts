@@ -107,6 +107,46 @@ const electronAPI = {
     },
   },
 
+  // Content capture IPC
+  capture: {
+    captureTab: (tabId: string, faviconUrl?: string | null): Promise<{
+      success: boolean;
+      data?: { id: string; title: string; url: string | null; itemType: string; domain: string | null; wordCount: number | null; readingTime: number | null };
+      error?: string;
+      isDuplicate?: boolean;
+    }> => ipcRenderer.invoke("capture:tab", tabId, faviconUrl),
+
+    captureSelection: (tabId: string, selectedText: string, faviconUrl?: string | null): Promise<{
+      success: boolean;
+      data?: { id: string; title: string; url: string | null; itemType: string; domain: string | null; wordCount: number | null; readingTime: number | null };
+      error?: string;
+    }> => ipcRenderer.invoke("capture:selection", tabId, selectedText, faviconUrl),
+
+    getSelection: (tabId: string): Promise<string | null> =>
+      ipcRenderer.invoke("capture:get-selection", tabId),
+
+    showContextMenu: (tabId: string, hasSelection: boolean, faviconUrl?: string | null): Promise<void> =>
+      ipcRenderer.invoke("capture:show-context-menu", tabId, hasSelection, faviconUrl),
+
+    onCompleted: (callback: (data: {
+      success: boolean;
+      data?: { id: string; title: string; url: string | null; itemType: string; domain: string | null; wordCount: number | null; readingTime: number | null };
+      error?: string;
+      type: string;
+    }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: {
+        success: boolean;
+        data?: { id: string; title: string; url: string | null; itemType: string; domain: string | null; wordCount: number | null; readingTime: number | null };
+        error?: string;
+        type: string;
+      }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("capture:completed", handler);
+      return () => ipcRenderer.removeListener("capture:completed", handler);
+    },
+  },
+
   sidebar: {
     setWidth: (width: number): Promise<void> =>
       ipcRenderer.invoke("sidebar:set-width", width),
