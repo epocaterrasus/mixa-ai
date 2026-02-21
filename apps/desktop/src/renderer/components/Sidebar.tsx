@@ -55,8 +55,8 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     height: "100%",
-    backgroundColor: "#111",
-    borderRight: "1px solid #2a2a2a",
+    backgroundColor: "var(--mixa-bg-surface)",
+    borderRight: "1px solid var(--mixa-border-default)",
     overflow: "hidden",
     position: "relative",
     userSelect: "none",
@@ -66,13 +66,13 @@ const styles = {
     alignItems: "center",
     justifyContent: "space-between",
     padding: "8px 10px",
-    borderBottom: "1px solid #222",
+    borderBottom: "1px solid var(--mixa-border-subtle)",
     flexShrink: 0,
   } as React.CSSProperties,
   headerTitle: {
     fontSize: "11px",
     fontWeight: 600,
-    color: "#888",
+    color: "var(--mixa-text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.5px",
   } as React.CSSProperties,
@@ -85,7 +85,7 @@ const styles = {
     borderRadius: "4px",
     border: "none",
     backgroundColor: "transparent",
-    color: "#666",
+    color: "var(--mixa-text-disabled)",
     cursor: "pointer",
     fontSize: "12px",
     padding: 0,
@@ -104,7 +104,7 @@ const styles = {
     padding: "4px 10px",
     fontSize: "10px",
     fontWeight: 600,
-    color: "#666",
+    color: "var(--mixa-text-disabled)",
     textTransform: "uppercase",
     letterSpacing: "0.5px",
   } as React.CSSProperties,
@@ -115,7 +115,7 @@ const styles = {
     padding: "5px 10px",
     cursor: "pointer",
     fontSize: "12px",
-    color: "#aaa",
+    color: "var(--mixa-text-tertiary)",
     border: "none",
     backgroundColor: "transparent",
     width: "100%",
@@ -124,11 +124,11 @@ const styles = {
     overflow: "hidden",
   } as React.CSSProperties,
   tabItemActive: {
-    backgroundColor: "#1e1e2e",
-    color: "#fafafa",
+    backgroundColor: "var(--mixa-bg-active-accent)",
+    color: "var(--mixa-text-primary)",
   } as React.CSSProperties,
   tabItemHover: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "var(--mixa-bg-elevated)",
   } as React.CSSProperties,
   tabFavicon: {
     width: "14px",
@@ -154,7 +154,7 @@ const styles = {
     borderRadius: "3px",
     border: "none",
     backgroundColor: "transparent",
-    color: "#555",
+    color: "var(--mixa-text-subtle)",
     cursor: "pointer",
     fontSize: "13px",
     padding: 0,
@@ -162,7 +162,7 @@ const styles = {
     lineHeight: "1",
   } as React.CSSProperties,
   quickActions: {
-    borderTop: "1px solid #222",
+    borderTop: "1px solid var(--mixa-border-subtle)",
     padding: "6px 0",
     flexShrink: 0,
   } as React.CSSProperties,
@@ -174,7 +174,7 @@ const styles = {
     padding: "6px 10px",
     border: "none",
     backgroundColor: "transparent",
-    color: "#888",
+    color: "var(--mixa-text-muted)",
     cursor: "pointer",
     fontSize: "12px",
     textAlign: "left",
@@ -200,8 +200,8 @@ const styles = {
     flexDirection: "column",
     alignItems: "center",
     height: "100%",
-    backgroundColor: "#111",
-    borderRight: "1px solid #2a2a2a",
+    backgroundColor: "var(--mixa-bg-surface)",
+    borderRight: "1px solid var(--mixa-border-default)",
     overflow: "hidden",
     userSelect: "none",
     width: `${COLLAPSED_WIDTH}px`,
@@ -216,7 +216,7 @@ const styles = {
     borderRadius: "6px",
     border: "none",
     backgroundColor: "transparent",
-    color: "#666",
+    color: "var(--mixa-text-disabled)",
     cursor: "pointer",
     fontSize: "14px",
     padding: 0,
@@ -224,7 +224,7 @@ const styles = {
   collapsedDivider: {
     width: "24px",
     height: "1px",
-    backgroundColor: "#222",
+    backgroundColor: "var(--mixa-border-subtle)",
     margin: "2px 0",
   } as React.CSSProperties,
   collapsedTabIcon: {
@@ -236,7 +236,7 @@ const styles = {
     borderRadius: "6px",
     border: "none",
     backgroundColor: "transparent",
-    color: "#888",
+    color: "var(--mixa-text-muted)",
     cursor: "pointer",
     fontSize: "13px",
     padding: 0,
@@ -244,13 +244,13 @@ const styles = {
   // Context menu
   contextMenu: {
     position: "fixed",
-    backgroundColor: "#252525",
-    border: "1px solid #3a3a3a",
+    backgroundColor: "var(--mixa-bg-overlay)",
+    border: "1px solid var(--mixa-border-overlay)",
     borderRadius: "6px",
     padding: "4px 0",
     zIndex: 9999,
     minWidth: "160px",
-    boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+    boxShadow: "var(--mixa-shadow-overlay)",
   } as React.CSSProperties,
   contextMenuItem: {
     display: "block",
@@ -258,18 +258,18 @@ const styles = {
     padding: "6px 12px",
     border: "none",
     backgroundColor: "transparent",
-    color: "#ccc",
+    color: "var(--mixa-text-secondary)",
     fontSize: "12px",
     textAlign: "left",
     cursor: "pointer",
   } as React.CSSProperties,
   contextMenuItemHover: {
-    backgroundColor: "#333",
-    color: "#fff",
+    backgroundColor: "var(--mixa-border-strong)",
+    color: "var(--mixa-text-primary)",
   } as React.CSSProperties,
   contextMenuSeparator: {
     height: "1px",
-    backgroundColor: "#3a3a3a",
+    backgroundColor: "var(--mixa-border-overlay)",
     margin: "4px 0",
   } as React.CSSProperties,
 } as const;
@@ -424,7 +424,7 @@ function SidebarTabItem({
         aria-label={`Close ${tab.title}`}
         style={{
           ...styles.tabClose,
-          ...(closeHovered ? { backgroundColor: "#444", color: "#fff" } : {}),
+          ...(closeHovered ? { backgroundColor: "var(--mixa-text-faint)", color: "var(--mixa-text-primary)" } : {}),
           opacity: hovered || tab.isActive ? 1 : 0,
         }}
         onClick={handleClose}
@@ -452,7 +452,7 @@ function CollapsedSidebar(): React.ReactElement {
         type="button"
         style={{
           ...styles.collapsedToggle,
-          ...(hoveredId === "expand" ? { backgroundColor: "#1a1a1a" } : {}),
+          ...(hoveredId === "expand" ? { backgroundColor: "var(--mixa-bg-elevated)" } : {}),
         }}
         onClick={toggle}
         onMouseEnter={() => setHoveredId("expand")}
@@ -471,8 +471,8 @@ function CollapsedSidebar(): React.ReactElement {
           type="button"
           style={{
             ...styles.collapsedTabIcon,
-            ...(tab.isActive ? { backgroundColor: "#1e1e2e", color: "#fafafa" } : {}),
-            ...(hoveredId === tab.id && !tab.isActive ? { backgroundColor: "#1a1a1a" } : {}),
+            ...(tab.isActive ? { backgroundColor: "var(--mixa-bg-active-accent)", color: "var(--mixa-text-primary)" } : {}),
+            ...(hoveredId === tab.id && !tab.isActive ? { backgroundColor: "var(--mixa-bg-elevated)" } : {}),
           }}
           onClick={() => activateTab(tab.id)}
           onMouseEnter={() => setHoveredId(tab.id)}
@@ -505,7 +505,7 @@ function CollapsedSidebar(): React.ReactElement {
           type="button"
           style={{
             ...styles.collapsedTabIcon,
-            ...(hoveredId === `qa-${action.type}` ? { backgroundColor: "#1a1a1a" } : {}),
+            ...(hoveredId === `qa-${action.type}` ? { backgroundColor: "var(--mixa-bg-elevated)" } : {}),
           }}
           onClick={() => addTab(action.type)}
           onMouseEnter={() => setHoveredId(`qa-${action.type}`)}
@@ -636,7 +636,7 @@ export function Sidebar(): React.ReactElement {
           type="button"
           style={{
             ...styles.collapseButton,
-            ...(collapseHovered ? { backgroundColor: "#1a1a1a" } : {}),
+            ...(collapseHovered ? { backgroundColor: "var(--mixa-bg-elevated)" } : {}),
           }}
           onClick={toggle}
           onMouseEnter={() => setCollapseHovered(true)}
@@ -675,7 +675,7 @@ export function Sidebar(): React.ReactElement {
           <div
             style={{
               padding: "20px 10px",
-              color: "#555",
+              color: "var(--mixa-text-subtle)",
               fontSize: "12px",
               textAlign: "center",
             }}
@@ -693,7 +693,7 @@ export function Sidebar(): React.ReactElement {
             type="button"
             style={{
               ...styles.quickActionButton,
-              ...(qaHovered === action.type ? { backgroundColor: "#1a1a1a", color: "#ccc" } : {}),
+              ...(qaHovered === action.type ? { backgroundColor: "var(--mixa-bg-elevated)", color: "var(--mixa-text-secondary)" } : {}),
             }}
             onClick={() => addTab(action.type)}
             onMouseEnter={() => setQaHovered(action.type)}
@@ -711,7 +711,7 @@ export function Sidebar(): React.ReactElement {
       <div
         style={{
           ...styles.resizeHandle,
-          ...(resizing ? { backgroundColor: "#6366f1" } : {}),
+          ...(resizing ? { backgroundColor: "var(--mixa-accent-primary)" } : {}),
         }}
         onMouseDown={handleResizeStart}
         role="separator"

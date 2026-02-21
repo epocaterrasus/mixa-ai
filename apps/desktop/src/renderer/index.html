@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,8 +9,10 @@
     />
     <title>Mixa</title>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { overflow: hidden; background: #0a0a0a; }
+      /* Inline critical styles to prevent flash before CSS loads */
+      body { overflow: hidden; }
+      [data-theme="dark"] body { background: #0a0a0a; }
+      [data-theme="light"] body { background: #f8f8f8; }
     </style>
   </head>
   <body>

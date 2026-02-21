@@ -7,8 +7,8 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     height: "100%",
-    backgroundColor: "#0a0a0a",
-    color: "#fafafa",
+    backgroundColor: "var(--mixa-bg-base)",
+    color: "var(--mixa-text-primary)",
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   } as React.CSSProperties,
@@ -23,7 +23,7 @@ const styles = {
   } as React.CSSProperties,
   subtitle: {
     fontSize: "13px",
-    color: "#888",
+    color: "var(--mixa-text-muted)",
   } as React.CSSProperties,
 } as const;
 
@@ -67,7 +67,7 @@ function NewTabPage(): React.ReactElement {
       <h1 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "8px" }}>
         Mixa
       </h1>
-      <p style={{ fontSize: "13px", color: "#888" }}>Developer Browser</p>
+      <p style={{ fontSize: "13px", color: "var(--mixa-text-muted)" }}>Developer Browser</p>
     </div>
   );
 }

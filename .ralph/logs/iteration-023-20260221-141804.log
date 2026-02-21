@@ -1,0 +1,15 @@
+**MIXA-010 is complete.** The Go engine lifecycle was already fully implemented — the only issue was a TypeScript readonly type mismatch in the engine store that was causing the typecheck to fail. Fixed by updating `updateStatus` to accept `ReadonlyArray` matching the preload's `as const` assertion.
+
+All acceptance criteria verified:
+1. Electron main spawns Go engine binary on app start
+2. Binary path resolved for both packaged and dev modes
+3. gRPC client connects with retry logic (5 retries)
+4. Health check polling every 10 seconds
+5. Auto-restart on crash with exponential backoff (max 3 retries)
+6. Graceful shutdown via SIGTERM with SIGKILL fallback
+7. Engine status exposed to renderer via IPC + tRPC
+8. Status indicator in browser chrome (colored dot + "Fenix" label)
+9. Logs captured and forwarded to renderer
+10. Works in both dev and production modes
+
+All backpressure checks pass (typecheck, lint, build, go vet, go test). Committed as `720f6e9`.

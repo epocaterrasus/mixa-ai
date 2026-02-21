@@ -55,10 +55,10 @@ const styles = {
 
   display: {
     height: "26px",
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "var(--mixa-bg-elevated)",
     borderRadius: "6px",
-    border: "1px solid #2a2a2a",
-    color: "#ccc",
+    border: "1px solid var(--mixa-border-default)",
+    color: "var(--mixa-text-secondary)",
     fontSize: "12px",
     padding: "0 10px",
     display: "flex",
@@ -70,8 +70,8 @@ const styles = {
   } as React.CSSProperties,
 
   displayFocused: {
-    border: "1px solid #555",
-    backgroundColor: "#222",
+    border: "1px solid var(--mixa-border-focus)",
+    backgroundColor: "var(--mixa-bg-hover)",
   } as React.CSSProperties,
 
   input: {
@@ -80,7 +80,7 @@ const styles = {
     border: "none",
     outline: "none",
     backgroundColor: "transparent",
-    color: "#fafafa",
+    color: "var(--mixa-text-primary)",
     fontSize: "12px",
     fontFamily: "inherit",
     padding: 0,
@@ -98,7 +98,7 @@ const styles = {
   lockIcon: {
     marginRight: "6px",
     fontSize: "10px",
-    color: "#4ade80",
+    color: "var(--mixa-accent-green)",
     flexShrink: 0,
   } as React.CSSProperties,
 
@@ -110,13 +110,13 @@ const styles = {
     height: "2px",
     borderRadius: "1px",
     overflow: "hidden",
-    backgroundColor: "#333",
+    backgroundColor: "var(--mixa-border-strong)",
   } as React.CSSProperties,
 
   loadingFill: {
     height: "100%",
     width: "30%",
-    backgroundColor: "#3b82f6",
+    backgroundColor: "var(--mixa-accent-blue)",
     borderRadius: "1px",
     animation: "omnibar-loading 1.5s ease-in-out infinite",
   } as React.CSSProperties,
@@ -126,10 +126,10 @@ const styles = {
     top: "calc(100% + 4px)",
     left: 0,
     right: 0,
-    backgroundColor: "#1a1a1a",
-    border: "1px solid #333",
+    backgroundColor: "var(--mixa-bg-elevated)",
+    border: "1px solid var(--mixa-border-strong)",
     borderRadius: "8px",
-    boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+    boxShadow: "var(--mixa-shadow-dropdown)",
     maxHeight: "320px",
     overflowY: "auto",
     zIndex: 1000,
@@ -143,12 +143,12 @@ const styles = {
     padding: "6px 12px",
     cursor: "pointer",
     fontSize: "12px",
-    color: "#ccc",
+    color: "var(--mixa-text-secondary)",
   } as React.CSSProperties,
 
   suggestionItemActive: {
-    backgroundColor: "#2a2a2a",
-    color: "#fafafa",
+    backgroundColor: "var(--mixa-bg-active)",
+    color: "var(--mixa-text-primary)",
   } as React.CSSProperties,
 
   suggestionIcon: {
@@ -166,7 +166,7 @@ const styles = {
   } as React.CSSProperties,
 
   suggestionDescription: {
-    color: "#666",
+    color: "var(--mixa-text-disabled)",
     fontSize: "11px",
     flexShrink: 0,
     maxWidth: "200px",
@@ -177,31 +177,15 @@ const styles = {
 
   suggestionKindBadge: {
     fontSize: "10px",
-    color: "#555",
-    border: "1px solid #333",
+    color: "var(--mixa-text-subtle)",
+    border: "1px solid var(--mixa-border-strong)",
     borderRadius: "3px",
     padding: "1px 4px",
     flexShrink: 0,
   } as React.CSSProperties,
 } as const;
 
-// --- Inline keyframes (injected once) ---
-
-let stylesInjected = false;
-
-function injectStyles(): void {
-  if (stylesInjected) return;
-  stylesInjected = true;
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes omnibar-loading {
-      0% { transform: translateX(-100%); }
-      50% { transform: translateX(250%); }
-      100% { transform: translateX(-100%); }
-    }
-  `;
-  document.head.appendChild(style);
-}
+// Keyframe animations are defined in globals.css
 
 // --- Tab type icons ---
 
@@ -286,11 +270,6 @@ export function Omnibar(): React.ReactElement {
   const addTab = useTabStore((s) => s.addTab);
   const activateTab = useTabStore((s) => s.activateTab);
   const searchHistory = useHistoryStore((s) => s.search);
-
-  // Inject CSS keyframes on mount
-  useEffect(() => {
-    injectStyles();
-  }, []);
 
   // Derived state
   const isWebTab = activeTab?.type === "web";
@@ -611,11 +590,11 @@ export function Omnibar(): React.ReactElement {
                 <span style={styles.urlText}>{displayUrl}</span>
               </>
             ) : isWebTab ? (
-              <span style={{ ...styles.urlText, color: "#666" }}>
+              <span style={{ ...styles.urlText, color: "var(--mixa-text-disabled)" }}>
                 Search or enter URL
               </span>
             ) : (
-              <span style={{ ...styles.urlText, color: "#666" }}>
+              <span style={{ ...styles.urlText, color: "var(--mixa-text-disabled)" }}>
                 mixa://{activeTab?.type ?? "home"}
               </span>
             )}

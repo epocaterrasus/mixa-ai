@@ -15,7 +15,7 @@ const styles = {
     flexDirection: "row",
     height: "100vh",
     overflow: "hidden",
-    backgroundColor: "#0a0a0a",
+    backgroundColor: "var(--mixa-bg-base)",
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   } as React.CSSProperties,
@@ -37,7 +37,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     height: "100%",
-    color: "#fafafa",
+    color: "var(--mixa-text-primary)",
   } as React.CSSProperties,
 } as const;
 
@@ -49,7 +49,7 @@ function EmptyState(): React.ReactElement {
       <h1 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "8px" }}>
         Mixa
       </h1>
-      <p style={{ fontSize: "13px", color: "#888", marginBottom: "24px" }}>
+      <p style={{ fontSize: "13px", color: "var(--mixa-text-muted)", marginBottom: "24px" }}>
         Developer Browser
       </p>
       <button
@@ -58,9 +58,9 @@ function EmptyState(): React.ReactElement {
         style={{
           padding: "8px 20px",
           borderRadius: "8px",
-          border: "1px solid #333",
-          backgroundColor: "#1a1a1a",
-          color: "#fafafa",
+          border: "1px solid var(--mixa-border-strong)",
+          backgroundColor: "var(--mixa-bg-elevated)",
+          color: "var(--mixa-text-primary)",
           fontSize: "13px",
           cursor: "pointer",
         }}

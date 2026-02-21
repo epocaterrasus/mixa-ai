@@ -24,7 +24,7 @@ const styles = {
     height: "28px",
     borderRadius: "6px",
     fontSize: "11px",
-    color: "#888",
+    color: "var(--mixa-text-muted)",
     cursor: "default",
     flexShrink: 0,
   } as React.CSSProperties,

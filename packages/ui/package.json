@@ -13,6 +13,7 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "lint": "eslint src/",
     "clean": "rm -rf dist"
   },
@@ -26,7 +27,8 @@
     "react": "^19.0.0",
     "@types/react": "^19.0.0",
     "tailwindcss": "^3.4.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
   },
   "peerDependencies": {
     "react": "^19.0.0"

@@ -1,0 +1,9 @@
+**MIXA-034 complete.** Committed as `8025d87`.
+
+**What was built:**
+- `.github/workflows/ci.yml` — Triggers on PRs to `main` with two parallel jobs:
+  - **JS job**: pnpm install → lint → typecheck → test → build, with PostgreSQL 16 (pgvector) + Redis 7 services available for integration tests, pnpm cache via `actions/setup-node`
+  - **Go job**: go vet → go test in `engine/`, with Go version from `go.mod` and Go module cache
+  - Concurrency group cancels stale runs on the same PR
+
+**All backpressure checks passed:** typecheck ✅, lint ✅, test ✅, build ✅, go vet ✅, go test ✅

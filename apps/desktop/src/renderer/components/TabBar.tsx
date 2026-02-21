@@ -7,8 +7,8 @@ const styles = {
     display: "flex",
     alignItems: "center",
     height: "36px",
-    backgroundColor: "#1a1a1a",
-    borderBottom: "1px solid #2a2a2a",
+    backgroundColor: "var(--mixa-bg-elevated)",
+    borderBottom: "1px solid var(--mixa-border-default)",
     paddingLeft: "4px",
     paddingRight: "4px",
     WebkitAppRegion: "drag",
@@ -32,7 +32,7 @@ const styles = {
     borderRadius: "6px",
     cursor: "pointer",
     fontSize: "12px",
-    color: "#999",
+    color: "var(--mixa-text-muted)",
     backgroundColor: "transparent",
     border: "none",
     transition: "background-color 0.1s",
@@ -41,11 +41,11 @@ const styles = {
     overflow: "hidden",
   } as React.CSSProperties,
   tabActive: {
-    backgroundColor: "#2a2a2a",
-    color: "#fafafa",
+    backgroundColor: "var(--mixa-bg-active)",
+    color: "var(--mixa-text-primary)",
   } as React.CSSProperties,
   tabHover: {
-    backgroundColor: "#222",
+    backgroundColor: "var(--mixa-bg-hover)",
   } as React.CSSProperties,
   tabFavicon: {
     width: "14px",
@@ -72,7 +72,7 @@ const styles = {
     borderRadius: "3px",
     border: "none",
     backgroundColor: "transparent",
-    color: "#666",
+    color: "var(--mixa-text-disabled)",
     cursor: "pointer",
     fontSize: "14px",
     lineHeight: "1",
@@ -81,8 +81,8 @@ const styles = {
     WebkitAppRegion: "no-drag",
   } as React.CSSProperties,
   tabCloseHover: {
-    backgroundColor: "#444",
-    color: "#fff",
+    backgroundColor: "var(--mixa-text-faint)",
+    color: "var(--mixa-text-primary)",
   } as React.CSSProperties,
   addButton: {
     display: "flex",
@@ -93,7 +93,7 @@ const styles = {
     borderRadius: "6px",
     border: "none",
     backgroundColor: "transparent",
-    color: "#888",
+    color: "var(--mixa-text-muted)",
     cursor: "pointer",
     fontSize: "16px",
     padding: 0,
@@ -105,8 +105,8 @@ const styles = {
     height: "14px",
     marginRight: "6px",
     flexShrink: 0,
-    border: "2px solid #333",
-    borderTopColor: "#6366f1",
+    border: "2px solid var(--mixa-border-strong)",
+    borderTopColor: "var(--mixa-accent-primary)",
     borderRadius: "50%",
     animation: "spin 0.6s linear infinite",
   } as React.CSSProperties,
@@ -276,11 +276,6 @@ export function TabBar(): React.ReactElement {
 
   return (
     <div style={styles.container} role="tablist" aria-label="Browser tabs">
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
       <div style={styles.tabList}>
         {tabs.map((tab, index) => (
           <DraggableTabItem key={tab.id} tab={tab} index={index} />

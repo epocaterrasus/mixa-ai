@@ -1,0 +1,118 @@
+/* Mixa AI — Theme CSS Custom Properties */
+/* Applied via data-theme attribute on <html> */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Dark theme (default) */
+:root,
+[data-theme="dark"] {
+  --mixa-bg-base: #0a0a0a;
+  --mixa-bg-surface: #111111;
+  --mixa-bg-elevated: #1a1a1a;
+  --mixa-bg-active: #2a2a2a;
+  --mixa-bg-hover: #222222;
+  --mixa-bg-overlay: #252525;
+  --mixa-bg-active-accent: #1e1e2e;
+
+  --mixa-border-default: #2a2a2a;
+  --mixa-border-subtle: #222222;
+  --mixa-border-strong: #333333;
+  --mixa-border-focus: #555555;
+  --mixa-border-overlay: #3a3a3a;
+
+  --mixa-text-primary: #fafafa;
+  --mixa-text-secondary: #cccccc;
+  --mixa-text-tertiary: #aaaaaa;
+  --mixa-text-muted: #888888;
+  --mixa-text-disabled: #666666;
+  --mixa-text-subtle: #555555;
+  --mixa-text-faint: #444444;
+
+  --mixa-accent-primary: #6366f1;
+  --mixa-accent-light: #818cf8;
+  --mixa-accent-blue: #3b82f6;
+  --mixa-accent-green: #4ade80;
+
+  --mixa-shadow-dropdown: 0 8px 24px rgba(0,0,0,0.6);
+  --mixa-shadow-overlay: 0 4px 16px rgba(0,0,0,0.4);
+  --mixa-shadow-float: 0 2px 8px rgba(0,0,0,0.4);
+
+  color-scheme: dark;
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --mixa-bg-base: #f8f8f8;
+  --mixa-bg-surface: #f0f0f0;
+  --mixa-bg-elevated: #ffffff;
+  --mixa-bg-active: #e4e4e7;
+  --mixa-bg-hover: #f4f4f5;
+  --mixa-bg-overlay: #ffffff;
+  --mixa-bg-active-accent: #e8e8ff;
+
+  --mixa-border-default: #e4e4e7;
+  --mixa-border-subtle: #e8e8ea;
+  --mixa-border-strong: #d4d4d8;
+  --mixa-border-focus: #a1a1aa;
+  --mixa-border-overlay: #d4d4d8;
+
+  --mixa-text-primary: #09090b;
+  --mixa-text-secondary: #3f3f46;
+  --mixa-text-tertiary: #52525b;
+  --mixa-text-muted: #71717a;
+  --mixa-text-disabled: #a1a1aa;
+  --mixa-text-subtle: #d4d4d8;
+  --mixa-text-faint: #e4e4e7;
+
+  --mixa-accent-primary: #6366f1;
+  --mixa-accent-light: #4f46e5;
+  --mixa-accent-blue: #2563eb;
+  --mixa-accent-green: #16a34a;
+
+  --mixa-shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
+  --mixa-shadow-overlay: 0 4px 16px rgba(0,0,0,0.08);
+  --mixa-shadow-float: 0 2px 8px rgba(0,0,0,0.08);
+
+  color-scheme: light;
+}
+
+body {
+  overflow: hidden;
+  background: var(--mixa-bg-base);
+  color: var(--mixa-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Shared keyframe animations */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes omnibar-loading {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(250%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Scrollbar theming */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--mixa-border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mixa-border-focus);
+}
