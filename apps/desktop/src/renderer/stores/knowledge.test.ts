@@ -58,7 +58,7 @@ describe("Knowledge Store", () => {
       error: null,
       checkedIds: new Set<string>(),
       showFilters: false,
-      filters: { itemType: undefined, isFavorite: undefined, isArchived: false },
+      filters: { itemType: undefined, isFavorite: undefined, isArchived: false, dateFrom: undefined, dateTo: undefined },
       sortBy: "capturedAt",
       sortOrder: "desc",
       page: 0,

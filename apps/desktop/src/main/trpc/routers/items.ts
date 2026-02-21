@@ -20,7 +20,28 @@ const sourceTypeSchema = z.enum([
   "terminal",
 ]);
 
-function toItemResponse(item: CapturedItem): Record<string, unknown> {
+export interface ItemResponse {
+  id: string;
+  url: string | null;
+  title: string;
+  description: string | null;
+  contentText: string | null;
+  contentHtml: string | null;
+  itemType: string;
+  sourceType: string;
+  thumbnailUrl: string | null;
+  faviconUrl: string | null;
+  domain: string | null;
+  wordCount: number | null;
+  readingTime: number | null;
+  isArchived: boolean;
+  isFavorite: boolean;
+  capturedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function toItemResponse(item: CapturedItem): ItemResponse {
   return {
     id: item.id,
     url: item.url,
