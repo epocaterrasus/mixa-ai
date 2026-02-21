@@ -82,3 +82,16 @@ export {
   type SummarizeJobData,
   type SummarizeJobResult,
 } from "./summarize-queue.js";
+
+// Retriever — Hybrid search (vector + full-text)
+export {
+  hybridSearch,
+  normalizeScores,
+  mergeResults,
+  type SearchOptions,
+  type SearchResult,
+  type SearchResultItem,
+  type SearchResultChunk,
+  type RawVectorHit,
+  type RawFtsHit,
+} from "./retriever.js";
