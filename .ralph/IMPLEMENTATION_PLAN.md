@@ -27,7 +27,7 @@
 | # | Task ID | Title | Status | Dependencies | Agent |
 |---|---------|-------|--------|--------------|-------|
 | 16 | MIXA-011 | Content capture from web tabs | 🟢 DONE | 003, 006 | KNOWLEDGE-ENGINEER |
-| 17 | MIXA-014 | Text chunking + embeddings | 🔴 TODO | 003, 013 | KNOWLEDGE-ENGINEER |
+| 17 | MIXA-014 | Text chunking + embeddings | 🟢 DONE | 003, 013 | KNOWLEDGE-ENGINEER |
 | 18 | MIXA-015 | Auto-summarize + auto-tag | 🔴 TODO | 014 | KNOWLEDGE-ENGINEER |
 | 19 | MIXA-016 | Semantic + full-text search | 🔴 TODO | 014 | KNOWLEDGE-ENGINEER |
 | 20 | MIXA-017 | RAG chat pipeline | 🔴 TODO | 016 | KNOWLEDGE-ENGINEER |
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 16
-- Remaining: 35
+- Completed: 17
+- Remaining: 34
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes
