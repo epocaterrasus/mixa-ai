@@ -47,7 +47,7 @@ func Open(dbPath string, key []byte) (*Store, error) {
 		return nil, fmt.Errorf("create GCM: %w", err)
 	}
 
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
