@@ -1,4 +1,5 @@
 import type { TabType } from "@mixa-ai/types";
+import { ChatTab } from "./chat/ChatTab";
 
 const styles = {
   container: {
@@ -33,7 +34,7 @@ interface PlaceholderContent {
   subtitle: string;
 }
 
-const placeholders: Record<Exclude<TabType, "web">, PlaceholderContent> = {
+const placeholders: Record<Exclude<TabType, "web" | "chat">, PlaceholderContent> = {
   terminal: {
     icon: "\u{25B6}\uFE0F",
     title: "Terminal",
@@ -43,11 +44,6 @@ const placeholders: Record<Exclude<TabType, "web">, PlaceholderContent> = {
     icon: "\u{1F4DA}",
     title: "Knowledge Base",
     subtitle: "Knowledge browser coming in Sprint 2",
-  },
-  chat: {
-    icon: "\u{1F4AC}",
-    title: "Chat",
-    subtitle: "RAG chat coming in Sprint 2",
   },
   dashboard: {
     icon: "\u{1F4CA}",
@@ -88,6 +84,11 @@ export function TabContent({
     }
     // This shouldn't be visible when there's a URL (BrowserView covers it)
     return <div />;
+  }
+
+  // Chat tab renders the full ChatTab component
+  if (type === "chat") {
+    return <ChatTab />;
   }
 
   const content = placeholders[type];
