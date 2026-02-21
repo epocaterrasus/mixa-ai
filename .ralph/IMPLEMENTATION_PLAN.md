@@ -18,7 +18,7 @@
 | 10 | MIXA-009 | Browser navigation + history | 🟢 DONE | 006 | ELECTRON-ENGINEER |
 | 11 | MIXA-010 | Go engine lifecycle (Electron ↔ Go) | 🟢 DONE | 004, 005 | ELECTRON-ENGINEER |
 | 12 | MIXA-034 | GitHub Actions CI | 🟢 DONE | 001, 004 | DEVOPS-ENGINEER |
-| 13 | MIXA-033 | Theming system | 🔴 TODO | 005 | FRONTEND-ENGINEER |
+| 13 | MIXA-033 | Theming system | 🟢 DONE | 005 | FRONTEND-ENGINEER |
 | 14 | MIXA-012 | Content processor package | 🔴 TODO | 002 | KNOWLEDGE-ENGINEER |
 | 15 | MIXA-013 | LLM provider abstraction (BYOK) | 🔴 TODO | 002 | KNOWLEDGE-ENGINEER |
 
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 12
-- Remaining: 39
+- Completed: 13
+- Remaining: 38
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes
