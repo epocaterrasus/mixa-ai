@@ -67,13 +67,13 @@ export interface UIComponent {
   preformatted: boolean | null;
   /** Table columns */
   columns: TableColumn[] | null;
-  /** Table/list row data */
-  rows: Record<string, unknown>[] | null;
+  /** Table row data */
+  rows: RowData[] | null;
   /** Metrics for metric_row components */
   metrics: Metric[] | null;
   /** Chart type and data */
   chartType: ChartType | null;
-  chartData: Record<string, unknown>[] | null;
+  chartData: ChartDataPoint[] | null;
   /** List items */
   items: string[] | null;
   /** Form fields */
@@ -97,6 +97,8 @@ export interface UIView {
 
 /** User interaction event sent from renderer to engine */
 export interface UIEvent {
+  /** The module this event is targeted at */
+  module: string;
   actionId: string | null;
   componentId: string | null;
   eventType: "click" | "input" | "shortcut" | "scroll";

@@ -35,6 +35,8 @@ export type {
   UIComponentType,
   ChartType,
   TrendDirection,
+  RowData,
+  ChartDataPoint,
   Metric,
   TableColumn,
   FormField,
