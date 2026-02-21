@@ -13,6 +13,7 @@ import (
 
 	server "github.com/mixa-ai/engine/internal/grpc"
 	"github.com/mixa-ai/engine/internal/module"
+	"github.com/mixa-ai/engine/internal/modules/forge"
 	"github.com/mixa-ai/engine/internal/modules/guard"
 	"github.com/mixa-ai/engine/internal/modules/system"
 )
@@ -47,6 +48,13 @@ func main() {
 		log.Fatalf("Failed to register guard module: %v", err)
 	}
 
+	// FORGE module — Git & GitHub integration.
+	forgeScanDir := forgeScanPath()
+	forgeMod := forge.New(forgeScanDir)
+	if err := registry.Register(forgeMod); err != nil {
+		log.Fatalf("Failed to register forge module: %v", err)
+	}
+
 	if err := registry.StartAll(); err != nil {
 		log.Fatalf("Failed to start modules: %v", err)
 	}
@@ -67,6 +75,15 @@ func main() {
 	registry.StopAll()
 	srv.Stop()
 	fmt.Println("Fenix engine stopped.")
+}
+
+// forgeScanPath returns the directory FORGE scans for Git repositories.
+func forgeScanPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	return filepath.Join(home, "Developer")
 }
 
 // guardStoragePath returns the directory where GUARD stores its encrypted database.
