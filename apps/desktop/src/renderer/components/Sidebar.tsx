@@ -39,13 +39,15 @@ interface QuickAction {
   type: TabType;
   icon: string;
   label: string;
+  url?: string;
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
   { type: "terminal", icon: "\u25B6", label: "Terminal" },
   { type: "knowledge", icon: "\u{1F4DA}", label: "Knowledge" },
   { type: "chat", icon: "\u{1F4AC}", label: "Chat" },
-  { type: "dashboard", icon: "\u{1F4CA}", label: "Dashboard" },
+  { type: "dashboard", icon: "\u{1F4CA}", label: "Cost Dashboard" },
+  { type: "dashboard", icon: "\u{1F3E5}", label: "Health Dashboard", url: "health" },
   { type: "settings", icon: "\u2699", label: "Settings" },
 ];
 
@@ -502,14 +504,14 @@ function CollapsedSidebar(): React.ReactElement {
       {/* Quick action icons */}
       {QUICK_ACTIONS.map((action) => (
         <button
-          key={action.type}
+          key={action.label}
           type="button"
           style={{
             ...styles.collapsedTabIcon,
-            ...(hoveredId === `qa-${action.type}` ? { backgroundColor: "var(--mixa-bg-elevated)" } : {}),
+            ...(hoveredId === `qa-${action.label}` ? { backgroundColor: "var(--mixa-bg-elevated)" } : {}),
           }}
-          onClick={() => addTab(action.type)}
-          onMouseEnter={() => setHoveredId(`qa-${action.type}`)}
+          onClick={() => addTab(action.type, action.url)}
+          onMouseEnter={() => setHoveredId(`qa-${action.label}`)}
           onMouseLeave={() => setHoveredId(null)}
           aria-label={`New ${action.label}`}
           title={`New ${action.label}`}
@@ -690,14 +692,14 @@ export function Sidebar(): React.ReactElement {
       <div style={styles.quickActions}>
         {QUICK_ACTIONS.map((action) => (
           <button
-            key={action.type}
+            key={action.label}
             type="button"
             style={{
               ...styles.quickActionButton,
-              ...(qaHovered === action.type ? { backgroundColor: "var(--mixa-bg-elevated)", color: "var(--mixa-text-secondary)" } : {}),
+              ...(qaHovered === action.label ? { backgroundColor: "var(--mixa-bg-elevated)", color: "var(--mixa-text-secondary)" } : {}),
             }}
-            onClick={() => addTab(action.type)}
-            onMouseEnter={() => setQaHovered(action.type)}
+            onClick={() => addTab(action.type, action.url)}
+            onMouseEnter={() => setQaHovered(action.label)}
             onMouseLeave={() => setQaHovered(null)}
             aria-label={`New ${action.label}`}
             title={`New ${action.label}`}

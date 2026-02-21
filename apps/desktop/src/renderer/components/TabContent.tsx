@@ -1,6 +1,7 @@
 import type { TabType } from "@mixa-ai/types";
 import { ChatTab } from "./chat/ChatTab";
 import { CostDashboard } from "./dashboard/CostDashboard";
+import { HealthDashboard } from "./dashboard/HealthDashboard";
 import { KnowledgeTab } from "./knowledge/KnowledgeTab";
 import { SettingsTab } from "./settings/SettingsTab";
 import { TerminalTab } from "./terminal/TerminalTab";
@@ -33,9 +34,11 @@ function NewTabPage(): React.ReactElement {
 export function TabContent({
   type,
   hasUrl,
+  url,
 }: {
   type: TabType;
   hasUrl: boolean;
+  url: string | null;
 }): React.ReactElement {
   if (type === "web") {
     // Web tabs without a URL show the new tab page
@@ -67,8 +70,11 @@ export function TabContent({
     return <TerminalTab />;
   }
 
-  // Dashboard tab renders the cost dashboard
+  // Dashboard tab renders cost or health dashboard based on url
   if (type === "dashboard") {
+    if (url === "health") {
+      return <HealthDashboard />;
+    }
     return <CostDashboard />;
   }
 

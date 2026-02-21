@@ -99,7 +99,7 @@ export function App(): React.ReactElement {
         <div style={styles.content}>
           <FindBar />
           {activeTab ? (
-            <TabContent type={activeTab.type} hasUrl={!!activeTab.url} />
+            <TabContent type={activeTab.type} hasUrl={!!activeTab.url} url={activeTab.url} />
           ) : hasTabs ? null : (
             <EmptyState />
           )}

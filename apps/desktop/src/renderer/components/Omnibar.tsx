@@ -245,11 +245,18 @@ const COMMANDS: CommandDef[] = [
     action: (addTab) => addTab("chat"),
   },
   {
-    id: "cmd-dashboard",
-    label: "Dashboard",
-    description: "Open the dashboard",
+    id: "cmd-dashboard-cost",
+    label: "Cost Dashboard",
+    description: "Open cost tracking dashboard",
     icon: "\u{1F4CA}",
-    action: (addTab) => addTab("dashboard"),
+    action: (addTab) => addTab("dashboard", "cost"),
+  },
+  {
+    id: "cmd-dashboard-health",
+    label: "Health Dashboard",
+    description: "Open uptime & health monitoring dashboard",
+    icon: "\u{1F3E5}",
+    action: (addTab) => addTab("dashboard", "health"),
   },
   {
     id: "cmd-settings",
