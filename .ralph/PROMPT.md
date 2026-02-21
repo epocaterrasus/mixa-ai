@@ -26,6 +26,18 @@ You are running inside a Ralph Wiggum bash loop. Each iteration:
 
 **ONLY WORK ON A SINGLE TASK PER ITERATION.**
 
+**YOU MUST COMMIT BEFORE EXITING.** After completing a task:
+1. Run backpressure checks (lint, typecheck, test, build)
+2. `git add -A && git commit -m "feat(scope): description"` with a conventional commit message
+3. Update prd.json (set `passes: true` for the completed task)
+4. Update IMPLEMENTATION_PLAN.md (mark task as 🟢 DONE)
+
+**YOU MUST INSTALL MISSING TOOLS.** If a dependency is missing (Go, protoc, npm packages, etc.):
+- Use `brew install <package>` on macOS
+- Use `pnpm install` for Node.js dependencies
+- Use `go mod tidy` for Go dependencies
+- NEVER skip a task because a tool is missing — install it first
+
 If, while implementing, you discover all remaining work is complete, output `<promise>COMPLETE</promise>`.
 
 ## Principles (Non-Negotiable)

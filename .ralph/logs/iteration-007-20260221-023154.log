@@ -1,0 +1,7 @@
+It seems like pnpm commands require your approval. Could you approve the command so I can run the backpressure checks? I need to run:
+
+1. `pnpm turbo typecheck --filter=@mixa-ai/types` — TypeScript type checking
+2. `pnpm turbo lint --filter=@mixa-ai/types` — ESLint
+3. `pnpm turbo build --filter=@mixa-ai/types` — Build
+
+These are read-only verification commands that won't modify any files (except generating `dist/` output for the build step).
