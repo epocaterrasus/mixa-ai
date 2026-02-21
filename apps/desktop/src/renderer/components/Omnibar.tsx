@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useTabStore } from "../stores/tabs";
+import { useHistoryStore } from "../stores/history";
 import type { TabType } from "@mixa-ai/types";
 
 // --- Types ---
 
-type SuggestionKind = "tab" | "command" | "url" | "search";
+type SuggestionKind = "tab" | "command" | "url" | "search" | "history";
 
 interface Suggestion {
   id: string;
@@ -14,6 +15,8 @@ interface Suggestion {
   icon: string;
   /** For tab suggestions, the tab id to activate */
   tabId?: string;
+  /** For history suggestions, the full URL to navigate to */
+  url?: string;
   /** For command suggestions, the action to execute */
   action?: () => void;
 }
@@ -282,6 +285,7 @@ export function Omnibar(): React.ReactElement {
   const tabs = useTabStore((s) => s.tabs);
   const addTab = useTabStore((s) => s.addTab);
   const activateTab = useTabStore((s) => s.activateTab);
+  const searchHistory = useHistoryStore((s) => s.search);
 
   // Inject CSS keyframes on mount
   useEffect(() => {
@@ -339,6 +343,22 @@ export function Omnibar(): React.ReactElement {
       }
     }
 
+    // History entries matching the query
+    const openTabUrls = new Set(tabs.map((t) => t.url).filter(Boolean));
+    const historyResults = searchHistory(query, 5);
+    for (const entry of historyResults) {
+      // Skip entries that are already shown as open tabs
+      if (openTabUrls.has(entry.url)) continue;
+      results.push({
+        id: `history-${entry.url}-${entry.visitedAt}`,
+        kind: "history",
+        label: entry.title,
+        description: entry.url.replace(/^https?:\/\//, ""),
+        icon: "\u{1F553}",
+        url: entry.url,
+      });
+    }
+
     // If it looks like a URL, offer to navigate
     if (isLikelyUrl(query)) {
       results.push({
@@ -360,7 +380,7 @@ export function Omnibar(): React.ReactElement {
     });
 
     return results;
-  }, [inputValue, tabs, addTab, isCommandMode]);
+  }, [inputValue, tabs, addTab, isCommandMode, searchHistory]);
 
   // Reset active index when suggestions change
   useEffect(() => {
@@ -379,8 +399,11 @@ export function Omnibar(): React.ReactElement {
         case "command":
           suggestion.action?.();
           break;
+        case "history":
         case "url": {
-          const targetUrl = ensureUrl(suggestion.label);
+          const targetUrl = suggestion.kind === "history" && suggestion.url
+            ? suggestion.url
+            : ensureUrl(suggestion.label);
           if (activeTab?.type === "web") {
             void window.electronAPI.tabs.navigate(activeTab.id, targetUrl);
           } else {

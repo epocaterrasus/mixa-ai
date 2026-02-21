@@ -51,11 +51,16 @@ export function Toolbar(): React.ReactElement {
     }
   }, [activeTab]);
 
-  const handleReload = useCallback(() => {
-    if (activeTab) {
+  const handleReloadOrStop = useCallback(() => {
+    if (!activeTab) return;
+    if (activeTab.state === "loading") {
+      void window.electronAPI.tabs.stop(activeTab.id);
+    } else {
       void window.electronAPI.tabs.reload(activeTab.id);
     }
   }, [activeTab]);
+
+  const isLoading = activeTab?.state === "loading";
 
   return (
     <div style={styles.container}>
@@ -69,7 +74,7 @@ export function Toolbar(): React.ReactElement {
         onClick={handleGoBack}
         disabled={!activeTab?.canGoBack}
         aria-label="Go back"
-        title="Back"
+        title="Back (Cmd+[)"
       >
         {"\u2190"}
       </button>
@@ -82,19 +87,19 @@ export function Toolbar(): React.ReactElement {
         onClick={handleGoForward}
         disabled={!activeTab?.canGoForward}
         aria-label="Go forward"
-        title="Forward"
+        title="Forward (Cmd+])"
       >
         {"\u2192"}
       </button>
       <button
         type="button"
         style={styles.navButton}
-        onClick={handleReload}
+        onClick={handleReloadOrStop}
         disabled={!activeTab}
-        aria-label="Reload page"
-        title="Reload"
+        aria-label={isLoading ? "Stop loading" : "Reload page"}
+        title={isLoading ? "Stop (Esc)" : "Reload (Cmd+R)"}
       >
-        {activeTab?.state === "loading" ? "\u00D7" : "\u21BB"}
+        {isLoading ? "\u00D7" : "\u21BB"}
       </button>
 
       {/* Omnibar (URL + command palette + search) */}
