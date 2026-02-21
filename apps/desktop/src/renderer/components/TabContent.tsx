@@ -1,5 +1,6 @@
 import type { TabType } from "@mixa-ai/types";
 import { ChatTab } from "./chat/ChatTab";
+import { KnowledgeTab } from "./knowledge/KnowledgeTab";
 
 const styles = {
   container: {
@@ -34,16 +35,11 @@ interface PlaceholderContent {
   subtitle: string;
 }
 
-const placeholders: Record<Exclude<TabType, "web" | "chat">, PlaceholderContent> = {
+const placeholders: Record<Exclude<TabType, "web" | "chat" | "knowledge">, PlaceholderContent> = {
   terminal: {
     icon: "\u{25B6}\uFE0F",
     title: "Terminal",
     subtitle: "Terminal renderer coming in Sprint 3",
-  },
-  knowledge: {
-    icon: "\u{1F4DA}",
-    title: "Knowledge Base",
-    subtitle: "Knowledge browser coming in Sprint 2",
   },
   dashboard: {
     icon: "\u{1F4CA}",
