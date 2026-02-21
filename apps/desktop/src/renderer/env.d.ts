@@ -159,6 +159,26 @@ interface ElectronShellAPI {
   readonly onExit: (callback: (data: { shellId: string; exitCode: number; signal: number }) => void) => () => void;
 }
 
+interface UpdaterStateData {
+  readonly status: string;
+  readonly version: string | null;
+  readonly releaseDate: string | null;
+  readonly downloadProgress: number | null;
+  readonly bytesPerSecond: number | null;
+  readonly transferred: number | null;
+  readonly total: number | null;
+  readonly error: string | null;
+  readonly currentVersion: string;
+}
+
+interface ElectronUpdaterAPI {
+  readonly getState: () => Promise<UpdaterStateData>;
+  readonly checkForUpdates: () => Promise<void>;
+  readonly downloadUpdate: () => Promise<void>;
+  readonly installUpdate: () => Promise<void>;
+  readonly onStateChanged: (callback: (data: UpdaterStateData) => void) => () => void;
+}
+
 interface ElectronAPI {
   readonly versions: {
     readonly node: string;
@@ -175,6 +195,7 @@ interface ElectronAPI {
   readonly tabs: ElectronTabsAPI;
   readonly capture: ElectronCaptureAPI;
   readonly sidebar: ElectronSidebarAPI;
+  readonly updater: ElectronUpdaterAPI;
   readonly engine: ElectronEngineAPI;
   readonly chat: ElectronChatAPI;
   readonly augmented: ElectronAugmentedAPI;

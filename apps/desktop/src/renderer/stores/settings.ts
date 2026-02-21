@@ -44,7 +44,8 @@ export type SettingsSection =
   | "engine"
   | "shortcuts"
   | "data"
-  | "general";
+  | "general"
+  | "about";
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   settings: null,

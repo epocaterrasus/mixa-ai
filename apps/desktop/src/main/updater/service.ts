@@ -1,7 +1,7 @@
 // Auto-updater service — checks for updates on launch and periodically,
 // downloads in background, notifies renderer of status changes.
 
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, type BrowserWindow, ipcMain } from "electron";
 import { autoUpdater } from "electron-updater";
 import type { UpdateInfo, ProgressInfo } from "electron-updater";
 

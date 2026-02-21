@@ -81,19 +81,26 @@ export function UpdateNotification(): React.ReactElement | null {
   const {
     status,
     version,
+    error,
     downloadProgress,
     bytesPerSecond,
     transferred,
     total,
     dismissed,
     dismiss,
+    checkForUpdates,
     downloadUpdate,
     installUpdate,
   } = useUpdaterStore();
 
   // Only show for actionable states
   if (dismissed) return null;
-  if (status !== "available" && status !== "downloading" && status !== "ready") {
+  if (
+    status !== "available" &&
+    status !== "downloading" &&
+    status !== "ready" &&
+    status !== "error"
+  ) {
     return null;
   }
 
@@ -171,6 +178,39 @@ export function UpdateNotification(): React.ReactElement | null {
                 onClick={() => void installUpdate()}
               >
                 Restart Now
+              </button>
+            </div>
+          </>
+        )}
+
+        {status === "error" && (
+          <>
+            <div style={titleStyle}>Update Failed</div>
+            <div style={descStyle}>
+              {error ?? "Auto-update encountered an error."}
+            </div>
+            <div style={buttonRowStyle}>
+              <button
+                type="button"
+                style={secondaryBtnStyle}
+                onClick={dismiss}
+              >
+                Dismiss
+              </button>
+              <a
+                href="https://github.com/mixa-ai/mixa-ai/releases/latest"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ ...primaryBtnStyle, textDecoration: "none" }}
+              >
+                Download Manually
+              </a>
+              <button
+                type="button"
+                style={secondaryBtnStyle}
+                onClick={() => void checkForUpdates()}
+              >
+                Retry
               </button>
             </div>
           </>

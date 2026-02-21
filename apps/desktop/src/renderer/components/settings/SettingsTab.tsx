@@ -8,6 +8,7 @@ import { EngineSection } from "./EngineSection";
 import { ShortcutsSection } from "./ShortcutsSection";
 import { DataSection } from "./DataSection";
 import { GeneralSection } from "./GeneralSection";
+import { AboutSection } from "./AboutSection";
 
 const containerStyle: React.CSSProperties = {
   display: "flex",
@@ -76,6 +77,7 @@ const navItems: NavItem[] = [
   { id: "engine", label: "Engine", icon: "\u26A1" },
   { id: "shortcuts", label: "Shortcuts", icon: "\u2328\uFE0F" },
   { id: "data", label: "Data", icon: "\u{1F4BE}" },
+  { id: "about", label: "About", icon: "\u2139\uFE0F" },
 ];
 
 function NavButton({
@@ -146,6 +148,8 @@ function SectionContent({
       return <ShortcutsSection />;
     case "data":
       return <DataSection />;
+    case "about":
+      return <AboutSection />;
   }
 }
 
