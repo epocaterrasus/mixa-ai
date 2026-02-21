@@ -29,6 +29,26 @@ interface ElectronSidebarAPI {
   readonly setWidth: (width: number) => Promise<void>;
 }
 
+interface EngineStatusData {
+  readonly connected: boolean;
+  readonly status: string;
+  readonly modules: ReadonlyArray<{
+    readonly name: string;
+    readonly displayName: string;
+    readonly description: string;
+    readonly enabled: boolean;
+    readonly status: string;
+    readonly errorMessage: string | null;
+  }>;
+  readonly uptime: number;
+  readonly version: string;
+}
+
+interface ElectronEngineAPI {
+  readonly onStatusChanged: (callback: (data: EngineStatusData) => void) => () => void;
+  readonly onLog: (callback: (entry: string) => void) => () => void;
+}
+
 interface ElectronAPI {
   readonly versions: {
     readonly node: string;
@@ -44,6 +64,7 @@ interface ElectronAPI {
   >;
   readonly tabs: ElectronTabsAPI;
   readonly sidebar: ElectronSidebarAPI;
+  readonly engine: ElectronEngineAPI;
 }
 
 interface Window {

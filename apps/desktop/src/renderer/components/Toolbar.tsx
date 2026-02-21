@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useTabStore } from "../stores/tabs";
 import { Omnibar } from "./Omnibar";
+import { EngineStatusIndicator } from "./EngineStatusIndicator";
 
 const styles = {
   container: {
@@ -104,6 +105,9 @@ export function Toolbar(): React.ReactElement {
 
       {/* Omnibar (URL + command palette + search) */}
       <Omnibar />
+
+      {/* Engine health indicator */}
+      <EngineStatusIndicator />
     </div>
   );
 }

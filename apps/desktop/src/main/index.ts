@@ -2,6 +2,7 @@ import { app, BrowserWindow, shell } from "electron";
 import { join } from "node:path";
 import { setupTRPCHandler } from "./trpc/index.js";
 import { tabManager } from "./tabs/manager.js";
+import { engineLifecycle } from "./engine/index.js";
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -52,11 +53,19 @@ void app.whenReady().then(() => {
   setupTRPCHandler();
   createWindow();
 
+  // Start the Go engine as a child process
+  void engineLifecycle.start();
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
+});
+
+// Graceful shutdown: stop engine before quitting
+app.on("before-quit", () => {
+  void engineLifecycle.stop();
 });
 
 app.on("window-all-closed", () => {

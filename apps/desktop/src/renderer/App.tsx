@@ -6,6 +6,7 @@ import { Sidebar } from "./components/Sidebar";
 import { useTabEvents } from "./hooks/useTabEvents";
 import { useTabShortcuts } from "./hooks/useTabShortcuts";
 import { useTabLifecycle } from "./hooks/useTabLifecycle";
+import { useEngineStatus } from "./hooks/useEngineStatus";
 import { useTabStore } from "./stores/tabs";
 
 const styles = {
@@ -75,6 +76,7 @@ export function App(): React.ReactElement {
   useTabEvents();
   useTabShortcuts();
   useTabLifecycle();
+  useEngineStatus();
 
   const activeTab = useTabStore((s) => {
     const id = s.activeTabId;

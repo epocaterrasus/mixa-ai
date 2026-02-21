@@ -111,6 +111,50 @@ const electronAPI = {
     setWidth: (width: number): Promise<void> =>
       ipcRenderer.invoke("sidebar:set-width", width),
   },
+
+  // Engine lifecycle events from main → renderer
+  engine: {
+    onStatusChanged: (callback: (data: {
+      connected: boolean;
+      status: string;
+      modules: Array<{
+        name: string;
+        displayName: string;
+        description: string;
+        enabled: boolean;
+        status: string;
+        errorMessage: string | null;
+      }>;
+      uptime: number;
+      version: string;
+    }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: {
+        connected: boolean;
+        status: string;
+        modules: Array<{
+          name: string;
+          displayName: string;
+          description: string;
+          enabled: boolean;
+          status: string;
+          errorMessage: string | null;
+        }>;
+        uptime: number;
+        version: string;
+      }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("engine:status-changed", handler);
+      return () => ipcRenderer.removeListener("engine:status-changed", handler);
+    },
+    onLog: (callback: (entry: string) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, entry: string): void => {
+        callback(entry);
+      };
+      ipcRenderer.on("engine:log", handler);
+      return () => ipcRenderer.removeListener("engine:log", handler);
+    },
+  },
 } as const;
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);
