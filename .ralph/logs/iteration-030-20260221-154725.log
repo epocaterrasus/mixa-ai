@@ -1,0 +1,20 @@
+**MIXA-012 complete.** Committed as `eec68f1`.
+
+## Summary — Iteration 30
+
+**Task**: MIXA-012 — Build content processor package
+
+**What was built** (13 files, 898 lines):
+
+| Module | File | Purpose |
+|--------|------|---------|
+| Sanitizer | `src/sanitizer.ts` | Strips scripts, iframes, tracking pixels, event handlers, dangerous URIs |
+| Thumbnail | `src/thumbnail.ts` | Extracts og:image, twitter:image, link[rel=image_src] with URL resolution |
+| Article | `src/extractors/article.ts` | Mozilla Readability extraction → title, author, content, excerpt, word count, reading time |
+| Code | `src/extractors/code.ts` | Detects `<pre><code>` blocks with language detection (language-xxx, lang-xxx, highlight-source-xxx + aliases) |
+| Fixtures | `src/__fixtures__/` | Comprehensive HTML test fixtures for articles, dangerous HTML, code blocks |
+| Tests | 4 test files | **39 tests**, all passing |
+
+**Backpressure**: All 6 gates pass (typecheck, lint, test, build, go vet, go test)
+
+**Next task**: MIXA-013 — LLM provider abstraction (BYOK) — dependencies met (MIXA-002 ✅)

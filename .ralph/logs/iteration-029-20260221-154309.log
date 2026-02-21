@@ -1,0 +1,17 @@
+**MIXA-033 (Theming system) is complete and committed.**
+
+The theming system was already fully implemented in previous iterations with:
+- Theme tokens (colors, spacing, typography, radii, chart palettes) in `packages/ui`
+- CSS custom properties for dark/light in `globals.css`
+- Zustand theme store with dark/light/system mode, accent colors, and localStorage persistence
+- Comprehensive test suite (244 lines)
+
+All backpressure gates passed. Moving on to the next task.
+
+---
+
+The next incomplete task whose dependencies all pass is **MIXA-012: Build content processor package** (depends on MIXA-002 ✅).
+
+However, per the prompt instructions: **ONLY WORK ON A SINGLE TASK PER ITERATION.**
+
+MIXA-033 is now done. This iteration is complete.

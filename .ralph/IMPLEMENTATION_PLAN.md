@@ -20,7 +20,7 @@
 | 12 | MIXA-034 | GitHub Actions CI | 🟢 DONE | 001, 004 | DEVOPS-ENGINEER |
 | 13 | MIXA-033 | Theming system | 🟢 DONE | 005 | FRONTEND-ENGINEER |
 | 14 | MIXA-012 | Content processor package | 🟢 DONE | 002 | KNOWLEDGE-ENGINEER |
-| 15 | MIXA-013 | LLM provider abstraction (BYOK) | 🔴 TODO | 002 | KNOWLEDGE-ENGINEER |
+| 15 | MIXA-013 | LLM provider abstraction (BYOK) | 🟢 DONE | 002 | KNOWLEDGE-ENGINEER |
 
 ### Sprint 2 — Knowledge Capture + AI Pipeline
 
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 14
-- Remaining: 37
+- Completed: 15
+- Remaining: 36
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes
