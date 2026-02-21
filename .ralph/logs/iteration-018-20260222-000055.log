@@ -1,0 +1,23 @@
+**MIXA-039 complete.** Committed as `f44af6e`.
+
+### Summary of changes:
+
+**Onboarding wizard** (5-step modal shown on first launch):
+1. **WelcomeStep** — Branding + feature grid (Smart Browsing, Knowledge Base, AI Chat, Dev Tools)
+2. **AISetupStep** — Pick AI provider (OpenAI/Anthropic/Gemini/Ollama) + enter API key
+3. **ExploreStep** — Quick tour of tab types (Web, Terminal, Knowledge, Chat) with shortcuts
+4. **CaptureStep** — Step-by-step instructions for saving first page (Cmd+T, Cmd+S, auto-tags)
+5. **ChatStep** — Example queries + RAG explanation with tip about scoping
+
+**Integration fixes:**
+- Wired `<OnboardingOverlay />` into `App.tsx`
+- Added Skip button on **every** step (not just the first)
+- Onboarding store now loads settings store during init so AISetupStep can show provider status
+
+**Enhanced empty states:**
+- **Knowledge tab** — 3 numbered tutorial cards (open tab, Cmd+S, auto-generates)
+- **Chat tab** — Example queries + tip about saving pages first and scope selector
+
+**All backpressure gates pass:** typecheck, lint, 211 tests, build, go vet, go test.
+
+Progress: **39/51 tasks complete** (12 remaining).
