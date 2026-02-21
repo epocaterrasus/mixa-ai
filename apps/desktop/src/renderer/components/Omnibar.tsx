@@ -224,6 +224,13 @@ const COMMANDS: CommandDef[] = [
     action: (addTab) => addTab("terminal"),
   },
   {
+    id: "cmd-open-shell",
+    label: "Open Shell",
+    description: "Open a raw shell tab",
+    icon: ">_",
+    action: (addTab) => addTab("terminal", "shell"),
+  },
+  {
     id: "cmd-knowledge",
     label: "Knowledge Base",
     description: "Open the knowledge base",

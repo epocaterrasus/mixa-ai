@@ -12,6 +12,7 @@ import { useFindBarStore } from "../stores/findBar";
  * - Cmd+R / Ctrl+R: Reload
  * - Escape: Stop loading
  * - Cmd+F / Ctrl+F: Find in page
+ * - Cmd+` / Ctrl+`: Open new shell tab
  */
 export function useTabShortcuts(): void {
   const addTab = useTabStore((s) => s.addTab);
@@ -112,6 +113,13 @@ export function useTabShortcuts(): void {
           e.preventDefault();
           findBarToggle();
         }
+        return;
+      }
+
+      // Cmd+`: Open new shell tab
+      if (e.key === "`" && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        addTab("terminal", "shell");
         return;
       }
 

@@ -150,6 +150,15 @@ interface ElectronTerminalAPI {
   readonly onStreamUpdate: (callback: (data: TerminalStreamUpdateData) => void) => () => void;
 }
 
+interface ElectronShellAPI {
+  readonly create: (shellId: string, cols: number, rows: number) => Promise<void>;
+  readonly write: (shellId: string, data: string) => Promise<void>;
+  readonly resize: (shellId: string, cols: number, rows: number) => Promise<void>;
+  readonly destroy: (shellId: string) => Promise<void>;
+  readonly onData: (callback: (data: { shellId: string; data: string }) => void) => () => void;
+  readonly onExit: (callback: (data: { shellId: string; exitCode: number; signal: number }) => void) => () => void;
+}
+
 interface ElectronAPI {
   readonly versions: {
     readonly node: string;
@@ -170,6 +179,7 @@ interface ElectronAPI {
   readonly chat: ElectronChatAPI;
   readonly augmented: ElectronAugmentedAPI;
   readonly terminal: ElectronTerminalAPI;
+  readonly shell: ElectronShellAPI;
 }
 
 interface Window {

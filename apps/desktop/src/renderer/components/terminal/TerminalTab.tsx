@@ -1,4 +1,6 @@
-// Terminal tab — renders Fenix UI protocol views streamed from the Go engine
+// Terminal tab — supports two modes:
+// 1. "fenix" mode: renders Fenix UI protocol views streamed from the Go engine
+// 2. "shell" mode: raw xterm.js shell connected to user's shell via node-pty
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { UIEvent, UIAction, EngineModule } from "@mixa-ai/types";
@@ -6,6 +8,9 @@ import { UIViewRenderer } from "@mixa-ai/terminal-renderer";
 import { useTabStore } from "../../stores/tabs";
 import { useEngineStore } from "../../stores/engine";
 import { useTerminalStream, type TerminalStreamState } from "../../hooks/useTerminalStream";
+import { ShellTerminal } from "./ShellTerminal";
+
+type TerminalMode = "fenix" | "shell";
 
 const containerStyle: React.CSSProperties = {
   display: "flex",
@@ -37,6 +42,18 @@ const moduleSelectStyle: React.CSSProperties = {
   outline: "none",
   cursor: "pointer",
 };
+
+const modeToggleStyle = (active: boolean): React.CSSProperties => ({
+  padding: "4px 10px",
+  borderRadius: "4px",
+  border: "1px solid var(--mixa-border-default)",
+  backgroundColor: active ? "var(--mixa-accent-blue, #569cd6)" : "var(--mixa-bg-elevated)",
+  color: active ? "#ffffff" : "var(--mixa-text-secondary)",
+  fontSize: "12px",
+  fontWeight: active ? 600 : 400,
+  cursor: "pointer",
+  transition: "background-color 150ms ease, color 150ms ease",
+});
 
 const statusDotStyle = (state: TerminalStreamState): React.CSSProperties => ({
   width: "8px",
@@ -142,18 +159,25 @@ function keyboardEventToShortcut(e: React.KeyboardEvent): string | null {
 }
 
 export function TerminalTab(): React.ReactElement {
+  const activeTab = useTabStore((s) => {
+    const id = s.activeTabId;
+    return s.tabs.find((t) => t.id === id);
+  });
   const activeTabId = useTabStore((s) => s.activeTabId);
   const updateTab = useTabStore((s) => s.updateTab);
   const engineConnected = useEngineStore((s) => s.connected);
   const engineModules = useEngineStore((s) => s.modules);
 
+  // Determine initial mode from tab URL: "shell" → shell mode, else fenix
+  const initialMode: TerminalMode = activeTab?.url === "shell" ? "shell" : "fenix";
+  const [mode, setMode] = useState<TerminalMode>(initialMode);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const streamId = activeTabId ?? "terminal-default";
   const { view, state, error, sendEvent, reconnect } = useTerminalStream(
     streamId,
-    selectedModule,
+    mode === "fenix" ? selectedModule : null,
   );
 
   const handleModuleChange = useCallback(
@@ -171,15 +195,14 @@ export function TerminalTab(): React.ReactElement {
     [sendEvent],
   );
 
-  // Capture keyboard shortcuts and forward matching ones as UIEvents
+  // Capture keyboard shortcuts and forward matching ones as UIEvents (fenix mode only)
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (!selectedModule || !view) return;
+      if (mode !== "fenix" || !selectedModule || !view) return;
 
       const shortcut = keyboardEventToShortcut(e);
       if (!shortcut) return;
 
-      // Check if any action has a matching shortcut
       const matchingAction = view.actions.find(
         (a: UIAction) => a.enabled && a.shortcut === shortcut,
       );
@@ -196,43 +219,100 @@ export function TerminalTab(): React.ReactElement {
         });
       }
     },
-    [selectedModule, view, sendEvent],
+    [mode, selectedModule, view, sendEvent],
   );
 
   const enabledModules = engineModules.filter((m: EngineModule) => m.enabled);
 
-  // Update tab title when module changes
+  // Update tab title when mode or module changes
   const activeModule = enabledModules.find((m) => m.name === selectedModule);
   useEffect(() => {
     if (!activeTabId) return;
-    const title = activeModule
-      ? `Terminal - ${activeModule.displayName || activeModule.name}`
-      : "Terminal";
-    updateTab(activeTabId, { title });
-  }, [activeTabId, activeModule, updateTab]);
+    if (mode === "shell") {
+      updateTab(activeTabId, { title: "Shell" });
+    } else {
+      const title = activeModule
+        ? `Terminal - ${activeModule.displayName || activeModule.name}`
+        : "Terminal";
+      updateTab(activeTabId, { title });
+    }
+  }, [activeTabId, mode, activeModule, updateTab]);
 
   // Focus container when streaming starts to enable keyboard shortcut capture
   useEffect(() => {
-    if (state === "streaming" && containerRef.current) {
+    if (mode === "fenix" && state === "streaming" && containerRef.current) {
       containerRef.current.focus();
     }
-  }, [state]);
+  }, [mode, state]);
 
-  // Not connected to engine
+  const switchToFenix = useCallback(() => setMode("fenix"), []);
+  const switchToShell = useCallback(() => setMode("shell"), []);
+
+  // Shell mode
+  if (mode === "shell") {
+    return (
+      <div style={containerStyle}>
+        <div style={toolbarStyle}>
+          <button
+            type="button"
+            style={modeToggleStyle(false)}
+            onClick={switchToFenix}
+            aria-label="Switch to Fenix UI mode"
+          >
+            Fenix
+          </button>
+          <button
+            type="button"
+            style={modeToggleStyle(true)}
+            onClick={switchToShell}
+            aria-label="Shell mode active"
+          >
+            Shell
+          </button>
+          <div style={{ flex: 1 }} />
+          <span style={statusTextStyle}>Raw shell</span>
+        </div>
+        <div style={{ flex: 1, overflow: "hidden" }}>
+          <ShellTerminal shellId={streamId} />
+        </div>
+      </div>
+    );
+  }
+
+  // Fenix mode — engine not connected
   if (!engineConnected) {
     return (
       <div style={containerStyle}>
+        <div style={toolbarStyle}>
+          <button
+            type="button"
+            style={modeToggleStyle(true)}
+            onClick={switchToFenix}
+            aria-label="Fenix mode active"
+          >
+            Fenix
+          </button>
+          <button
+            type="button"
+            style={modeToggleStyle(false)}
+            onClick={switchToShell}
+            aria-label="Switch to Shell mode"
+          >
+            Shell
+          </button>
+        </div>
         <div style={centerStyle}>
           <div style={{ fontSize: "32px" }}>&#x26A0;&#xFE0F;</div>
           <div style={{ fontSize: "16px", fontWeight: 600 }}>Engine Not Connected</div>
           <div style={{ fontSize: "13px", color: "var(--mixa-text-muted)" }}>
-            The Fenix engine is not running. It will start automatically.
+            The Fenix engine is not running. Switch to Shell mode or wait for it to start.
           </div>
         </div>
       </div>
     );
   }
 
+  // Fenix mode — connected
   return (
     <div
       ref={containerRef}
@@ -243,7 +323,24 @@ export function TerminalTab(): React.ReactElement {
       aria-label="Terminal module view"
     >
       <div style={toolbarStyle}>
-        <span style={moduleLabelStyle}>Module:</span>
+        <button
+          type="button"
+          style={modeToggleStyle(true)}
+          onClick={switchToFenix}
+          aria-label="Fenix mode active"
+        >
+          Fenix
+        </button>
+        <button
+          type="button"
+          style={modeToggleStyle(false)}
+          onClick={switchToShell}
+          aria-label="Switch to Shell mode"
+        >
+          Shell
+        </button>
+
+        <span style={{ ...moduleLabelStyle, marginLeft: "8px" }}>Module:</span>
         <select
           value={selectedModule ?? ""}
           onChange={handleModuleChange}

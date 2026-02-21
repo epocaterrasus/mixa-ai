@@ -3,7 +3,7 @@
 
 import { ipcMain, type WebContents } from "electron";
 import * as pty from "node-pty";
-import { platform, homedir, env } from "node:os";
+import { platform, homedir } from "node:os";
 
 /** Active PTY process tracked per shell tab */
 interface ActiveShell {
@@ -41,7 +41,7 @@ interface ShellDestroyRequest {
 
 function getDefaultShell(): string {
   if (platform() === "win32") {
-    return env()["COMSPEC"] || "cmd.exe";
+    return process.env["COMSPEC"] || "cmd.exe";
   }
   return process.env["SHELL"] || "/bin/zsh";
 }
