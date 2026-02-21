@@ -57,7 +57,8 @@ export function useTerminalStream(
       }
 
       if (data.view) {
-        setView(data.view as UIView);
+        // IPC data is always a fresh copy; cast through unknown to bridge readonly→mutable
+        setView(data.view as unknown as UIView);
         setState("streaming");
       }
     });

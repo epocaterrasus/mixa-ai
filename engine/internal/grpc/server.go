@@ -34,7 +34,7 @@ func NewServer(registry *module.Registry, version string) *Server {
 	// Register services.
 	healthSvc := &healthService{server: s}
 	moduleSvc := &moduleService{registry: registry}
-	uiSvc := &uiStreamService{}
+	uiSvc := &uiStreamService{registry: registry}
 
 	pb.RegisterHealthServiceServer(s.grpcServer, healthSvc)
 	pb.RegisterModuleServiceServer(s.grpcServer, moduleSvc)

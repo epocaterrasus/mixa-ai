@@ -11,6 +11,7 @@ import (
 
 	server "github.com/mixa-ai/engine/internal/grpc"
 	"github.com/mixa-ai/engine/internal/module"
+	"github.com/mixa-ai/engine/internal/modules/system"
 )
 
 // Version is set at build time via ldflags.
@@ -24,8 +25,17 @@ func main() {
 
 	fmt.Printf("Fenix engine %s starting...\n", Version)
 
-	// Initialize module registry (modules will be registered in later tasks).
+	// Initialize module registry and register built-in modules.
 	registry := module.NewRegistry()
+
+	sysMod := system.New(registry, Version)
+	if err := registry.Register(sysMod); err != nil {
+		log.Fatalf("Failed to register system module: %v", err)
+	}
+
+	if err := registry.StartAll(); err != nil {
+		log.Fatalf("Failed to start modules: %v", err)
+	}
 
 	// Start gRPC server.
 	srv := server.NewServer(registry, Version)
