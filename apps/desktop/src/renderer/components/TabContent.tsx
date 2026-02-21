@@ -1,53 +1,26 @@
 import type { TabType } from "@mixa-ai/types";
 import { ChatTab } from "./chat/ChatTab";
+import { CostDashboard } from "./dashboard/CostDashboard";
 import { KnowledgeTab } from "./knowledge/KnowledgeTab";
 import { SettingsTab } from "./settings/SettingsTab";
 import { TerminalTab } from "./terminal/TerminalTab";
 
-const styles = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "100%",
-    backgroundColor: "var(--mixa-bg-base)",
-    color: "var(--mixa-text-primary)",
-    fontFamily:
-      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  } as React.CSSProperties,
-  icon: {
-    fontSize: "48px",
-    marginBottom: "16px",
-  } as React.CSSProperties,
-  title: {
-    fontSize: "18px",
-    fontWeight: 600,
-    marginBottom: "8px",
-  } as React.CSSProperties,
-  subtitle: {
-    fontSize: "13px",
-    color: "var(--mixa-text-muted)",
-  } as React.CSSProperties,
-} as const;
-
-interface PlaceholderContent {
-  icon: string;
-  title: string;
-  subtitle: string;
-}
-
-const placeholders: Record<Exclude<TabType, "web" | "chat" | "knowledge" | "settings" | "terminal">, PlaceholderContent> = {
-  dashboard: {
-    icon: "\u{1F4CA}",
-    title: "Dashboard",
-    subtitle: "Dashboards coming in Sprint 4",
-  },
+const newTabPageStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  height: "100%",
+  backgroundColor: "var(--mixa-bg-base)",
+  color: "var(--mixa-text-primary)",
+  fontFamily:
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
 };
+
 
 function NewTabPage(): React.ReactElement {
   return (
-    <div style={styles.container}>
+    <div style={newTabPageStyle}>
       <h1 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "8px" }}>
         Mixa
       </h1>
@@ -94,13 +67,10 @@ export function TabContent({
     return <TerminalTab />;
   }
 
-  const content = placeholders[type];
+  // Dashboard tab renders the cost dashboard
+  if (type === "dashboard") {
+    return <CostDashboard />;
+  }
 
-  return (
-    <div style={styles.container}>
-      <div style={styles.icon}>{content.icon}</div>
-      <div style={styles.title}>{content.title}</div>
-      <div style={styles.subtitle}>{content.subtitle}</div>
-    </div>
-  );
+  return <div />;
 }

@@ -45,6 +45,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   { type: "terminal", icon: "\u25B6", label: "Terminal" },
   { type: "knowledge", icon: "\u{1F4DA}", label: "Knowledge" },
   { type: "chat", icon: "\u{1F4AC}", label: "Chat" },
+  { type: "dashboard", icon: "\u{1F4CA}", label: "Dashboard" },
   { type: "settings", icon: "\u2699", label: "Settings" },
 ];
 
