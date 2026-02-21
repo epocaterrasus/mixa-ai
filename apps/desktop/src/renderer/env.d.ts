@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ElectronTabsAPI {
-  readonly createWebView: (tabId: string, url?: string) => Promise<void>;
+  readonly createWebView: (tabId: string, url?: string, partitionId?: string) => Promise<void>;
   readonly destroyWebView: (tabId: string) => Promise<void>;
   readonly activate: (tabId: string) => Promise<void>;
   readonly navigate: (tabId: string, url: string) => Promise<void>;

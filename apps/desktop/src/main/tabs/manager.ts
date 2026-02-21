@@ -2,6 +2,7 @@ import {
   type BrowserWindow,
   WebContentsView,
   ipcMain,
+  session,
   type WebContents,
 } from "electron";
 
@@ -31,7 +32,7 @@ export class TabManager {
   private activeTabId: string | null = null;
   private mainWindow: BrowserWindow | null = null;
   private sidebarWidth = 0;
-  private downloadSessionSetup = false;
+  private configuredSessions = new WeakSet<Electron.Session>();
   private pageLoadedCallbacks: PageLoadedCallback[] = [];
   private tabDestroyedCallbacks: TabDestroyedCallback[] = [];
 
@@ -73,18 +74,23 @@ export class TabManager {
     };
   }
 
-  createWebView(tabId: string, url?: string): void {
+  createWebView(tabId: string, url?: string, partitionId?: string): void {
     if (!this.mainWindow) return;
     if (this.views.has(tabId)) return;
 
-    const view = new WebContentsView({
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        sandbox: true,
-        webSecurity: true,
-      },
-    });
+    const webPreferences: Electron.WebPreferences = {
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true,
+    };
+
+    // Use a persistent session partition for app tabs (enables isolated cookies/storage)
+    if (partitionId) {
+      webPreferences.session = session.fromPartition(`persist:${partitionId}`);
+    }
+
+    const view = new WebContentsView({ webPreferences });
 
     const bounds = this.getContentBounds();
     view.setBounds(bounds);
@@ -150,10 +156,11 @@ export class TabManager {
       });
     });
 
-    // Set up download handler once (all views share the default session)
-    if (!this.downloadSessionSetup) {
-      this.downloadSessionSetup = true;
-      wc.session.on("will-download", (_event, item) => {
+    // Set up download handler for sessions that haven't been configured yet
+    const tabSession = wc.session;
+    if (!this.configuredSessions.has(tabSession)) {
+      this.configuredSessions.add(tabSession);
+      tabSession.on("will-download", (_event, item) => {
         // Electron shows save dialog by default since we don't call setSavePath()
         const filename = item.getFilename();
         this.sendToRenderer("tab:download-started", {
@@ -355,8 +362,8 @@ export class TabManager {
   }
 
   private registerIPC(): void {
-    ipcMain.handle("tab:create-web-view", (_event, tabId: string, url?: string) => {
-      this.createWebView(tabId, url);
+    ipcMain.handle("tab:create-web-view", (_event, tabId: string, url?: string, partitionId?: string) => {
+      this.createWebView(tabId, url, partitionId);
     });
 
     ipcMain.handle("tab:destroy-web-view", (_event, tabId: string) => {

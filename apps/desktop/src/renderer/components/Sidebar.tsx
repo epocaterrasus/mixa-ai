@@ -7,6 +7,7 @@ import {
   MIN_WIDTH,
   MAX_WIDTH,
 } from "../stores/sidebar";
+import { APP_TEMPLATES, getAppTemplate, generatePartitionId } from "../stores/appTemplates";
 
 // ─── Tab type metadata ───────────────────────────────────────────
 
@@ -17,6 +18,7 @@ interface TabTypeInfo {
 
 const TAB_TYPE_INFO: Record<TabType, TabTypeInfo> = {
   web: { icon: "\u{1F310}", label: "Web" },
+  app: { icon: "\u{1F4F1}", label: "Apps" },
   terminal: { icon: "\u25B6", label: "Terminal" },
   knowledge: { icon: "\u{1F4DA}", label: "Knowledge" },
   chat: { icon: "\u{1F4AC}", label: "Chat" },
@@ -26,6 +28,7 @@ const TAB_TYPE_INFO: Record<TabType, TabTypeInfo> = {
 
 const TAB_TYPE_ORDER: TabType[] = [
   "web",
+  "app",
   "terminal",
   "knowledge",
   "chat",
@@ -40,6 +43,7 @@ interface QuickAction {
   icon: string;
   label: string;
   url?: string;
+  appTemplateId?: string;
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
@@ -50,7 +54,41 @@ const QUICK_ACTIONS: QuickAction[] = [
   { type: "dashboard", icon: "\u{1F3E5}", label: "Health Dashboard", url: "health" },
   { type: "dashboard", icon: "\u{1F4DA}", label: "Knowledge Stats", url: "knowledge" },
   { type: "settings", icon: "\u2699", label: "Settings" },
+  ...APP_TEMPLATES.map((t) => ({
+    type: "app" as TabType,
+    icon: t.icon,
+    label: t.name,
+    appTemplateId: t.id,
+  })),
 ];
+
+/** Helper to handle quick action clicks (handles both regular tabs and app tabs) */
+function handleQuickAction(
+  action: QuickAction,
+  addTab: (type: TabType, url?: string) => string,
+  addAppTab: (options: {
+    templateId: string;
+    title: string;
+    url: string;
+    icon: string;
+    partitionId: string;
+  }) => string,
+): void {
+  if (action.type === "app" && action.appTemplateId) {
+    const template = getAppTemplate(action.appTemplateId);
+    if (template) {
+      addAppTab({
+        templateId: template.id,
+        title: template.name,
+        url: template.url,
+        icon: template.icon,
+        partitionId: generatePartitionId(template.id),
+      });
+    }
+  } else {
+    addTab(action.type, action.url);
+  }
+}
 
 // ─── Styles ──────────────────────────────────────────────────────
 
@@ -391,7 +429,16 @@ function SidebarTabItem({
     [onContextMenu, tab.id],
   );
 
-  const faviconContent = tab.faviconUrl ? (
+  // For app tabs, always use the template icon (not the site favicon)
+  const appTemplateIcon = tab.type === "app" && tab.appTemplateId
+    ? getAppTemplate(tab.appTemplateId)?.icon
+    : undefined;
+
+  const faviconContent = appTemplateIcon ? (
+    <span style={styles.tabFavicon}>
+      {appTemplateIcon}
+    </span>
+  ) : tab.faviconUrl ? (
     <img
       src={tab.faviconUrl}
       alt=""
@@ -448,6 +495,7 @@ function CollapsedSidebar(): React.ReactElement {
   const tabs = useTabStore((s) => s.tabs);
   const activateTab = useTabStore((s) => s.activateTab);
   const addTab = useTabStore((s) => s.addTab);
+  const addAppTab = useTabStore((s) => s.addAppTab);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   return (
@@ -484,18 +532,20 @@ function CollapsedSidebar(): React.ReactElement {
           aria-label={tab.title}
           title={tab.title}
         >
-          {tab.faviconUrl ? (
-            <img
-              src={tab.faviconUrl}
-              alt=""
-              style={{ width: "14px", height: "14px", borderRadius: "2px" }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-          ) : (
-            TAB_TYPE_INFO[tab.type].icon
-          )}
+          {tab.type === "app" && tab.appTemplateId
+            ? (getAppTemplate(tab.appTemplateId)?.icon ?? TAB_TYPE_INFO[tab.type].icon)
+            : tab.faviconUrl ? (
+              <img
+                src={tab.faviconUrl}
+                alt=""
+                style={{ width: "14px", height: "14px", borderRadius: "2px" }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            ) : (
+              TAB_TYPE_INFO[tab.type].icon
+            )}
         </button>
       ))}
 
@@ -511,7 +561,7 @@ function CollapsedSidebar(): React.ReactElement {
             ...styles.collapsedTabIcon,
             ...(hoveredId === `qa-${action.label}` ? { backgroundColor: "var(--mixa-bg-elevated)" } : {}),
           }}
-          onClick={() => addTab(action.type, action.url)}
+          onClick={() => handleQuickAction(action, addTab, addAppTab)}
           onMouseEnter={() => setHoveredId(`qa-${action.label}`)}
           onMouseLeave={() => setHoveredId(null)}
           aria-label={`New ${action.label}`}
@@ -534,6 +584,7 @@ export function Sidebar(): React.ReactElement {
   const setWidth = useSidebarStore((s) => s.setWidth);
   const tabs = useTabStore((s) => s.tabs);
   const addTab = useTabStore((s) => s.addTab);
+  const addAppTab = useTabStore((s) => s.addAppTab);
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [resizing, setResizing] = useState(false);
@@ -699,7 +750,7 @@ export function Sidebar(): React.ReactElement {
               ...styles.quickActionButton,
               ...(qaHovered === action.label ? { backgroundColor: "var(--mixa-bg-elevated)", color: "var(--mixa-text-secondary)" } : {}),
             }}
-            onClick={() => addTab(action.type, action.url)}
+            onClick={() => handleQuickAction(action, addTab, addAppTab)}
             onMouseEnter={() => setQaHovered(action.label)}
             onMouseLeave={() => setQaHovered(null)}
             aria-label={`New ${action.label}`}

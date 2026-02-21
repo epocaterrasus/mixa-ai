@@ -16,8 +16,8 @@ const electronAPI = {
 
   // Tab management IPC
   tabs: {
-    createWebView: (tabId: string, url?: string): Promise<void> =>
-      ipcRenderer.invoke("tab:create-web-view", tabId, url),
+    createWebView: (tabId: string, url?: string, partitionId?: string): Promise<void> =>
+      ipcRenderer.invoke("tab:create-web-view", tabId, url, partitionId),
     destroyWebView: (tabId: string): Promise<void> =>
       ipcRenderer.invoke("tab:destroy-web-view", tabId),
     activate: (tabId: string): Promise<void> =>

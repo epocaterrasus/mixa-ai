@@ -51,6 +51,11 @@ export function TabContent({
     return <div />;
   }
 
+  // App tabs are rendered by the main process WebContentsView (like web tabs with session partitions)
+  if (type === "app") {
+    return <div />;
+  }
+
   // Chat tab renders the full ChatTab component
   if (type === "chat") {
     return <ChatTab />;

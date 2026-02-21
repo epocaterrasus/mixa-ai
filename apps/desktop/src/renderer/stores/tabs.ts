@@ -1,12 +1,21 @@
 import { create } from "zustand";
 import type { Tab, TabType } from "@mixa-ai/types";
 
+interface AddAppTabOptions {
+  templateId: string;
+  title: string;
+  url: string;
+  icon: string;
+  partitionId: string;
+}
+
 interface TabStore {
   tabs: Tab[];
   activeTabId: string | null;
 
   // Actions
   addTab: (type: TabType, url?: string) => string;
+  addAppTab: (options: AddAppTabOptions) => string;
   closeTab: (id: string) => void;
   closeOtherTabs: (id: string) => void;
   activateTab: (id: string) => void;
@@ -27,6 +36,8 @@ function defaultTitleForType(type: TabType): string {
   switch (type) {
     case "web":
       return "New Tab";
+    case "app":
+      return "App";
     case "terminal":
       return "Terminal";
     case "knowledge":
@@ -58,6 +69,37 @@ export const useTabStore = create<TabStore>((set, get) => ({
       canGoBack: false,
       canGoForward: false,
       createdAt: new Date().toISOString(),
+      partitionId: null,
+      appTemplateId: null,
+    };
+
+    set((state) => ({
+      tabs: [
+        ...state.tabs.map((t) => ({ ...t, isActive: false })),
+        tab,
+      ],
+      activeTabId: id,
+    }));
+
+    return id;
+  },
+
+  addAppTab: (options: AddAppTabOptions): string => {
+    const id = generateTabId();
+    const tab: Tab = {
+      id,
+      type: "app",
+      title: options.title,
+      url: options.url,
+      faviconUrl: null,
+      isActive: true,
+      state: "loading",
+      spaceId: null,
+      canGoBack: false,
+      canGoForward: false,
+      createdAt: new Date().toISOString(),
+      partitionId: options.partitionId,
+      appTemplateId: options.templateId,
     };
 
     set((state) => ({

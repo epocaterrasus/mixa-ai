@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useTabStore } from "../stores/tabs";
 import { useAugmentedStore } from "../stores/augmented";
 import { useSettingsStore } from "../stores/settings";
+
+const EMPTY_ITEMS: never[] = [];
 
 const styles = {
   button: {
@@ -40,22 +42,28 @@ const styles = {
 
 export function AugmentedIndicator(): React.ReactElement | null {
   const activeTabId = useTabStore((s) => s.activeTabId);
-  const activeTab = useTabStore((s) => {
-    const id = s.activeTabId;
-    return s.tabs.find((t) => t.id === id);
-  });
+  const activeTabType = useTabStore(
+    useCallback((s) => {
+      const id = s.activeTabId;
+      const tab = s.tabs.find((t) => t.id === id);
+      return tab?.type ?? null;
+    }, []),
+  );
   const augmentedEnabled = useSettingsStore(
     (s) => s.settings?.augmentedBrowsingEnabled ?? true,
   );
-  const relatedItems = useAugmentedStore((s) =>
-    activeTabId ? (s.relatedByTab[activeTabId] ?? []) : [],
+  const relatedItems = useAugmentedStore(
+    useCallback(
+      (s) => (activeTabId ? (s.relatedByTab[activeTabId] ?? EMPTY_ITEMS) : EMPTY_ITEMS),
+      [activeTabId],
+    ),
   );
   const togglePanel = useAugmentedStore((s) => s.togglePanel);
   const isPanelOpen = useAugmentedStore((s) => s.isPanelOpen);
   const [hovered, setHovered] = useState(false);
 
   // Only show for web tabs with augmented browsing enabled
-  if (!augmentedEnabled || !activeTab || activeTab.type !== "web") {
+  if (!augmentedEnabled || activeTabType !== "web") {
     return null;
   }
 

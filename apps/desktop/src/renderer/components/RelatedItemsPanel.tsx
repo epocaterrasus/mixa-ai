@@ -6,6 +6,8 @@ import {
 } from "../stores/augmented";
 import { useSettingsStore } from "../stores/settings";
 
+const EMPTY_ITEMS: never[] = [];
+
 const styles = {
   overlay: {
     position: "fixed",
@@ -207,15 +209,21 @@ export function RelatedItemsPanel(): React.ReactElement | null {
   const isPanelOpen = useAugmentedStore((s) => s.isPanelOpen);
   const closePanel = useAugmentedStore((s) => s.closePanel);
   const activeTabId = useTabStore((s) => s.activeTabId);
-  const activeTab = useTabStore((s) => {
-    const id = s.activeTabId;
-    return s.tabs.find((t) => t.id === id);
-  });
+  const activeTabType = useTabStore(
+    useCallback((s) => {
+      const id = s.activeTabId;
+      const tab = s.tabs.find((t) => t.id === id);
+      return tab?.type ?? null;
+    }, []),
+  );
   const augmentedEnabled = useSettingsStore(
     (s) => s.settings?.augmentedBrowsingEnabled ?? true,
   );
-  const relatedItems = useAugmentedStore((s) =>
-    activeTabId ? (s.relatedByTab[activeTabId] ?? []) : [],
+  const relatedItems = useAugmentedStore(
+    useCallback(
+      (s) => (activeTabId ? (s.relatedByTab[activeTabId] ?? EMPTY_ITEMS) : EMPTY_ITEMS),
+      [activeTabId],
+    ),
   );
   const addTab = useTabStore((s) => s.addTab);
   const [closeHovered, setCloseHovered] = useState(false);
@@ -232,7 +240,7 @@ export function RelatedItemsPanel(): React.ReactElement | null {
     [addTab],
   );
 
-  if (!isPanelOpen || !augmentedEnabled || !activeTab || activeTab.type !== "web") {
+  if (!isPanelOpen || !augmentedEnabled || activeTabType !== "web") {
     return null;
   }
 

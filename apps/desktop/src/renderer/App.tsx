@@ -88,9 +88,13 @@ export function App(): React.ReactElement {
   useAugmentedBrowsing();
   useUpdater();
 
-  const activeTab = useTabStore((s) => {
+  const activeTabType = useTabStore((s) => {
     const id = s.activeTabId;
-    return s.tabs.find((t) => t.id === id);
+    return s.tabs.find((t) => t.id === id)?.type ?? null;
+  });
+  const activeTabUrl = useTabStore((s) => {
+    const id = s.activeTabId;
+    return s.tabs.find((t) => t.id === id)?.url ?? null;
   });
   const hasTabs = useTabStore((s) => s.tabs.length > 0);
 
@@ -102,8 +106,8 @@ export function App(): React.ReactElement {
         <Toolbar />
         <div style={styles.content}>
           <FindBar />
-          {activeTab ? (
-            <TabContent type={activeTab.type} hasUrl={!!activeTab.url} url={activeTab.url} />
+          {activeTabType ? (
+            <TabContent type={activeTabType} hasUrl={!!activeTabUrl} url={activeTabUrl} />
           ) : hasTabs ? null : (
             <EmptyState />
           )}

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useTabStore } from "../stores/tabs";
 import { useHistoryStore } from "../stores/history";
+import { APP_TEMPLATES, generatePartitionId } from "../stores/appTemplates";
 import type { TabType } from "@mixa-ai/types";
 
 // --- Types ---
@@ -191,6 +192,7 @@ const styles = {
 
 const TAB_TYPE_ICONS: Record<TabType, string> = {
   web: "\u{1F310}",
+  app: "\u{1F4F1}",
   terminal: "\u25B6\uFE0F",
   knowledge: "\u{1F4DA}",
   chat: "\u{1F4AC}",
@@ -272,6 +274,23 @@ const COMMANDS: CommandDef[] = [
     icon: "\u2699\uFE0F",
     action: (addTab) => addTab("settings"),
   },
+  // App tab commands — generated from templates
+  ...APP_TEMPLATES.map((template) => ({
+    id: `cmd-app-${template.id}`,
+    label: `New App ${template.name}`,
+    description: `Open ${template.name} in an isolated app tab`,
+    icon: template.icon,
+    action: () => {
+      const partitionId = generatePartitionId(template.id);
+      useTabStore.getState().addAppTab({
+        templateId: template.id,
+        title: template.name,
+        url: template.url,
+        icon: template.icon,
+        partitionId,
+      });
+    },
+  })),
 ];
 
 // --- Component ---

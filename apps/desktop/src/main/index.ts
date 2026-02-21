@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from "electron";
+import { app, BrowserWindow, session, shell } from "electron";
 import { join } from "node:path";
 import { setupTRPCHandler } from "./trpc/index.js";
 import { tabManager } from "./tabs/manager.js";
@@ -59,6 +59,21 @@ function createWindow(): BrowserWindow {
 }
 
 void app.whenReady().then(() => {
+  // CSP: enforce strict policy in production only
+  // In dev, Vite injects inline scripts/eval for HMR that CSP would block
+  if (app.isPackaged) {
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          "Content-Security-Policy": [
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:",
+          ],
+        },
+      });
+    });
+  }
+
   setupTRPCHandler();
   setupChatHandlers();
   setupTerminalHandlers();

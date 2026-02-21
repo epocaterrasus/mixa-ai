@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { Tab } from "@mixa-ai/types";
 import { useTabStore } from "../stores/tabs";
+import { getAppTemplate } from "../stores/appTemplates";
 
 const styles = {
   container: {
@@ -130,9 +131,22 @@ function TabIcon({ tab }: { tab: Tab }): React.ReactElement {
     );
   }
 
+  // For app tabs, use the template icon
+  if (tab.type === "app" && tab.appTemplateId) {
+    const template = getAppTemplate(tab.appTemplateId);
+    if (template) {
+      return (
+        <span style={{ ...styles.tabFavicon, fontSize: "12px", textAlign: "center" as const }}>
+          {template.icon}
+        </span>
+      );
+    }
+  }
+
   // Default icon per tab type
   const icons: Record<string, string> = {
     web: "\u{1F310}",
+    app: "\u{1F4F1}",
     terminal: "\u{25B6}",
     knowledge: "\u{1F4DA}",
     chat: "\u{1F4AC}",
@@ -175,10 +189,12 @@ function TabItem({ tab }: { tab: Tab }): React.ReactElement {
     [closeTab, tab.id],
   );
 
-  const tabStyle = {
+  const isAppTab = tab.type === "app";
+  const tabStyle: React.CSSProperties = {
     ...styles.tab,
     ...(tab.isActive ? styles.tabActive : {}),
     ...(hovered && !tab.isActive ? styles.tabHover : {}),
+    ...(isAppTab ? { borderLeft: "2px solid var(--mixa-accent-primary)", paddingLeft: "6px" } : {}),
   };
 
   return (

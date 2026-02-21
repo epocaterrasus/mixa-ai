@@ -20,7 +20,14 @@ export type {
   Conversation,
 } from "./chat.js";
 
-export type { TabType, TabState, Tab, Space } from "./tabs.js";
+export type {
+  TabType,
+  TabState,
+  AppPartitionStrategy,
+  Tab,
+  Space,
+  AppTemplate,
+} from "./tabs.js";
 
 export type {
   EngineModuleName,

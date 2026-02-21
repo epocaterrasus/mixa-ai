@@ -80,10 +80,10 @@ export function useTabEvents(): void {
     const activeTab = tabs.find((t) => t.id === activeTabId);
     if (!activeTab) return;
 
-    if (activeTab.type === "web" && activeTab.url) {
+    if ((activeTab.type === "web" || activeTab.type === "app") && activeTab.url) {
       void window.electronAPI.tabs.activate(activeTabId);
     } else {
-      // Non-web tab or web tab without URL — hide the BrowserView
+      // Non-web/app tab or tab without URL — hide the BrowserView
       void window.electronAPI.tabs.hideActiveView();
     }
   }, [activeTabId, tabs]);
