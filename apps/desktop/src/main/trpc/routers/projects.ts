@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { router, publicProcedure, TRPCError } from "../trpc.js";
 
+export interface ProjectListItem {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
+}
+
 export const projectsRouter = router({
   create: publicProcedure
     .input(
@@ -27,7 +35,7 @@ export const projectsRouter = router({
         })
         .default({}),
     )
-    .query(async ({ input: _input }) => {
+    .query(async ({ input: _input }): Promise<{ projects: ProjectListItem[] }> => {
       // TODO: Implement with PGlite (MIXA-046)
       return { projects: [] };
     }),

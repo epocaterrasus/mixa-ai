@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { router, publicProcedure, TRPCError } from "../trpc.js";
 
+export interface TagListItem {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
 export const tagsRouter = router({
   list: publicProcedure
     .input(
@@ -11,7 +17,7 @@ export const tagsRouter = router({
         })
         .default({}),
     )
-    .query(async ({ input: _input }) => {
+    .query(async ({ input: _input }): Promise<{ tags: TagListItem[] }> => {
       // TODO: Implement with PGlite (MIXA-046)
       return { tags: [] };
     }),

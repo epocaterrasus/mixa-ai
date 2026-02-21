@@ -33,7 +33,7 @@
 | 20 | MIXA-017 | RAG chat pipeline | 🟢 DONE | 016 | KNOWLEDGE-ENGINEER |
 | 21 | MIXA-018 | Chat tab UI | 🟢 DONE | 017, 006 | KNOWLEDGE-ENGINEER |
 | 22 | MIXA-019 | Knowledge browse/search tab | 🟢 DONE | 016, 011, 006 | FRONTEND-ENGINEER |
-| 23 | MIXA-032 | Settings tab | 🔴 TODO | 013, 006 | FRONTEND-ENGINEER |
+| 23 | MIXA-032 | Settings tab | 🟢 DONE | 013, 006 | FRONTEND-ENGINEER |
 | 24 | MIXA-038 | Augmented browsing indicator | 🔴 TODO | 016, 006 | KNOWLEDGE-ENGINEER |
 
 ### Sprint 3 — Terminal Renderer + Engine Modules
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 22
-- Remaining: 29
+- Completed: 23
+- Remaining: 28
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes

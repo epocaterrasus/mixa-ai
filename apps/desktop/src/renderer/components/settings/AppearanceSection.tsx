@@ -27,14 +27,6 @@ const groupTitleStyle: React.CSSProperties = {
   marginBottom: "8px",
 };
 
-const labelStyle: React.CSSProperties = {
-  fontSize: "12px",
-  fontWeight: 500,
-  color: "var(--mixa-text-secondary)",
-  marginBottom: "4px",
-  display: "block",
-};
-
 const toggleGroupStyle: React.CSSProperties = {
   display: "flex",
   gap: "0",

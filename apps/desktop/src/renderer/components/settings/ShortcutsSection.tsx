@@ -165,6 +165,7 @@ export function ShortcutsSection(): React.ReactElement {
       window.addEventListener("keydown", handleKeyDown, true);
       return () => window.removeEventListener("keydown", handleKeyDown, true);
     }
+    return undefined;
   }, [recordingId, handleKeyDown]);
 
   // Group shortcuts by category
