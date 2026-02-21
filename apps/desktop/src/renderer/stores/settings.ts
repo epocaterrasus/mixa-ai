@@ -34,6 +34,7 @@ interface SettingsState {
   updateAutoCaptureMinSeconds: (seconds: number) => Promise<void>;
   updateAugmentedBrowsing: (enabled: boolean) => Promise<void>;
   updateDefaultSearchEngine: (url: string) => Promise<void>;
+  completeOnboarding: () => Promise<void>;
   setActiveSection: (section: SettingsSection) => void;
   clearError: () => void;
 }
@@ -323,6 +324,19 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       await trpc.settings.update.mutate({ defaultSearchEngine });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : "Failed to update search engine" });
+    }
+  },
+
+  completeOnboarding: async () => {
+    const { settings } = get();
+    if (!settings) return;
+
+    set({ settings: { ...settings, onboardingCompleted: true } });
+
+    try {
+      await trpc.settings.update.mutate({ onboardingCompleted: true });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : "Failed to complete onboarding" });
     }
   },
 

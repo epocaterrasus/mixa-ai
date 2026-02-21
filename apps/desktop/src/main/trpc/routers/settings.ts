@@ -94,6 +94,7 @@ const defaultSettings: UserSettings = {
   autoCaptureMinSeconds: 30,
   augmentedBrowsingEnabled: true,
   defaultSearchEngine: "https://www.google.com/search?q=",
+  onboardingCompleted: false,
 };
 
 export function loadSettings(): UserSettings {
@@ -164,6 +165,7 @@ export const settingsRouter = router({
         autoCaptureMinSeconds: z.number().int().min(5).max(300).optional(),
         augmentedBrowsingEnabled: z.boolean().optional(),
         defaultSearchEngine: z.string().optional(),
+        onboardingCompleted: z.boolean().optional(),
       }),
     )
     .mutation(async ({ input }): Promise<UserSettings> => {
@@ -210,6 +212,9 @@ export const settingsRouter = router({
       }
       if (input.defaultSearchEngine !== undefined) {
         current.defaultSearchEngine = input.defaultSearchEngine;
+      }
+      if (input.onboardingCompleted !== undefined) {
+        current.onboardingCompleted = input.onboardingCompleted;
       }
 
       saveSettings(current);

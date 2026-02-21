@@ -58,4 +58,5 @@ export interface UserSettings {
   autoCaptureMinSeconds: number;
   augmentedBrowsingEnabled: boolean;
   defaultSearchEngine: string;
+  onboardingCompleted: boolean;
 }
