@@ -1,0 +1,1 @@
+I need to install dependencies before I can verify the build. Could you approve the `pnpm install` command? It's needed to install all monorepo dependencies so I can run the backpressure gates (build, lint, typecheck).

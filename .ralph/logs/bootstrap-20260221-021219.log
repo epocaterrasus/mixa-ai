@@ -1,0 +1,8 @@
+I've attempted file writes multiple times but permissions keep being denied. I'll stop retrying to avoid spam.
+
+**To proceed, you have two options:**
+
+1. **In the Claude Code terminal**: When the permission prompt appears, press `y` to approve (or `a` to always allow for this directory)
+2. **Change permission mode**: Press `Shift+Tab` to cycle to a less restrictive mode
+
+Once permissions are granted, just send me a message saying "continue" and I'll immediately start creating all the files for MIXA-001.

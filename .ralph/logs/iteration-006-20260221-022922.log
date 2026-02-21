@@ -1,0 +1,6 @@
+It seems `pnpm turbo build` requires your approval. Could you allow pnpm and turbo commands? I need to run the backpressure checks:
+- `pnpm turbo build` 
+- `pnpm turbo lint`
+- `pnpm turbo typecheck`
+
+These are the standard build/lint/typecheck commands for the monorepo. Can you approve them?

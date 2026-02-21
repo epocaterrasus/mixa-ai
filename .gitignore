@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Turbo
+.turbo/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Debug
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+
+# Go engine binaries
+engine/bin/
+!engine/bin/.gitkeep
+
+# Electron
+release/
+*.dmg
+*.exe
+*.AppImage
+
+# Misc
+*.tsbuildinfo

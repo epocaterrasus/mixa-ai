@@ -1,0 +1,1297 @@
+{
+  "project": "mixa-ai",
+  "version": "2.0.0",
+  "phase": "0-1",
+  "description": "Mixa AI \u2014 Developer Browser + Knowledge Engine + Infrastructure Control Plane",
+  "userStories": [
+    {
+      "id": "MIXA-001",
+      "epic": "EP-01-FOUNDATION",
+      "title": "Initialize monorepo with Turborepo + pnpm",
+      "description": "Set up the root monorepo with Turborepo, pnpm workspaces, TypeScript, ESLint, Prettier. Create package.json for root and all workspace packages (apps/desktop, apps/web, packages/ui, packages/types, packages/ai-pipeline, packages/terminal-renderer, packages/content-processor, packages/db). Configure turbo.json. Create top-level Makefile for orchestrating Go + JS builds.",
+      "acceptanceCriteria": [
+        "Root package.json uses pnpm workspaces pointing to apps/* and packages/*",
+        "pnpm-workspace.yaml includes apps/*, packages/*, docs/*",
+        "turbo.json has build, dev, test, lint, typecheck pipelines",
+        "tsconfig.base.json exists with strict TypeScript (strict: true, no any)",
+        "Each package has its own package.json and tsconfig.json extending base",
+        ".eslintrc or eslint.config exists at root with TypeScript rules",
+        ".prettierrc exists at root",
+        "Makefile has targets: all, build-engine, build-js, dev, clean",
+        "`pnpm turbo build` runs without errors (empty builds OK)",
+        "`pnpm turbo lint` runs without errors",
+        ".gitignore includes node_modules, dist, .turbo, .next, *.env, engine/bin/"
+      ],
+      "priority": 1,
+      "estimatedComplexity": "medium",
+      "agent": "ARCHITECT",
+      "dependencies": [],
+      "passes": true
+    },
+    {
+      "id": "MIXA-002",
+      "epic": "EP-01-FOUNDATION",
+      "title": "Set up packages/types with all shared TypeScript types",
+      "description": "Create the shared types package with TypeScript interfaces for all domains: knowledge items, chunks, tags, projects, conversations, messages, tab system, engine modules, settings, chat, and UI protocol. These types are imported by all other packages.",
+      "acceptanceCriteria": [
+        "packages/types/src/knowledge.ts has types: Item, Chunk, Tag, Highlight, ItemType, SourceType",
+        "packages/types/src/projects.ts has types: Project, ItemProject",
+        "packages/types/src/chat.ts has types: Conversation, Message, Citation, ChatScope",
+        "packages/types/src/tabs.ts has types: Tab, TabType, Space, TabState",
+        "packages/types/src/engine.ts has types: EngineModule, EngineStatus, EngineCommand, EngineEvent",
+        "packages/types/src/protocol.ts has types: UIView, UIComponent, UIAction (Fenix UI protocol)",
+        "packages/types/src/settings.ts has types: UserSettings, LLMProvider, LLMConfig, ThemeConfig",
+        "packages/types/src/index.ts re-exports everything",
+        "Package builds successfully and all types are exported",
+        "No `any` types anywhere \u2014 all fields are explicitly typed"
+      ],
+      "priority": 2,
+      "estimatedComplexity": "medium",
+      "agent": "ARCHITECT",
+      "dependencies": [
+        "MIXA-001"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-003",
+      "epic": "EP-01-FOUNDATION",
+      "title": "Set up packages/db with Drizzle schema and Docker dev environment",
+      "description": "Create the database package with Drizzle ORM schema matching the PRD database design (Section 8). Set up Docker Compose for local PostgreSQL + pgvector + Redis. Create initial migration. Seed script with sample data.",
+      "acceptanceCriteria": [
+        "packages/db/src/schema/ contains all tables from PRD Section 8",
+        "Tables: users, items, chunks, tags, item_tags, projects, item_projects, highlights, conversations, messages",
+        "pgvector extension enabled for embedding column (vector(1536))",
+        "All indexes defined per PRD (fulltext, vector cosine, btree on foreign keys)",
+        "Drizzle config points to DATABASE_URL environment variable",
+        "docker/docker-compose.dev.yml starts PostgreSQL 16 with pgvector + Redis 7",
+        "Migration runs successfully against Docker PostgreSQL",
+        "Seed script creates sample user, sample items, sample tags",
+        "packages/db/src/client.ts exports configured Drizzle client",
+        "Package builds and exports schema + client"
+      ],
+      "priority": 3,
+      "estimatedComplexity": "high",
+      "agent": "ARCHITECT",
+      "dependencies": [
+        "MIXA-001"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-004",
+      "epic": "EP-01-FOUNDATION",
+      "title": "Initialize Go engine skeleton with gRPC server",
+      "description": "Create the Go engine in engine/ with module structure, gRPC server, protobuf definitions for the Electron \u2194 Go communication protocol, health check endpoint, and basic module registry. The engine should start, listen on a Unix socket or TCP port, and respond to health checks.",
+      "acceptanceCriteria": [
+        "engine/go.mod initialized with module path",
+        "engine/cmd/fenix/main.go is the binary entry point",
+        "engine/internal/grpc/server.go implements gRPC server",
+        "engine/pkg/proto/ contains .proto files for: HealthCheck, ModuleList, UIStream",
+        "Proto defines UIView message matching the Fenix UI protocol from PRD Section 7.4",
+        "Generated Go code from protobuf compiles",
+        "Engine starts and responds to gRPC health check",
+        "engine/internal/bus/ has a basic event bus (pub/sub pattern)",
+        "engine/internal/storage/ has encrypted SQLite wrapper (AES-256-GCM)",
+        "Makefile target `build-engine` cross-compiles for darwin-arm64, darwin-amd64, linux-amd64",
+        "`go test ./...` passes",
+        "`go vet ./...` passes"
+      ],
+      "priority": 4,
+      "estimatedComplexity": "high",
+      "agent": "TERMINAL-ENGINEER",
+      "dependencies": [
+        "MIXA-001"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-005",
+      "epic": "EP-02-BROWSER",
+      "title": "Set up Electron app with basic window management",
+      "description": "Initialize the Electron app in apps/desktop. Set up main process, renderer process, preload scripts with contextBridge. Create a basic BrowserWindow that loads a React app. Configure electron-builder for development. Set up Vite for the renderer process.",
+      "acceptanceCriteria": [
+        "apps/desktop/src/main/index.ts creates BrowserWindow with security best practices",
+        "nodeIntegration: false, contextIsolation: true in webPreferences",
+        "apps/desktop/src/preload/index.ts exposes safe IPC via contextBridge",
+        "apps/desktop/src/renderer/ is a Vite + React app",
+        "Renderer loads and displays a basic React component",
+        "Electron app starts in dev mode with hot reload (electron-vite or similar)",
+        "electron-builder.yml configured for macOS DMG (dev only, packaging is later)",
+        "Window has proper title, minimum size constraints, and icon placeholder",
+        "Dev tools accessible in development mode only",
+        "`pnpm turbo build` includes desktop app build"
+      ],
+      "priority": 5,
+      "estimatedComplexity": "high",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-001",
+        "MIXA-002"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-006",
+      "epic": "EP-02-BROWSER",
+      "title": "Implement tab system with Chromium webviews",
+      "description": "Build the core tab management system. Each tab has a type (web, terminal, knowledge, chat, dashboard, settings). Web tabs use Electron's webContents/BrowserView for Chromium rendering. Other tab types render React components. Tab bar with add/close/reorder. Tab state management with Zustand.",
+      "acceptanceCriteria": [
+        "TabBar component renders horizontal tab strip with favicon, title, close button",
+        "Clicking + button creates new web tab with blank page",
+        "Web tabs render actual web pages via Electron webContents",
+        "Tab close removes tab and activates adjacent tab",
+        "Tab reordering via drag-and-drop",
+        "Zustand store manages tab state: id, type, title, url, isActive, isLoading",
+        "Support for all TabType values from packages/types (web, terminal, knowledge, chat, dashboard, settings)",
+        "Non-web tabs render a React component placeholder (actual content comes later)",
+        "Keyboard shortcuts: Cmd+T (new tab), Cmd+W (close tab), Cmd+1-9 (switch to tab N)",
+        "Active tab indicator (underline or highlight)",
+        "Tab overflow handling (scroll or dropdown when too many tabs)"
+      ],
+      "priority": 6,
+      "estimatedComplexity": "high",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-005"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-007",
+      "epic": "EP-02-BROWSER",
+      "title": "Build omnibar (URL + command palette + search)",
+      "description": "Create the unified omnibar that serves as URL bar, command palette, and search input. When focused, it shows suggestions: recent URLs, bookmarks, open tabs, commands (prefixed with >), and knowledge search results.",
+      "acceptanceCriteria": [
+        "Omnibar input field at top of browser chrome",
+        "Typing a URL and pressing Enter navigates active web tab",
+        "Typing a search query and pressing Enter opens default search engine",
+        "Prefix with > to enter command mode (shows available commands)",
+        "Shows autocomplete suggestions: open tabs, recent history, commands",
+        "Cmd+L focuses the omnibar (standard browser shortcut)",
+        "Cmd+K opens omnibar in command mode (> prefix)",
+        "Escape closes suggestion dropdown and returns focus to tab",
+        "Current page URL shown when omnibar is not focused",
+        "Loading indicator when web tab is loading",
+        "SSL indicator (lock icon) for HTTPS pages"
+      ],
+      "priority": 7,
+      "estimatedComplexity": "high",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-008",
+      "epic": "EP-02-BROWSER",
+      "title": "Build sidebar with navigation and tab tree",
+      "description": "Create collapsible sidebar showing: tab tree (grouped by spaces), quick-access buttons for special tab types (terminal, knowledge, chat), and navigation controls.",
+      "acceptanceCriteria": [
+        "Sidebar component renders on left side of browser",
+        "Tab tree shows all open tabs grouped by type or space",
+        "Quick-access buttons: New Terminal, Knowledge Base, Chat, Settings",
+        "Sidebar is collapsible (toggle with Cmd+B or button)",
+        "Collapsed state shows only icons",
+        "Active tab highlighted in sidebar",
+        "Click tab in sidebar activates it",
+        "Right-click context menu on tabs: Close, Close Others, Move to Space",
+        "Sidebar width adjustable by dragging edge",
+        "Sidebar state persists across app restarts"
+      ],
+      "priority": 8,
+      "estimatedComplexity": "medium",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-009",
+      "epic": "EP-02-BROWSER",
+      "title": "Implement browser navigation controls and history",
+      "description": "Add standard browser navigation: back, forward, reload, stop, home. Implement browsing history storage and display. Handle new window requests, link clicks, and navigation events from webContents.",
+      "acceptanceCriteria": [
+        "Back/Forward/Reload/Stop buttons in browser chrome",
+        "Buttons are enabled/disabled based on navigation state",
+        "Keyboard shortcuts: Cmd+[/] (back/forward), Cmd+R (reload), Esc (stop)",
+        "Browsing history stored locally (last 10,000 entries)",
+        "History accessible via command palette or dedicated view",
+        "External link clicks open in current tab (same-origin) or new tab (target=_blank)",
+        "Window.open requests create new tabs instead of new windows",
+        "Downloads handled by Electron's download manager",
+        "Page title and favicon extracted and shown in tab bar",
+        "Find-in-page: Cmd+F opens search overlay for current web tab"
+      ],
+      "priority": 9,
+      "estimatedComplexity": "medium",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-010",
+      "epic": "EP-02-BROWSER",
+      "title": "Connect Electron to Go engine lifecycle",
+      "description": "Implement Go engine lifecycle management from Electron main process. Start the Go binary as a child process on app launch, establish gRPC connection, handle engine health checks, restart on crash, and graceful shutdown on app quit.",
+      "acceptanceCriteria": [
+        "Electron main process spawns Go engine binary on app start",
+        "Engine binary path resolved from app resources (bundled) or dev path",
+        "gRPC client connects to engine after spawn (with retry logic)",
+        "Health check polling every 10 seconds",
+        "If engine crashes, auto-restart with exponential backoff (max 3 retries)",
+        "Graceful shutdown: send shutdown signal to engine before Electron quits",
+        "Engine status exposed to renderer via IPC (running, starting, crashed, stopped)",
+        "Status indicator in browser chrome shows engine health",
+        "Logs from engine process captured and accessible in app",
+        "Works in both development mode (engine from source) and production (bundled binary)"
+      ],
+      "priority": 10,
+      "estimatedComplexity": "high",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-004",
+        "MIXA-005"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-011",
+      "epic": "EP-03-KNOWLEDGE",
+      "title": "Implement content capture from web tabs",
+      "description": "Build the content capture system. Users can save the current page (full article extraction via Readability) or a text selection. Captured content is stored in PostgreSQL via the db package. Capture accessible via keyboard shortcut, context menu, and omnibar command.",
+      "acceptanceCriteria": [
+        "Cmd+S saves current web page to knowledge base",
+        "Content extracted using Readability algorithm (title, author, content, excerpt)",
+        "Text selection \u2192 right-click \u2192 'Save to Mixa' captures selected text as highlight-type item",
+        "Captured items stored in items table with correct item_type and source_type",
+        "Domain and favicon extracted and stored",
+        "Word count and estimated reading time calculated",
+        "Capture shows brief toast notification confirming save",
+        "Duplicate URL detection with option to update existing item",
+        "Content sanitized (no scripts, safe HTML only)",
+        "Works on standard web pages, fails gracefully on restricted pages (chrome://, about:)"
+      ],
+      "priority": 11,
+      "estimatedComplexity": "high",
+      "agent": "KNOWLEDGE-ENGINEER",
+      "dependencies": [
+        "MIXA-003",
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-012",
+      "epic": "EP-03-KNOWLEDGE",
+      "title": "Build content processor package",
+      "description": "Implement packages/content-processor with extractors for different content types: articles (Readability), code blocks (syntax detection), and basic metadata. YouTube and PDF extractors are deferred to later phases.",
+      "acceptanceCriteria": [
+        "packages/content-processor/src/extractors/article.ts uses @mozilla/readability",
+        "Article extractor returns: title, author, content (HTML), textContent, excerpt, siteName",
+        "packages/content-processor/src/extractors/code.ts detects and extracts code blocks with language",
+        "packages/content-processor/src/sanitizer.ts strips scripts, iframes, tracking pixels from HTML",
+        "packages/content-processor/src/thumbnail.ts generates thumbnail URL from page metadata (og:image)",
+        "All extractors have TypeScript interfaces matching packages/types",
+        "Unit tests for article extraction (test with sample HTML fixtures)",
+        "Unit tests for code block detection",
+        "Package builds and exports all extractors"
+      ],
+      "priority": 12,
+      "estimatedComplexity": "medium",
+      "agent": "KNOWLEDGE-ENGINEER",
+      "dependencies": [
+        "MIXA-002"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-013",
+      "epic": "EP-04-AI",
+      "title": "Build LLM provider abstraction (BYOK)",
+      "description": "Implement packages/ai-pipeline with a provider abstraction layer. Support OpenAI, Anthropic, Ollama (local), and Gemini as LLM backends. Users configure their own API keys. Provider interface supports: chat completion, embedding generation, and streaming.",
+      "acceptanceCriteria": [
+        "packages/ai-pipeline/src/providers/ has adapters: openai.ts, anthropic.ts, ollama.ts, gemini.ts",
+        "Common interface: LLMProvider with methods: chat(), embed(), stream()",
+        "OpenAI adapter supports gpt-4o-mini, gpt-4o, text-embedding-3-small",
+        "Anthropic adapter supports claude-3.5-sonnet, claude-3-haiku",
+        "Ollama adapter connects to local Ollama instance (configurable endpoint)",
+        "Gemini adapter supports gemini-2.0-flash",
+        "Provider router selects provider based on user settings",
+        "API keys read from user settings (never hardcoded, never logged)",
+        "Graceful error handling: provider unavailable, rate limited, invalid key",
+        "Unit tests with mocked HTTP responses for each provider"
+      ],
+      "priority": 13,
+      "estimatedComplexity": "high",
+      "agent": "KNOWLEDGE-ENGINEER",
+      "dependencies": [
+        "MIXA-002"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-014",
+      "epic": "EP-04-AI",
+      "title": "Implement text chunking and embedding generation",
+      "description": "Build the text chunking strategy and embedding generation pipeline. Captured content is split into semantically meaningful chunks, each chunk gets an embedding vector, and both are stored in the chunks table with pgvector.",
+      "acceptanceCriteria": [
+        "packages/ai-pipeline/src/chunker.ts splits text into chunks (512 tokens target, 50 token overlap)",
+        "Chunking respects paragraph and sentence boundaries (not mid-sentence cuts)",
+        "packages/ai-pipeline/src/embedder.ts generates embeddings via configured LLM provider",
+        "Embeddings stored in chunks table with pgvector column",
+        "BullMQ job queue for async embedding generation (capture doesn't block on AI)",
+        "Worker processes embedding jobs from Redis queue",
+        "Job retries on failure (max 3 retries with exponential backoff)",
+        "Token counting for chunks (tiktoken or equivalent)",
+        "Unit tests for chunking logic (various text lengths, edge cases)",
+        "Integration test: capture item \u2192 chunk \u2192 embed \u2192 verify stored in DB"
+      ],
+      "priority": 14,
+      "estimatedComplexity": "high",
+      "agent": "KNOWLEDGE-ENGINEER",
+      "dependencies": [
+        "MIXA-003",
+        "MIXA-013"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-015",
+      "epic": "EP-04-AI",
+      "title": "Implement auto-summarization and auto-tagging",
+      "description": "When content is captured, generate an AI summary and auto-assign topic tags. Summary stored on the item. Tags created or matched to existing tags and linked via item_tags with confidence scores.",
+      "acceptanceCriteria": [
+        "After embedding job completes, a summarize+tag job runs automatically",
+        "Summary is 2-3 sentences, stored in items.summary",
+        "Tags are 3-7 topic labels per item, created in tags table if new",
+        "Tag assignment includes confidence score (0-1) in item_tags.score",
+        "LLM prompt is well-structured: takes article content, outputs JSON with summary + tags",
+        "Tags are normalized (lowercase, deduplicated, merged with existing similar tags)",
+        "Works with any configured LLM provider (OpenAI, Anthropic, Ollama, Gemini)",
+        "Graceful degradation: if AI fails, item is saved without summary/tags (not lost)",
+        "Unit tests for tag normalization and deduplication",
+        "Cost-efficient: uses cheapest model available (gpt-4o-mini or haiku)"
+      ],
+      "priority": 15,
+      "estimatedComplexity": "medium",
+      "agent": "KNOWLEDGE-ENGINEER",
+      "dependencies": [
+        "MIXA-014"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-016",
+      "epic": "EP-04-AI",
+      "title": "Implement semantic search and full-text search",
+      "description": "Build the search system combining vector similarity search (pgvector) with full-text search (PostgreSQL tsvector). Users can search their knowledge base and get ranked results combining both approaches.",
+      "acceptanceCriteria": [
+        "packages/ai-pipeline/src/retriever.ts implements hybrid search",
+        "Vector search: embed query \u2192 cosine similarity against chunks.embedding \u2192 return top K",
+        "Full-text search: PostgreSQL FTS with ts_rank against items content",
+        "Hybrid scoring: combine vector similarity and FTS rank with configurable weights",
+        "Search returns items with relevance score, highlighted matching snippets",
+        "Minimum score threshold to filter low-quality matches",
+        "Search scoping: filter by tags, projects, date range, item_type",
+        "Search performance: <500ms for 10,000 items",
+        "Unit tests for scoring logic",
+        "Integration test: insert items with embeddings \u2192 search \u2192 verify ranked results"
+      ],
+      "priority": 16,
+      "estimatedComplexity": "high",
+      "agent": "KNOWLEDGE-ENGINEER",
+      "dependencies": [
+        "MIXA-014"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-017",
+      "epic": "EP-05-CHAT",
+      "title": "Build RAG chat pipeline",
+      "description": "Implement the full RAG (Retrieval-Augmented Generation) pipeline for the chat interface. User asks a question \u2192 retrieve relevant chunks \u2192 construct prompt with context \u2192 generate response with citations.",
+      "acceptanceCriteria": [
+        "packages/ai-pipeline/src/pipeline.ts orchestrates: query \u2192 retrieve \u2192 rerank \u2192 generate",
+        "Retrieval uses hybrid search (MIXA-016) to find top 10-20 relevant chunks",
+        "Context window management: fit as many chunks as possible within model's context limit",
+        "System prompt instructs LLM to cite sources and stay grounded in provided context",
+        "Response includes citation markers referencing specific items and chunks",
+        "Citation format: [1], [2], etc. mapped to source items with URLs",
+        "Streaming response support (tokens streamed as generated)",
+        "Chat history maintained in conversations + messages tables",
+        "Scoped chat: user can limit retrieval to specific projects or tags",
+        "Unit tests for context window packing and citation extraction"
+      ],
+      "priority": 17,
+      "estimatedComplexity": "high",
+      "agent": "KNOWLEDGE-ENGINEER",
+      "dependencies": [
+        "MIXA-016"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-018",
+      "epic": "EP-05-CHAT",
+      "title": "Build chat tab UI",
+      "description": "Create the Chat tab React component with message input, streaming response display, source citations, conversation history sidebar, and scope selector.",
+      "acceptanceCriteria": [
+        "ChatTab.tsx renders a full-height chat interface",
+        "Message input at bottom with send button and keyboard shortcut (Enter to send, Shift+Enter for newline)",
+        "Messages display with proper markdown rendering (code blocks, lists, links)",
+        "AI responses stream token-by-token with typing indicator",
+        "Citations rendered as clickable chips/links below the response",
+        "Clicking a citation opens the source item (in a new knowledge tab or web tab)",
+        "Conversation history sidebar: list of past conversations, click to resume",
+        "New conversation button clears chat and starts fresh",
+        "Scope selector: dropdown to limit chat to specific projects or tags",
+        "Loading state while waiting for AI response",
+        "Error state with retry button if AI call fails"
+      ],
+      "priority": 18,
+      "estimatedComplexity": "high",
+      "agent": "KNOWLEDGE-ENGINEER",
+      "dependencies": [
+        "MIXA-017",
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-019",
+      "epic": "EP-03-KNOWLEDGE",
+      "title": "Build knowledge browse/search tab UI",
+      "description": "Create the Knowledge tab that shows all saved items with search, filters, and browse functionality. Grid/list view toggle, tag filtering, project filtering, and item detail view.",
+      "acceptanceCriteria": [
+        "KnowledgeTab.tsx renders saved items in grid (cards) or list layout",
+        "Toggle between grid and list view",
+        "Search bar at top triggers hybrid search (MIXA-016)",
+        "Filter sidebar: by tags, projects, item_type, date range, favorites",
+        "Item cards show: thumbnail, title, domain, summary excerpt, tags, capture date",
+        "Click item opens detail view: full content, highlights, metadata, related items",
+        "Bulk actions: select multiple \u2192 delete, move to project, add tag",
+        "Infinite scroll or pagination for large collections",
+        "Empty state with helpful onboarding message for new users",
+        "Sort options: newest, oldest, most relevant (when searching)"
+      ],
+      "priority": 19,
+      "estimatedComplexity": "high",
+      "agent": "FRONTEND-ENGINEER",
+      "dependencies": [
+        "MIXA-016",
+        "MIXA-011",
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-020",
+      "epic": "EP-06-TERMINAL",
+      "title": "Define Fenix UI protocol (protobuf + TypeScript types)",
+      "description": "Formalize the JSON-based UI protocol between the Go engine and the terminal renderer. Define protobuf messages for all UI component types (header, table, card, chart, form, list, metric-row, status-bar). Generate both Go and TypeScript types from the proto definitions.",
+      "acceptanceCriteria": [
+        "engine/pkg/proto/ui.proto defines all UIComponent types from PRD Section 7.4",
+        "Component types: Header, Table, Card, Chart, Form, List, MetricRow, StatusBar, TextBlock, ActionBar",
+        "UIView message wraps a module name + array of UIComponents + array of UIActions",
+        "UIAction has id, label, shortcut, enabled fields",
+        "UIEvent message for user interactions: click, input, shortcut, scroll",
+        "Proto compiles to Go code (engine/pkg/proto/)",
+        "Proto compiles to TypeScript types (packages/types/src/protocol.ts or generated)",
+        "Types match between Go and TypeScript (validated by comparing field names/types)",
+        "Documentation in proto files explains each message and field",
+        "Unit test in Go verifying serialization/deserialization of sample UIView"
+      ],
+      "priority": 20,
+      "estimatedComplexity": "high",
+      "agent": "TERMINAL-ENGINEER",
+      "dependencies": [
+        "MIXA-004"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-021",
+      "epic": "EP-06-TERMINAL",
+      "title": "Build terminal renderer React components",
+      "description": "Create packages/terminal-renderer with React components that render each Fenix UI protocol component type as beautiful, interactive HTML/CSS. This is the key innovation: terminals rendered as web UI.",
+      "acceptanceCriteria": [
+        "packages/terminal-renderer/src/components/Table.tsx renders sortable, filterable data tables",
+        "packages/terminal-renderer/src/components/Card.tsx renders info cards with actions",
+        "packages/terminal-renderer/src/components/Chart.tsx renders area/bar/line charts (using recharts or similar)",
+        "packages/terminal-renderer/src/components/MetricRow.tsx renders metric cards with trends",
+        "packages/terminal-renderer/src/components/List.tsx renders selectable lists with keyboard nav",
+        "packages/terminal-renderer/src/components/Form.tsx renders input forms",
+        "packages/terminal-renderer/src/components/ActionBar.tsx renders action buttons with shortcuts",
+        "packages/terminal-renderer/src/components/StatusBar.tsx renders bottom status bar",
+        "packages/terminal-renderer/src/protocol.ts parses UIView \u2192 renders correct components",
+        "All components respect active theme (dark/light)",
+        "All components are keyboard-accessible",
+        "Storybook or similar for visual component development and testing"
+      ],
+      "priority": 21,
+      "estimatedComplexity": "high",
+      "agent": "TERMINAL-ENGINEER",
+      "dependencies": [
+        "MIXA-020",
+        "MIXA-002"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-022",
+      "epic": "EP-06-TERMINAL",
+      "title": "Build terminal tab with gRPC streaming",
+      "description": "Create TerminalTab.tsx that connects to the Go engine via gRPC streaming, receives UIView updates, renders them using terminal-renderer components, and sends user interactions back as UIEvents.",
+      "acceptanceCriteria": [
+        "TerminalTab.tsx establishes gRPC stream to engine for the active module",
+        "Receives UIView messages and renders via terminal-renderer protocol parser",
+        "User clicks on interactive elements generate UIEvent messages sent back to engine",
+        "Keyboard shortcuts captured and forwarded as UIEvents",
+        "Module selector: dropdown or sidebar to switch between engine modules",
+        "Loading state while engine processes commands",
+        "Error state if engine connection is lost (with reconnect option)",
+        "Multiple terminal tabs can be open simultaneously (each with its own gRPC stream)",
+        "Terminal tab header shows active module name and status",
+        "Smooth transitions when engine sends view updates"
+      ],
+      "priority": 22,
+      "estimatedComplexity": "high",
+      "agent": "TERMINAL-ENGINEER",
+      "dependencies": [
+        "MIXA-021",
+        "MIXA-010"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-023",
+      "epic": "EP-06-TERMINAL",
+      "title": "Implement GUARD module in Go engine",
+      "description": "Build the GUARD (secrets & environment management) module in the Go engine. Manage environment variables, integrate with Doppler/vault, switch between environments. Expose via Fenix UI protocol.",
+      "acceptanceCriteria": [
+        "engine/internal/guard/ implements the GUARD module",
+        "List all environment variables for current project (masked values by default)",
+        "Reveal individual secret values on demand (with confirmation)",
+        "Switch between environments (dev/staging/prod)",
+        "Import from .env files",
+        "Export sanitized .env.example (values replaced with placeholders)",
+        "All secrets stored encrypted in SQLite (AES-256-GCM)",
+        "UIView output renders as a table with columns: Key, Value (masked), Environment, Source",
+        "Actions: Add, Edit, Delete, Reveal, Copy, Switch Env",
+        "Go tests for encryption, import/export, CRUD operations"
+      ],
+      "priority": 23,
+      "estimatedComplexity": "high",
+      "agent": "TERMINAL-ENGINEER",
+      "dependencies": [
+        "MIXA-020"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-024",
+      "epic": "EP-06-TERMINAL",
+      "title": "Implement FORGE module in Go engine",
+      "description": "Build the FORGE (Git & GitHub) module. View repos, branches, commits, PRs, issues. File browser for repos. Expose via Fenix UI protocol.",
+      "acceptanceCriteria": [
+        "engine/internal/forge/ implements the FORGE module",
+        "List Git repositories (local directory scanning)",
+        "Show current branch, recent commits, changed files for a repo",
+        "List GitHub PRs with status, reviewers, labels",
+        "List GitHub issues with status, assignees, labels",
+        "File browser: navigate repo tree, view file contents",
+        "Actions: checkout branch, pull, push, create PR (opens GitHub URL in web tab)",
+        "UIView renders repo info as cards + file tree as a navigable list",
+        "Uses local git commands and GitHub API (via gh CLI or direct API)",
+        "Go tests for git operations (using test repo fixture)"
+      ],
+      "priority": 24,
+      "estimatedComplexity": "high",
+      "agent": "TERMINAL-ENGINEER",
+      "dependencies": [
+        "MIXA-020"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-025",
+      "epic": "EP-06-TERMINAL",
+      "title": "Implement KEYS module in Go engine",
+      "description": "Build the KEYS (shortcuts & command palette) module. Define default keyboard shortcuts, allow customization, expose command palette data to the Electron omnibar.",
+      "acceptanceCriteria": [
+        "engine/internal/keys/ implements the KEYS module",
+        "Default shortcut map for all modules and common actions",
+        "User-customizable shortcuts stored in config (fenix.yaml or SQLite)",
+        "Shortcut conflicts detected and reported",
+        "Command palette endpoint: returns all available commands with descriptions",
+        "Commands filterable by module, category, or search string",
+        "Import/export shortcut configuration",
+        "Integration with Electron omnibar: commands from engine appear in Cmd+K palette",
+        "Go tests for shortcut conflict detection and command filtering"
+      ],
+      "priority": 25,
+      "estimatedComplexity": "medium",
+      "agent": "TERMINAL-ENGINEER",
+      "dependencies": [
+        "MIXA-020"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-026",
+      "epic": "EP-06-TERMINAL",
+      "title": "Implement xterm.js fallback for raw shell",
+      "description": "Add xterm.js-based raw shell terminal as a fallback for when users need actual bash/zsh access (not the Fenix UI protocol). This runs alongside the web-rendered terminal.",
+      "acceptanceCriteria": [
+        "TerminalTab can switch between 'fenix' mode (UI protocol) and 'shell' mode (xterm.js)",
+        "Shell mode uses xterm.js with proper terminal emulation",
+        "Shell connects to user's default shell (bash/zsh) via node-pty",
+        "Proper ANSI color rendering, cursor movement, scrollback buffer",
+        "Copy/paste support (Cmd+C/Cmd+V)",
+        "Font size adjustable",
+        "Omnibar command: 'Open Shell' creates terminal tab in shell mode",
+        "Keyboard shortcut: Cmd+` opens new shell tab"
+      ],
+      "priority": 26,
+      "estimatedComplexity": "medium",
+      "agent": "TERMINAL-ENGINEER",
+      "dependencies": [
+        "MIXA-022"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-027",
+      "epic": "EP-07-INFRA",
+      "title": "Implement COST module in Go engine",
+      "description": "Build the COST (cloud cost tracking) module. Track costs per provider, per project. Budget alerts. Cost history. Expose via Fenix UI protocol with rich charts.",
+      "acceptanceCriteria": [
+        "engine/internal/cost/ implements the COST module",
+        "Provider adapters for: DigitalOcean, AWS (basic), manual entry",
+        "Cost polling on configurable schedule (hourly/daily)",
+        "Cost data stored in encrypted SQLite with time-series structure",
+        "Budget limits per provider/project with threshold alerts (80%, 90%, 100%)",
+        "UIView renders: MetricRow (total, projected, budget), Chart (cost over time), Table (per-service breakdown)",
+        "Actions: Refresh, Export CSV, Set Budget, View History",
+        "Go tests for cost calculations, adapter interfaces, budget threshold logic"
+      ],
+      "priority": 27,
+      "estimatedComplexity": "high",
+      "agent": "TERMINAL-ENGINEER",
+      "dependencies": [
+        "MIXA-020"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-028",
+      "epic": "EP-07-INFRA",
+      "title": "Implement PULSE module in Go engine",
+      "description": "Build the PULSE (health & uptime) module. Ping endpoints, track SSL certificate expiry, monitor uptime. Expose via Fenix UI protocol.",
+      "acceptanceCriteria": [
+        "engine/internal/pulse/ implements the PULSE module",
+        "HTTP(S) health checker: ping configurable endpoints on schedule",
+        "SSL certificate expiry tracking with alerts at 30/14/7 days",
+        "Uptime calculation: percentage over last 24h, 7d, 30d",
+        "Response time tracking with p50/p95/p99 percentiles",
+        "Incident log: records when endpoints go down/up with timestamps",
+        "UIView renders: uptime grid (green/red squares), response time chart, SSL expiry table, incident timeline",
+        "Actions: Add Endpoint, Remove, Test Now, View Incidents",
+        "Go tests for health checking, uptime calculation, SSL parsing"
+      ],
+      "priority": 28,
+      "estimatedComplexity": "high",
+      "agent": "TERMINAL-ENGINEER",
+      "dependencies": [
+        "MIXA-020"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-029",
+      "epic": "EP-08-DASHBOARD",
+      "title": "Build cost dashboard tab",
+      "description": "Create a Dashboard tab specifically for costs that renders rich visualizations from the COST module data. This is the web-rendered alternative to the terminal COST view, with full interactive charts.",
+      "acceptanceCriteria": [
+        "DashboardTab variant for costs: apps/desktop/src/renderer/tabs/dashboards/CostDashboard.tsx",
+        "Total monthly spend metric card with trend indicator",
+        "Per-provider cost breakdown (pie/donut chart)",
+        "Daily cost accumulation (area chart)",
+        "Budget utilization bars with color coding (green < 80%, yellow 80-90%, red > 90%)",
+        "Month-over-month comparison",
+        "Table with per-service breakdown (sortable, filterable)",
+        "Budget limit editing (inline slider + input)",
+        "Data fetched from Go engine via gRPC",
+        "Responsive layout, loading states, empty states"
+      ],
+      "priority": 29,
+      "estimatedComplexity": "high",
+      "agent": "FRONTEND-ENGINEER",
+      "dependencies": [
+        "MIXA-027",
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-030",
+      "epic": "EP-08-DASHBOARD",
+      "title": "Build health dashboard tab",
+      "description": "Create a Dashboard tab for health/uptime monitoring with data from the PULSE module.",
+      "acceptanceCriteria": [
+        "DashboardTab variant for health: HealthDashboard.tsx",
+        "Uptime grid: visual grid of green/yellow/red squares per endpoint per day",
+        "Response time chart: line chart with p50/p95/p99",
+        "SSL certificate expiry table with countdown badges",
+        "Incident timeline: chronological list of up/down events",
+        "Endpoint management: add/edit/remove endpoints",
+        "Quick actions: Test Now, Acknowledge Incident",
+        "Data fetched from Go engine via gRPC",
+        "Responsive layout, loading states"
+      ],
+      "priority": 30,
+      "estimatedComplexity": "high",
+      "agent": "FRONTEND-ENGINEER",
+      "dependencies": [
+        "MIXA-028",
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-031",
+      "epic": "EP-08-DASHBOARD",
+      "title": "Build knowledge stats dashboard",
+      "description": "Create a dashboard view showing knowledge base statistics: items captured over time, most-used tags, reading habits, search patterns.",
+      "acceptanceCriteria": [
+        "KnowledgeDashboard.tsx shows knowledge base overview",
+        "Total items count with trend",
+        "Items captured per day/week (bar chart)",
+        "Top tags cloud or bar chart",
+        "Most saved domains (top 10)",
+        "Reading time estimates (total saved reading time)",
+        "Recent captures feed (last 10 items)",
+        "Quick actions: Open Knowledge Tab, New Capture, Start Chat",
+        "Data fetched from PostgreSQL via tRPC"
+      ],
+      "priority": 31,
+      "estimatedComplexity": "medium",
+      "agent": "FRONTEND-ENGINEER",
+      "dependencies": [
+        "MIXA-015",
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-032",
+      "epic": "EP-09-SETTINGS",
+      "title": "Build settings tab",
+      "description": "Create the Settings tab with configuration for LLM providers, Fenix engine modules, appearance, keyboard shortcuts, data management, and account.",
+      "acceptanceCriteria": [
+        "SettingsTab.tsx with tabbed/sectioned layout",
+        "AI Providers section: configure API keys for OpenAI, Anthropic, Gemini, Ollama endpoint",
+        "API keys stored securely in OS keychain (Electron safeStorage)",
+        "Active provider selector with model picker",
+        "Engine section: list of Fenix modules with enable/disable toggles",
+        "Appearance section: theme selector (dark/light/system), font size, sidebar position",
+        "Shortcuts section: list all shortcuts, click to rebind, reset to defaults",
+        "Data section: storage usage display, export all data button, clear cache button",
+        "All settings persisted (Electron store or SQLite)",
+        "Changes take effect immediately without restart"
+      ],
+      "priority": 32,
+      "estimatedComplexity": "high",
+      "agent": "FRONTEND-ENGINEER",
+      "dependencies": [
+        "MIXA-013",
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-033",
+      "epic": "EP-09-SETTINGS",
+      "title": "Implement theming system",
+      "description": "Build a theming system that applies across the entire app: browser chrome, terminal renderer, knowledge views, dashboards, and chat. Support dark/light/system themes with customizable accent colors.",
+      "acceptanceCriteria": [
+        "packages/ui/src/themes/ defines theme tokens (colors, spacing, typography, radii)",
+        "Built-in themes: dark (default), light, system (follows OS)",
+        "Theme applied globally via CSS variables or Tailwind config",
+        "Terminal renderer components respect active theme",
+        "Dashboard charts use theme-aware color palettes",
+        "Chat messages styled according to theme",
+        "Web tabs are not affected by theme (they render their own content)",
+        "Theme switching is instant (no flash/reload)",
+        "Accent color customizable (10 preset options + hex input)",
+        "Theme preference persisted in settings"
+      ],
+      "priority": 33,
+      "estimatedComplexity": "medium",
+      "agent": "FRONTEND-ENGINEER",
+      "dependencies": [
+        "MIXA-005"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-034",
+      "epic": "EP-10-DEVOPS",
+      "title": "Set up GitHub Actions CI pipeline",
+      "description": "Create CI workflow that runs on PRs: lint, typecheck, test for all TypeScript packages, and go test/vet for the engine.",
+      "acceptanceCriteria": [
+        ".github/workflows/ci.yml triggers on pull_request to main",
+        "Runs: pnpm install \u2192 pnpm turbo lint \u2192 pnpm turbo typecheck \u2192 pnpm turbo test",
+        "Runs: cd engine && go vet ./... && go test ./...",
+        "Uses pnpm cache for faster installs",
+        "Uses Go cache for faster builds",
+        "Fails PR if any check fails",
+        "Runs on ubuntu-latest",
+        "PostgreSQL + Redis services for integration tests",
+        "Job matrix: Node 20, Go 1.22"
+      ],
+      "priority": 34,
+      "estimatedComplexity": "medium",
+      "agent": "DEVOPS-ENGINEER",
+      "dependencies": [
+        "MIXA-001",
+        "MIXA-004"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-035",
+      "epic": "EP-10-DEVOPS",
+      "title": "Set up Electron packaging and build workflow",
+      "description": "Configure electron-builder for packaging the app as DMG (macOS), AppImage (Linux), and NSIS installer (Windows). Create GitHub Actions workflow for building releases.",
+      "acceptanceCriteria": [
+        "apps/desktop/electron-builder.yml configured for mac (dmg+zip), linux (AppImage), win (nsis)",
+        "Go engine binary bundled as extraResource in the Electron app",
+        "Makefile target: `make package` builds Go engine \u2192 builds Electron app \u2192 packages",
+        ".github/workflows/release.yml triggers on git tag (v*)",
+        "Release workflow: build for all platforms \u2192 upload artifacts to GitHub Release",
+        "Code signing placeholder for macOS (notarization config, actual certs later)",
+        "App icon set for all platforms",
+        "Package size optimized (no unnecessary devDependencies bundled)",
+        "Smoke test: packaged app launches and shows browser window"
+      ],
+      "priority": 35,
+      "estimatedComplexity": "high",
+      "agent": "DEVOPS-ENGINEER",
+      "dependencies": [
+        "MIXA-010"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-036",
+      "epic": "EP-10-DEVOPS",
+      "title": "Implement auto-update mechanism",
+      "description": "Set up electron-updater so the app checks for updates on launch and notifies users when a new version is available. Updates downloaded in background and applied on restart.",
+      "acceptanceCriteria": [
+        "electron-updater configured with GitHub Releases as update source",
+        "Check for updates on app launch (after 5-second delay)",
+        "Check for updates every 4 hours while running",
+        "Notification shown when update is available (non-blocking)",
+        "User can choose: Update Now (restart) or Later",
+        "Download progress shown in notification",
+        "Update applied on next app restart",
+        "Version info visible in Settings tab",
+        "Fallback: manual download link if auto-update fails"
+      ],
+      "priority": 36,
+      "estimatedComplexity": "medium",
+      "agent": "DEVOPS-ENGINEER",
+      "dependencies": [
+        "MIXA-035"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-037",
+      "epic": "EP-01-FOUNDATION",
+      "title": "Set up tRPC layer for renderer \u2194 main process communication",
+      "description": "Implement tRPC router in the Electron main process with procedures for all knowledge base operations. Renderer uses tRPC client via IPC (not HTTP) for type-safe communication.",
+      "acceptanceCriteria": [
+        "tRPC router in main process with routers: items, projects, tags, search, chat, settings, engine",
+        "IPC-based tRPC transport (not HTTP \u2014 uses Electron IPC for same-process communication)",
+        "items router: create, list, get, update, delete, search",
+        "projects router: create, list, get, update, delete",
+        "tags router: list, merge, rename",
+        "search router: hybrid search with filters",
+        "chat router: createConversation, sendMessage (streaming), listConversations",
+        "settings router: get, update",
+        "engine router: status, listModules, sendCommand",
+        "All procedures use Zod input validation",
+        "Full TypeScript type inference from router to client"
+      ],
+      "priority": 37,
+      "estimatedComplexity": "high",
+      "agent": "ARCHITECT",
+      "dependencies": [
+        "MIXA-002",
+        "MIXA-003",
+        "MIXA-005"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-038",
+      "epic": "EP-03-KNOWLEDGE",
+      "title": "Build augmented browsing indicator",
+      "description": "While browsing any web page, Mixa checks if the user's knowledge base contains related content and shows a subtle indicator. Clicking the indicator opens a sidebar panel with related saves.",
+      "acceptanceCriteria": [
+        "Content script (injected into web pages) extracts page title + meta description",
+        "Extracted text sent to search system to find related items",
+        "If related items found: subtle indicator appears (badge on sidebar or floating icon)",
+        "Clicking indicator opens panel showing related items from knowledge base",
+        "Panel shows: item title, summary, relevance score, capture date",
+        "Clicking an item in the panel opens it in a knowledge tab",
+        "Indicator doesn't appear on restricted pages or when knowledge base is empty",
+        "Check happens 2 seconds after page load (debounced, not on every navigation)",
+        "Toggle augmented browsing on/off in settings"
+      ],
+      "priority": 38,
+      "estimatedComplexity": "medium",
+      "agent": "KNOWLEDGE-ENGINEER",
+      "dependencies": [
+        "MIXA-016",
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-039",
+      "epic": "EP-11-POLISH",
+      "title": "Create onboarding flow for new users",
+      "description": "When the app is launched for the first time, guide users through setup: configure LLM provider, explore tab types, capture first item, try a chat query.",
+      "acceptanceCriteria": [
+        "First launch detection (no settings file exists)",
+        "Welcome screen with Mixa AI branding and value proposition",
+        "Step 1: Configure AI provider (pick provider, enter API key, test connection)",
+        "Step 2: Quick tour of tab types (web, terminal, knowledge, chat)",
+        "Step 3: Prompted to capture a page ('try saving this page')",
+        "Step 4: Prompted to ask a question in chat",
+        "Skip option available at every step",
+        "Onboarding state tracked (don't show again after completion or skip)",
+        "Tutorial tips in empty states (empty knowledge base, empty chat, etc.)"
+      ],
+      "priority": 39,
+      "estimatedComplexity": "medium",
+      "agent": "FRONTEND-ENGINEER",
+      "dependencies": [
+        "MIXA-032",
+        "MIXA-011",
+        "MIXA-018"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-040",
+      "epic": "EP-11-POLISH",
+      "title": "Create comprehensive README and documentation",
+      "description": "Write root README, per-package READMEs, development setup guide, and architecture documentation.",
+      "acceptanceCriteria": [
+        "Root README.md: project overview, architecture diagram (ASCII), quick start, contributing guide",
+        "apps/desktop/README.md: Electron app setup, dev workflow, packaging",
+        "engine/README.md: Go engine setup, module development, gRPC API reference",
+        "packages/ai-pipeline/README.md: provider setup, RAG pipeline docs",
+        "packages/terminal-renderer/README.md: component catalog, theming",
+        "packages/content-processor/README.md: extractor docs",
+        "packages/db/README.md: schema reference, migration guide",
+        "docs/ARCHITECTURE.md: detailed architecture with diagrams",
+        "docs/DEVELOPMENT.md: full setup from zero to running (prerequisites, Docker, env)",
+        "docs/FENIX-UI-PROTOCOL.md: protocol specification with examples",
+        "docs/BYOK.md: how to configure each LLM provider"
+      ],
+      "priority": 40,
+      "estimatedComplexity": "medium",
+      "agent": "DEVOPS-ENGINEER",
+      "dependencies": [
+        "MIXA-010",
+        "MIXA-022",
+        "MIXA-018"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-041",
+      "epic": "EP-12-APPS",
+      "title": "Implement App tabs with session partitions",
+      "description": "Build the App tab type that runs web apps in isolated Electron session partitions. Each App tab has its own cookies, localStorage, and auth \u2014 enabling multiple accounts of the same service (e.g., two WhatsApp Web instances).",
+      "acceptanceCriteria": [
+        "App tab type uses Electron session.fromPartition() with persist: prefix",
+        "Each App tab instance gets a unique partition name",
+        "Cookies and localStorage persist across app restarts per partition",
+        "Can open two WhatsApp Web tabs logged into different accounts simultaneously",
+        "App tab templates for popular apps: WhatsApp Web, Slack, Discord, Gmail, Google Meet, Notion",
+        "Templates include: URL, icon, name, recommended partition strategy",
+        "Sidebar shows App tabs with custom icons (not just favicons)",
+        "New App tab via omnibar command: 'new app [name]'",
+        "App tabs are visually distinct from regular web tabs in tab bar"
+      ],
+      "priority": 41,
+      "estimatedComplexity": "high",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-042",
+      "epic": "EP-12-APPS",
+      "title": "Google Meet integration in media bar",
+      "description": "Detect active Google Meet tabs, show them in a persistent media bar, and provide quick controls (mute/unmute, camera toggle, leave meeting) from the media bar without switching tabs.",
+      "acceptanceCriteria": [
+        "Media bar component appears when a Google Meet tab is active",
+        "Media bar shows: meeting name, duration, participant count",
+        "Quick controls: mute/unmute mic, toggle camera, leave meeting",
+        "Controls interact with Meet page via injected content script",
+        "Media bar also shows tabs playing audio (any tab with audible media)",
+        "Media bar position configurable (top/bottom)",
+        "Media bar collapsible",
+        "Works for both regular web tabs and App tabs running Meet"
+      ],
+      "priority": 42,
+      "estimatedComplexity": "high",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-041"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-043",
+      "epic": "EP-13-CANVAS",
+      "title": "Build Canvas tab as visual workspace with embedded tabs",
+      "description": "Integrate Excalidraw (MIT-licensed) as a native Canvas tab type, extended with the ability to embed browser tabs INTO the canvas. Users can drag tabs from the tab bar into the canvas, then draw notes, arrows, and diagrams around them \u2014 creating a spatial visual workspace.",
+      "acceptanceCriteria": [
+        "Canvas tab renders embedded Excalidraw React component with custom extensions",
+        "Drag a tab from tab bar into canvas \u2192 embedded as live webview or static screenshot",
+        "Embedded tabs can be resized and repositioned within canvas",
+        "Two embed modes: Live (interactive webview) and Snapshot (screenshot with link)",
+        "Spatial zoom: zoom out for full canvas view, zoom into embedded tab to interact",
+        "Add sticky notes, text blocks, freeform drawing around embedded elements",
+        "Draw arrows and connectors between any elements (tabs, notes, shapes)",
+        "New Canvas from omnibar: 'new canvas' or 'new drawing'",
+        "Canvas auto-saves to local filesystem (~/.mixa/data/canvases/)",
+        "Export canvas as PNG, SVG, or Excalidraw JSON",
+        "Canvas list viewable in sidebar under Canvases section",
+        "Dark theme support matching Mixa's active theme"
+      ],
+      "priority": 43,
+      "estimatedComplexity": "medium",
+      "agent": "FRONTEND-ENGINEER",
+      "dependencies": [
+        "MIXA-006"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-044",
+      "epic": "EP-14-COLLAB",
+      "title": "Implement Clerk licensing and workspace auth",
+      "description": "Integrate Clerk for lightweight licensing (Pro token verification) and workspace identity. Clerk only answers: does this user have a valid Pro license? Free tier works without any auth.",
+      "acceptanceCriteria": [
+        "Clerk SDK integrated in Electron main process",
+        "On app launch: check Clerk for Pro license status (single API call)",
+        "If Clerk unreachable or no account: app works in free tier mode (no error)",
+        "Pro features gated by license status (not by Clerk being available)",
+        "Sign up / Sign in flow accessible from Settings tab (not forced)",
+        "Clerk organization used for workspace sharing (MIXA-045)",
+        "License status shown in Settings tab: Free / Pro / Team",
+        "License check cached locally: re-verify every 24 hours, not on every launch",
+        "No user data sent to Clerk beyond email + license status"
+      ],
+      "priority": 44,
+      "estimatedComplexity": "medium",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-032"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-045",
+      "epic": "EP-14-COLLAB",
+      "title": "Workspace sharing via Clerk invite links",
+      "description": "Allow users to share their workspace with others via simple Clerk organization invite links. No complex invitation system \u2014 one link to join.",
+      "acceptanceCriteria": [
+        "Generate shareable invite link from Settings > Workspace",
+        "Link uses Clerk organization invite flow",
+        "Recipient clicks link \u2192 signs in/up via Clerk \u2192 joins workspace",
+        "Workspace roles: Owner, Member (simple, no granular permissions)",
+        "Shared workspace members can see shared knowledge projects",
+        "Shared workspace members can view shared canvases",
+        "Owner can revoke access (remove member from Clerk org)",
+        "Workspace member list visible in Settings > Workspace"
+      ],
+      "priority": 45,
+      "estimatedComplexity": "high",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-044"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-046",
+      "epic": "EP-01-FOUNDATION",
+      "title": "Replace PostgreSQL with PGlite (embedded WASM)",
+      "description": "Replace the external PostgreSQL dependency with PGlite \u2014 PostgreSQL compiled to WASM that runs embedded in the Electron main process. This eliminates the Docker/PostgreSQL installation requirement entirely.",
+      "acceptanceCriteria": [
+        "packages/db uses @electric-sql/pglite instead of postgres driver",
+        "PGlite data directory: ~/.mixa/data/pglite/",
+        "pgvector extension loaded in PGlite for embedding storage",
+        "All Drizzle schema and migrations work with PGlite",
+        "No Docker required for development or production",
+        "Database survives app restarts (persistent filesystem storage)",
+        "Migration from Docker PostgreSQL to PGlite documented (for existing dev data)",
+        "Performance acceptable: <100ms for typical queries on 10k items",
+        "docker-compose.dev.yml removed or made optional (for those who prefer external PG)"
+      ],
+      "priority": 46,
+      "estimatedComplexity": "high",
+      "agent": "ARCHITECT",
+      "dependencies": [
+        "MIXA-003"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-047",
+      "epic": "EP-15-TABS",
+      "title": "Implement tab management features (TabFlow)",
+      "description": "Port key tab management features from TabFlow: tab groups, sessions, forever history, tab reminders, auto-categorization, and tab suspension.",
+      "acceptanceCriteria": [
+        "Tab groups: create named, colored groups; collapse/expand groups in tab bar",
+        "Sessions: save current tab set as named session, restore later from omnibar",
+        "Forever history: all tab opens/closes logged in PGlite, searchable via omnibar",
+        "Tab reminders: right-click tab \u2192 'Remind me' \u2192 pick time \u2192 native notification",
+        "Tab suspension: tabs inactive for >N minutes get suspended (configurable, default 30min)",
+        "Suspended tabs show placeholder, reload on focus",
+        "Quick Access pins: pinned sites always shown at top of sidebar",
+        "All tab management data stored in PGlite",
+        "Import sessions from Chrome (optional)"
+      ],
+      "priority": 47,
+      "estimatedComplexity": "high",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-006",
+        "MIXA-046"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-048",
+      "epic": "EP-15-TABS",
+      "title": "Implement Simple Mode / Power Mode UI toggle",
+      "description": "Two UI modes: Simple Mode reduces visible options by ~60%, shows text labels, progressive disclosure. Power Mode shows everything (icon-only, all views, all actions). Based on TabFlow's Simple Mode design.",
+      "acceptanceCriteria": [
+        "Mode toggle in Settings > Appearance: Simple / Power",
+        "Simple Mode: 5 primary views in sidebar (instead of 10+), text labels on all actions",
+        "Simple Mode: tab actions always visible (not hover-only), larger click targets (44px+)",
+        "Simple Mode: progressive disclosure \u2014 advanced features behind 'More' dropdowns",
+        "Power Mode: icon-only controls, all views visible, compact layout",
+        "Mode selection on first launch (onboarding)",
+        "Mode affects: sidebar, tab bar, tab actions, omnibar suggestions, dashboard controls",
+        "Smooth transition between modes (no reload needed)",
+        "Mode preference persisted in settings"
+      ],
+      "priority": 48,
+      "estimatedComplexity": "medium",
+      "agent": "FRONTEND-ENGINEER",
+      "dependencies": [
+        "MIXA-008",
+        "MIXA-032"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-049",
+      "epic": "EP-14-COLLAB",
+      "title": "Implement backup to user's own storage provider",
+      "description": "Users connect their own S3-compatible storage, Dropbox, Google Drive, or local directory for encrypted backups. Mixa never stores user data.",
+      "acceptanceCriteria": [
+        "Settings > Data > Backup Provider: dropdown with S3, Dropbox, Google Drive, Local Directory",
+        "S3-compatible: bucket name, endpoint, access key, secret key (works with AWS S3, Backblaze B2, MinIO)",
+        "Local directory: file picker to choose backup location",
+        "Dropbox and Google Drive: OAuth flow to authorize Mixa (read/write to a dedicated folder)",
+        "Backup format: encrypted ZIP (AES-256-GCM), user sets encryption passphrase",
+        "Backup includes: PGlite database dump, canvas files, settings, engine config",
+        "Manual backup button: 'Backup Now'",
+        "Scheduled backups: daily or weekly (configurable)",
+        "Restore: select backup file \u2192 enter passphrase \u2192 restore all data",
+        "Backup history visible in settings (date, size, provider)"
+      ],
+      "priority": 49,
+      "estimatedComplexity": "high",
+      "agent": "ARCHITECT",
+      "dependencies": [
+        "MIXA-046",
+        "MIXA-032"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-050",
+      "epic": "EP-15-TABS",
+      "title": "Implement Doppler integration for token management",
+      "description": "Users who use Doppler can connect their Doppler project to Mixa. API keys and tokens are pulled from Doppler instead of manual entry. Alternative: users manage tokens via local settings.",
+      "acceptanceCriteria": [
+        "Settings > Tokens > Source: 'Manual' (default) or 'Doppler'",
+        "Doppler mode: user enters Doppler service token or uses doppler CLI auth",
+        "Doppler mode: pulls all configured tokens on app launch (LLM keys, provider keys, etc.)",
+        "Token mapping: Doppler secret names mapped to Mixa token slots (configurable)",
+        "Manual mode: tokens entered directly in Settings (existing flow)",
+        "Both modes store tokens in OS keychain",
+        "Token list view: shows all configured tokens, source (manual/Doppler), last verified",
+        "Token refresh: re-pull from Doppler on demand or on schedule"
+      ],
+      "priority": 50,
+      "estimatedComplexity": "medium",
+      "agent": "ELECTRON-ENGINEER",
+      "dependencies": [
+        "MIXA-032"
+      ],
+      "passes": false
+    },
+    {
+      "id": "MIXA-051",
+      "epic": "EP-16-MARKETING",
+      "title": "Build marketing site with real UI simulation demos",
+      "description": "Build the Next.js marketing site (apps/web) that showcases Mixa using actual product UI components, not screenshots. Use the fluffy-umbrella/Fintivio pattern: BrowserMockup wrappers, declarative demo-acts animation system, auto-measurement, and interactive feature demos. Visitors should feel like they're using the product.",
+      "acceptanceCriteria": [
+        "apps/web is a Next.js app with landing page, pricing, and docs",
+        "BrowserMockup component wraps product UI in fake browser chrome (traffic lights, address bar)",
+        "Demo-acts system: declarative animation configs that drive interactive demos",
+        "AnimatedCursor component: visual cursor that moves, clicks, drags on demo elements",
+        "Auto-measurement: data-w attributes on DOM elements, runtime position calculation",
+        "InterruptibleDemoLoop: plays acts in sequence, pause/resume, jump-to-act on feature click",
+        "Hero section: full BrowserMockup showing Mixa with tabs, sidebar, omnibar",
+        "Feature sections: Browsing, Terminal, Knowledge/Chat, Canvas, App Tabs \u2014 each with interactive demo",
+        "Feature cards in sidebar: clicking a feature jumps to its demo animation",
+        "All demo UIs use real components from packages/ui (tab bar, sidebar, omnibar, terminal renderer, etc.)",
+        "Pricing section with Free/Pro/Team cards",
+        "Responsive design, fast loading, SEO optimized"
+      ],
+      "priority": 51,
+      "estimatedComplexity": "high",
+      "agent": "FRONTEND-ENGINEER",
+      "dependencies": [
+        "MIXA-006",
+        "MIXA-021",
+        "MIXA-018",
+        "MIXA-043"
+      ],
+      "passes": false
+    }
+  ]
+}

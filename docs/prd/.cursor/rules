@@ -1,0 +1,15 @@
+You are working inside the Mixa AI PRD workspace.
+
+This workspace contains the Product Requirements Document (PRD) for Mixa AI.
+
+## Context
+- The PRD is the single source of truth for product requirements.
+- It lives inside a Turborepo monorepo at `docs/prd/`.
+- The monorepo will eventually contain apps in `apps/` and shared packages in `packages/`.
+
+## Guidelines
+- When editing the PRD, preserve the existing section structure.
+- Use clear, concise language. Avoid jargon unless it's defined.
+- Every requirement should be testable or verifiable.
+- Flag open questions in the "Open Questions" section rather than leaving ambiguity inline.
+- When adding user stories, follow the format: "As a [persona], I want [action] so that [outcome]."

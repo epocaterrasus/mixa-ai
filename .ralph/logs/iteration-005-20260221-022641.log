@@ -1,0 +1,1 @@
+I need your permission to run `pnpm install` to install the monorepo dependencies. Please approve the command when prompted so I can proceed with the backpressure checks. Without installing dependencies, I can't run `pnpm turbo build`, `lint`, or `typecheck`.
