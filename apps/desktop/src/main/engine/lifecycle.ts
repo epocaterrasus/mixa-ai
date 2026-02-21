@@ -170,6 +170,11 @@ export class EngineLifecycle {
     this.setStatus("stopped");
   }
 
+  /** Expose the gRPC client for direct access (e.g., UI streaming) */
+  getGrpcClient(): EngineGrpcClient | null {
+    return this.grpcClient;
+  }
+
   getStatus(): EngineStatus {
     return {
       connected: this.connected,

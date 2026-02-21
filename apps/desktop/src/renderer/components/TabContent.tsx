@@ -2,6 +2,7 @@ import type { TabType } from "@mixa-ai/types";
 import { ChatTab } from "./chat/ChatTab";
 import { KnowledgeTab } from "./knowledge/KnowledgeTab";
 import { SettingsTab } from "./settings/SettingsTab";
+import { TerminalTab } from "./terminal/TerminalTab";
 
 const styles = {
   container: {
@@ -36,12 +37,7 @@ interface PlaceholderContent {
   subtitle: string;
 }
 
-const placeholders: Record<Exclude<TabType, "web" | "chat" | "knowledge" | "settings">, PlaceholderContent> = {
-  terminal: {
-    icon: "\u{25B6}\uFE0F",
-    title: "Terminal",
-    subtitle: "Terminal renderer coming in Sprint 3",
-  },
+const placeholders: Record<Exclude<TabType, "web" | "chat" | "knowledge" | "settings" | "terminal">, PlaceholderContent> = {
   dashboard: {
     icon: "\u{1F4CA}",
     title: "Dashboard",
@@ -91,6 +87,11 @@ export function TabContent({
   // Settings tab renders the full settings panel
   if (type === "settings") {
     return <SettingsTab />;
+  }
+
+  // Terminal tab renders the Fenix engine UI via gRPC streaming
+  if (type === "terminal") {
+    return <TerminalTab />;
   }
 
   const content = placeholders[type];

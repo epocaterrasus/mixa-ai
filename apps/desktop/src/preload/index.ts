@@ -231,6 +231,50 @@ const electronAPI = {
     },
   },
 
+  // Terminal gRPC streaming IPC
+  terminal: {
+    startStream: (streamId: string, module: string): Promise<void> =>
+      ipcRenderer.invoke("terminal:start-stream", { streamId, module }),
+
+    stopStream: (streamId: string): Promise<void> =>
+      ipcRenderer.invoke("terminal:stop-stream", { streamId }),
+
+    sendEvent: (data: {
+      streamId: string;
+      module: string;
+      actionId: string | null;
+      componentId: string | null;
+      eventType: string;
+      data: Record<string, string>;
+    }): Promise<boolean> => ipcRenderer.invoke("terminal:send-event", data),
+
+    onStreamUpdate: (callback: (data: {
+      streamId: string;
+      view: {
+        module: string;
+        components: Array<Record<string, unknown>>;
+        actions: Array<Record<string, unknown>>;
+      } | null;
+      error: string | null;
+      ended: boolean;
+    }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: {
+        streamId: string;
+        view: {
+          module: string;
+          components: Array<Record<string, unknown>>;
+          actions: Array<Record<string, unknown>>;
+        } | null;
+        error: string | null;
+        ended: boolean;
+      }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("terminal:stream-update", handler);
+      return () => ipcRenderer.removeListener("terminal:stream-update", handler);
+    },
+  },
+
   // Engine lifecycle events from main → renderer
   engine: {
     onStatusChanged: (callback: (data: {
