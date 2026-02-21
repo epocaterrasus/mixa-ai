@@ -87,6 +87,11 @@ export function TabContent({
     return <ChatTab />;
   }
 
+  // Knowledge tab renders the knowledge browse/search UI
+  if (type === "knowledge") {
+    return <KnowledgeTab />;
+  }
+
   const content = placeholders[type];
 
   return (

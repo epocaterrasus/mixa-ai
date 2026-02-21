@@ -96,6 +96,8 @@ export const itemsRouter = router({
         itemType: itemTypeSchema.optional(),
         isFavorite: z.boolean().optional(),
         isArchived: z.boolean().optional(),
+        dateFrom: z.string().datetime().optional(),
+        dateTo: z.string().datetime().optional(),
         sortBy: z
           .enum(["capturedAt", "title", "updatedAt"])
           .default("capturedAt"),
@@ -114,6 +116,12 @@ export const itemsRouter = router({
       }
       if (input.isArchived !== undefined) {
         items = items.filter((i) => i.isArchived === input.isArchived);
+      }
+      if (input.dateFrom) {
+        items = items.filter((i) => i.capturedAt >= input.dateFrom!);
+      }
+      if (input.dateTo) {
+        items = items.filter((i) => i.capturedAt <= input.dateTo!);
       }
 
       // Sort

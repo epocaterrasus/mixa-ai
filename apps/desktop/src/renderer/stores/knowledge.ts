@@ -31,12 +31,16 @@ export interface KnowledgeFilters {
   itemType: "article" | "highlight" | "youtube" | "pdf" | "code" | "image" | "terminal" | undefined;
   isFavorite: boolean | undefined;
   isArchived: boolean | undefined;
+  dateFrom: string | undefined;
+  dateTo: string | undefined;
 }
 
 const DEFAULT_FILTERS: KnowledgeFilters = {
   itemType: undefined,
   isFavorite: undefined,
   isArchived: false,
+  dateFrom: undefined,
+  dateTo: undefined,
 };
 
 const PAGE_SIZE = 24;
