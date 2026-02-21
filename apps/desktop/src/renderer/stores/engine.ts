@@ -8,18 +8,18 @@ interface EngineState {
   uptime: number;
   version: string;
   updateStatus: (data: {
-    connected: boolean;
-    status: string;
-    modules: Array<{
-      name: string;
-      displayName: string;
-      description: string;
-      enabled: boolean;
-      status: string;
-      errorMessage: string | null;
+    readonly connected: boolean;
+    readonly status: string;
+    readonly modules: ReadonlyArray<{
+      readonly name: string;
+      readonly displayName: string;
+      readonly description: string;
+      readonly enabled: boolean;
+      readonly status: string;
+      readonly errorMessage: string | null;
     }>;
-    uptime: number;
-    version: string;
+    readonly uptime: number;
+    readonly version: string;
   }) => void;
 }
 
