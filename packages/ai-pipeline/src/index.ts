@@ -95,3 +95,16 @@ export {
   type RawVectorHit,
   type RawFtsHit,
 } from "./retriever.js";
+
+// Pipeline — RAG chat (retrieve → pack context → generate → citations)
+export {
+  ragQuery,
+  ragStream,
+  packContext,
+  buildSystemPrompt,
+  extractCitations,
+  type RAGOptions,
+  type RAGResponse,
+  type RAGStreamChunk,
+  type ContextChunk,
+} from "./pipeline.js";

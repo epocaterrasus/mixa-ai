@@ -30,7 +30,7 @@
 | 17 | MIXA-014 | Text chunking + embeddings | 🟢 DONE | 003, 013 | KNOWLEDGE-ENGINEER |
 | 18 | MIXA-015 | Auto-summarize + auto-tag | 🟢 DONE | 014 | KNOWLEDGE-ENGINEER |
 | 19 | MIXA-016 | Semantic + full-text search | 🟢 DONE | 014 | KNOWLEDGE-ENGINEER |
-| 20 | MIXA-017 | RAG chat pipeline | 🔴 TODO | 016 | KNOWLEDGE-ENGINEER |
+| 20 | MIXA-017 | RAG chat pipeline | 🟢 DONE | 016 | KNOWLEDGE-ENGINEER |
 | 21 | MIXA-018 | Chat tab UI | 🔴 TODO | 017, 006 | KNOWLEDGE-ENGINEER |
 | 22 | MIXA-019 | Knowledge browse/search tab | 🔴 TODO | 016, 011, 006 | FRONTEND-ENGINEER |
 | 23 | MIXA-032 | Settings tab | 🔴 TODO | 013, 006 | FRONTEND-ENGINEER |
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 19
-- Remaining: 32
+- Completed: 20
+- Remaining: 31
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes
