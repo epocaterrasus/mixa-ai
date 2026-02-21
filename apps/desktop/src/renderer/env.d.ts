@@ -6,6 +6,13 @@ interface ElectronAPI {
     readonly chrome: string;
     readonly electron: string;
   };
+  readonly trpc: (request: {
+    path: string;
+    input: unknown;
+  }) => Promise<
+    | { result: { data: unknown } }
+    | { error: { code: string; message: string } }
+  >;
 }
 
 interface Window {

@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell } from "electron";
 import { join } from "node:path";
+import { setupTRPCHandler } from "./trpc/index.js";
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -42,6 +43,7 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  setupTRPCHandler();
   createWindow();
 
   app.on("activate", () => {
