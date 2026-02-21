@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useTabStore } from "../stores/tabs";
+import { Omnibar } from "./Omnibar";
 
 const styles = {
   container: {
@@ -30,35 +31,6 @@ const styles = {
     color: "#444",
     cursor: "default",
   } as React.CSSProperties,
-  urlDisplay: {
-    flex: 1,
-    height: "26px",
-    backgroundColor: "#1a1a1a",
-    borderRadius: "6px",
-    border: "1px solid #2a2a2a",
-    color: "#ccc",
-    fontSize: "12px",
-    padding: "0 10px",
-    display: "flex",
-    alignItems: "center",
-    overflow: "hidden",
-    whiteSpace: "nowrap",
-    textOverflow: "ellipsis",
-    marginLeft: "4px",
-    marginRight: "4px",
-  } as React.CSSProperties,
-  urlText: {
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    flex: 1,
-  } as React.CSSProperties,
-  lockIcon: {
-    marginRight: "6px",
-    fontSize: "10px",
-    color: "#4ade80",
-    flexShrink: 0,
-  } as React.CSSProperties,
 } as const;
 
 export function Toolbar(): React.ReactElement {
@@ -85,13 +57,6 @@ export function Toolbar(): React.ReactElement {
     }
   }, [activeTab]);
 
-  const isWebTab = activeTab?.type === "web";
-  const url = activeTab?.url ?? "";
-  const isHttps = url.startsWith("https://");
-
-  // Clean display URL (remove protocol for display)
-  const displayUrl = url.replace(/^https?:\/\//, "");
-
   return (
     <div style={styles.container}>
       {/* Navigation buttons */}
@@ -106,7 +71,7 @@ export function Toolbar(): React.ReactElement {
         aria-label="Go back"
         title="Back"
       >
-        ←
+        {"\u2190"}
       </button>
       <button
         type="button"
@@ -119,7 +84,7 @@ export function Toolbar(): React.ReactElement {
         aria-label="Go forward"
         title="Forward"
       >
-        →
+        {"\u2192"}
       </button>
       <button
         type="button"
@@ -129,24 +94,11 @@ export function Toolbar(): React.ReactElement {
         aria-label="Reload page"
         title="Reload"
       >
-        {activeTab?.state === "loading" ? "×" : "↻"}
+        {activeTab?.state === "loading" ? "\u00D7" : "\u21BB"}
       </button>
 
-      {/* URL display */}
-      <div style={styles.urlDisplay}>
-        {isWebTab && url ? (
-          <>
-            {isHttps && <span style={styles.lockIcon}>🔒</span>}
-            <span style={styles.urlText}>{displayUrl}</span>
-          </>
-        ) : isWebTab ? (
-          <span style={{ ...styles.urlText, color: "#666" }}>New Tab</span>
-        ) : (
-          <span style={{ ...styles.urlText, color: "#666" }}>
-            mixa://{activeTab?.type ?? "home"}
-          </span>
-        )}
-      </div>
+      {/* Omnibar (URL + command palette + search) */}
+      <Omnibar />
     </div>
   );
 }
