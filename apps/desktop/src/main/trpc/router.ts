@@ -6,6 +6,7 @@ import { searchRouter } from "./routers/search.js";
 import { chatRouter } from "./routers/chat.js";
 import { settingsRouter } from "./routers/settings.js";
 import { engineRouter } from "./routers/engine.js";
+import { knowledgeStatsRouter } from "./routers/knowledge-stats.js";
 
 export const appRouter = router({
   items: itemsRouter,
@@ -15,6 +16,7 @@ export const appRouter = router({
   chat: chatRouter,
   settings: settingsRouter,
   engine: engineRouter,
+  knowledgeStats: knowledgeStatsRouter,
 });
 
 export type AppRouter = typeof appRouter;

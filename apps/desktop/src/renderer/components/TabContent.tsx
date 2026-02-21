@@ -2,6 +2,7 @@ import type { TabType } from "@mixa-ai/types";
 import { ChatTab } from "./chat/ChatTab";
 import { CostDashboard } from "./dashboard/CostDashboard";
 import { HealthDashboard } from "./dashboard/HealthDashboard";
+import { KnowledgeDashboard } from "./dashboard/KnowledgeDashboard";
 import { KnowledgeTab } from "./knowledge/KnowledgeTab";
 import { SettingsTab } from "./settings/SettingsTab";
 import { TerminalTab } from "./terminal/TerminalTab";
@@ -70,10 +71,13 @@ export function TabContent({
     return <TerminalTab />;
   }
 
-  // Dashboard tab renders cost or health dashboard based on url
+  // Dashboard tab renders cost, health, or knowledge dashboard based on url
   if (type === "dashboard") {
     if (url === "health") {
       return <HealthDashboard />;
+    }
+    if (url === "knowledge") {
+      return <KnowledgeDashboard />;
     }
     return <CostDashboard />;
   }

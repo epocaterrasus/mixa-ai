@@ -259,6 +259,13 @@ const COMMANDS: CommandDef[] = [
     action: (addTab) => addTab("dashboard", "health"),
   },
   {
+    id: "cmd-dashboard-knowledge",
+    label: "Knowledge Stats",
+    description: "View knowledge base statistics & insights",
+    icon: "\u{1F4DA}",
+    action: (addTab) => addTab("dashboard", "knowledge"),
+  },
+  {
     id: "cmd-settings",
     label: "Settings",
     description: "Open settings",

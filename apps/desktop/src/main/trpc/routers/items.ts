@@ -223,6 +223,90 @@ export const itemsRouter = router({
       return { success: true };
     }),
 
+  stats: publicProcedure
+    .query(async () => {
+      const items = captureStore.getAll();
+      const total = items.length;
+
+      // Reading time totals
+      let totalReadingTime = 0;
+      let totalWordCount = 0;
+      for (const item of items) {
+        totalReadingTime += item.readingTime ?? 0;
+        totalWordCount += item.wordCount ?? 0;
+      }
+
+      // Items per day (last 30 days)
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const dailyCounts: Record<string, number> = {};
+      for (let d = 0; d < 30; d++) {
+        const date = new Date(thirtyDaysAgo);
+        date.setDate(date.getDate() + d);
+        dailyCounts[date.toISOString().slice(0, 10)] = 0;
+      }
+      for (const item of items) {
+        const day = item.capturedAt.slice(0, 10);
+        const current = dailyCounts[day];
+        if (current !== undefined) {
+          dailyCounts[day] = current + 1;
+        }
+      }
+      const capturesPerDay = Object.entries(dailyCounts)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, count]) => ({ date, count }));
+
+      // Top domains
+      const domainCounts: Record<string, number> = {};
+      for (const item of items) {
+        if (item.domain) {
+          domainCounts[item.domain] = (domainCounts[item.domain] ?? 0) + 1;
+        }
+      }
+      const topDomains = Object.entries(domainCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10)
+        .map(([domain, count]) => ({ domain, count }));
+
+      // Item type breakdown
+      const typeCounts: Record<string, number> = {};
+      for (const item of items) {
+        typeCounts[item.itemType] = (typeCounts[item.itemType] ?? 0) + 1;
+      }
+      const typeBreakdown = Object.entries(typeCounts)
+        .sort(([, a], [, b]) => b - a)
+        .map(([itemType, count]) => ({ itemType, count }));
+
+      // Favorites count
+      const favoritesCount = items.filter((i) => i.isFavorite).length;
+
+      // Recent captures (last 10)
+      const recentCaptures = [...items]
+        .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
+        .slice(0, 10)
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          domain: item.domain,
+          itemType: item.itemType,
+          capturedAt: item.capturedAt,
+          readingTime: item.readingTime,
+          faviconUrl: item.faviconUrl,
+        }));
+
+      return {
+        total,
+        totalReadingTime,
+        totalWordCount,
+        favoritesCount,
+        capturesPerDay,
+        topDomains,
+        typeBreakdown,
+        recentCaptures,
+      };
+    }),
+
   search: publicProcedure
     .input(
       z.object({

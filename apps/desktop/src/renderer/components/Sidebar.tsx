@@ -48,6 +48,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   { type: "chat", icon: "\u{1F4AC}", label: "Chat" },
   { type: "dashboard", icon: "\u{1F4CA}", label: "Cost Dashboard" },
   { type: "dashboard", icon: "\u{1F3E5}", label: "Health Dashboard", url: "health" },
+  { type: "dashboard", icon: "\u{1F4DA}", label: "Knowledge Stats", url: "knowledge" },
   { type: "settings", icon: "\u2699", label: "Settings" },
 ];
 
