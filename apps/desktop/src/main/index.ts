@@ -6,6 +6,7 @@ import { engineLifecycle } from "./engine/index.js";
 import { setupCaptureHandlers } from "./capture/index.js";
 import { setupChatHandlers } from "./chat/handler.js";
 import { setupTerminalHandlers, cleanupTerminalStreams } from "./terminal/handler.js";
+import { setupShellHandlers, cleanupShells } from "./shell/handler.js";
 import { augmentedBrowsingService } from "./augmented/index.js";
 import { loadSettings } from "./trpc/routers/settings.js";
 
@@ -60,6 +61,7 @@ void app.whenReady().then(() => {
   setupTRPCHandler();
   setupChatHandlers();
   setupTerminalHandlers();
+  setupShellHandlers();
   const mainWindow = createWindow();
 
   // Set up content capture IPC handlers
@@ -85,9 +87,10 @@ void app.whenReady().then(() => {
   });
 });
 
-// Graceful shutdown: clean up terminal streams + stop engine before quitting
+// Graceful shutdown: clean up terminal streams, shells, and stop engine before quitting
 app.on("before-quit", () => {
   cleanupTerminalStreams();
+  cleanupShells();
   void engineLifecycle.stop();
 });
 
