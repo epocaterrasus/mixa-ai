@@ -1,0 +1,29 @@
+## MIXA-006 Complete
+
+**Task**: Implement tab system with Chromium webviews
+**Status**: All acceptance criteria met, all backpressure gates passed, committed.
+
+### What was built:
+
+**Main Process** (`src/main/tabs/manager.ts`):
+- `TabManager` class managing `WebContentsView` instances for each web tab
+- Lifecycle: create, activate, destroy web views
+- Navigation: back, forward, reload, navigate to URL
+- Event forwarding: title updates, favicon changes, URL changes, loading state → renderer via IPC
+- Window resize handling to keep views properly bounded
+- Security: sandbox enabled, nodeIntegration disabled, contextIsolation enabled
+
+**Renderer** (new files):
+- `stores/tabs.ts` — Zustand store with full tab state management (add, close, activate, move, update)
+- `components/TabBar.tsx` — Tab strip with drag-and-drop reorder, favicons, loading spinners, close buttons, active indicator
+- `components/Toolbar.tsx` — Navigation buttons (back/forward/reload) + URL display with HTTPS lock icon
+- `components/TabContent.tsx` — Placeholder content for non-web tab types + new tab page
+- `hooks/useTabEvents.ts` — Subscribes to main process events, syncs to Zustand
+- `hooks/useTabShortcuts.ts` — Cmd+T, Cmd+W, Cmd+1-9 keyboard shortcuts
+- `hooks/useTabLifecycle.ts` — Creates/destroys BrowserViews when tabs are added/removed
+
+**Preload** (`preload/index.ts`):
+- Extended with full `tabs` API: createWebView, destroyWebView, activate, navigate, goBack, goForward, reload
+- Event listeners: onLoading, onStateChanged, onTitleUpdated, onFaviconUpdated, onUrlUpdated
+
+**App.tsx**: Rewired as browser chrome layout with TabBar + Toolbar + content area

@@ -1,0 +1,19 @@
+**MIXA-007 complete.** Here's what was implemented:
+
+### Omnibar (URL + Command Palette + Search)
+
+**New file**: `apps/desktop/src/renderer/components/Omnibar.tsx`
+**Modified**: `apps/desktop/src/renderer/components/Toolbar.tsx`
+
+**Features delivered:**
+- **URL navigation**: Type a URL and press Enter to navigate the active web tab (auto-prepends `https://` for bare domains)
+- **Search fallback**: Non-URL queries open Google search
+- **Command mode**: Prefix with `>` to see available commands (New Tab, Terminal, Knowledge, Chat, Dashboard, Settings)
+- **Tab search**: Type to filter open tabs by title or URL; click to switch
+- **Keyboard shortcuts**: `Cmd+L` focuses omnibar (URL mode), `Cmd+K` opens command mode, `Escape` closes, Arrow keys navigate suggestions, Enter executes
+- **URL display**: Shows current page URL when unfocused, with SSL lock icon for HTTPS pages
+- **Loading indicator**: Animated progress bar when web tab is loading
+- **Autocomplete dropdown**: Keyboard-navigable suggestion list with kind badges (Tab/Cmd/URL/Search)
+- **Accessibility**: `role="combobox"`, `role="listbox"`, `aria-selected` on suggestions
+
+**All backpressure gates passed**: typecheck, lint, test, build, Go vet, Go test.

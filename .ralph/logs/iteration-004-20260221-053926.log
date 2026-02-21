@@ -1,0 +1,34 @@
+**MIXA-037 is complete.** Here's a summary of what was implemented:
+
+## tRPC Layer (MIXA-037) - Done
+
+### Architecture
+- **Custom IPC transport** - No HTTP server needed. Uses `ipcMain.handle('trpc', ...)` in main process and `ipcRenderer.invoke('trpc', ...)` in preload, with a custom tRPC link in the renderer.
+
+### Files Created
+- `apps/desktop/src/main/trpc/trpc.ts` - tRPC instance with context type
+- `apps/desktop/src/main/trpc/router.ts` - Root router merging 7 sub-routers
+- `apps/desktop/src/main/trpc/ipc.ts` - IPC handler bridging Electron IPC to tRPC
+- `apps/desktop/src/main/trpc/index.ts` - Exports
+- **7 routers** in `routers/`:
+  - `items.ts` - create, list, get, update, delete, search
+  - `projects.ts` - create, list, get, update, delete
+  - `tags.ts` - list, merge, rename
+  - `search.ts` - hybrid search with filters (vector + FTS weights)
+  - `chat.ts` - createConversation, sendMessage, listConversations, getConversation, deleteConversation
+  - `settings.ts` - get, update (with default settings)
+  - `engine.ts` - status, listModules, sendCommand
+- `apps/desktop/src/renderer/trpc.ts` - tRPC client with custom IPC link
+
+### Files Modified
+- `apps/desktop/src/main/index.ts` - Calls `setupTRPCHandler()` on app ready
+- `apps/desktop/src/preload/index.ts` - Exposes `trpc` method via contextBridge
+- `apps/desktop/src/renderer/env.d.ts` - Extended ElectronAPI type
+- `apps/desktop/tsconfig.web.json` - Updated rootDir for cross-process type imports
+
+### Backpressure: All gates pass
+- TypeScript typecheck: zero errors
+- Lint: zero errors
+- Tests: all pass
+- Build: successful (main: 15.89kB, preload: 0.37kB, renderer: 530.35kB)
+- Go vet/test: all pass
