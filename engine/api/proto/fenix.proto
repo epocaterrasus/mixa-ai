@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package fenix;
+
+option go_package = "github.com/mixa-ai/engine/pkg/proto";
+
+// HealthCheck service for engine status
+service HealthService {
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Module management service
+service ModuleService {
+  rpc ListModules(ListModulesRequest) returns (ListModulesResponse);
+  rpc GetModuleStatus(GetModuleStatusRequest) returns (ModuleStatus);
+}
+
+// UI streaming service for Fenix terminal renderer
+service UIStreamService {
+  // Server-side stream: engine pushes UI updates to renderer
+  rpc StreamUI(UIStreamRequest) returns (stream UIViewUpdate);
+  // Client sends user interactions back to engine
+  rpc SendEvent(UIEventRequest) returns (UIEventResponse);
+}
+
+// --- HealthCheck ---
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  bool healthy = 1;
+  string status = 2; // "running", "stopped", "error", "starting"
+  string version = 3;
+  int64 uptime_seconds = 4;
+}
+
+// --- Module ---
+
+message ListModulesRequest {}
+
+message ListModulesResponse {
+  repeated ModuleStatus modules = 1;
+}
+
+message GetModuleStatusRequest {
+  string name = 1;
+}
+
+message ModuleStatus {
+  string name = 1;
+  string display_name = 2;
+  string description = 3;
+  bool enabled = 4;
+  string status = 5; // "running", "stopped", "error", "starting"
+  string error_message = 6;
+}
+
+// --- UI Protocol (Fenix) ---
+
+message UIStreamRequest {
+  string module = 1;
+}
+
+message UIViewUpdate {
+  string module = 1;
+  repeated UIComponent components = 2;
+  repeated UIAction actions = 3;
+}
+
+message UIComponent {
+  string id = 1;
+  string type = 2; // "header", "text_block", "table", "card", "metric_row", "chart", "list", "form", "action_bar", "status_bar"
+  optional int32 level = 3;
+  optional string content = 4;
+  optional bool preformatted = 5;
+  repeated TableColumn columns = 6;
+  repeated RowData rows = 7;
+  repeated Metric metrics = 8;
+  optional string chart_type = 9; // "area", "bar", "line", "pie"
+  repeated ChartDataPoint chart_data = 10;
+  repeated string items = 11;
+  repeated FormField fields = 12;
+}
+
+message TableColumn {
+  string key = 1;
+  string label = 2;
+  bool sortable = 3;
+  optional int32 width = 4;
+}
+
+message RowData {
+  map<string, string> values = 1;
+}
+
+message Metric {
+  string label = 1;
+  string value = 2;
+  string trend = 3; // "up", "down", "flat"
+  double change_percent = 4;
+}
+
+message ChartDataPoint {
+  map<string, string> values = 1;
+}
+
+message FormField {
+  string id = 1;
+  string label = 2;
+  string field_type = 3; // "text", "number", "select", "checkbox", "password"
+  optional string placeholder = 4;
+  bool required = 5;
+  repeated string options = 6;
+}
+
+message UIAction {
+  string id = 1;
+  string label = 2;
+  optional string shortcut = 3;
+  bool enabled = 4;
+}
+
+message UIEventRequest {
+  string module = 1;
+  optional string action_id = 2;
+  optional string component_id = 3;
+  string event_type = 4; // "click", "input", "shortcut", "scroll"
+  map<string, string> data = 5;
+}
+
+message UIEventResponse {
+  bool accepted = 1;
+}
