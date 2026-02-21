@@ -27,6 +27,16 @@ export interface Metric {
   changePercent: number;
 }
 
+/** A single row in a table, mapping column keys to cell values */
+export interface RowData {
+  values: Record<string, string>;
+}
+
+/** A single data point in a chart, mapping axis/series keys to values */
+export interface ChartDataPoint {
+  values: Record<string, string>;
+}
+
 /** Column definition for table components */
 export interface TableColumn {
   key: string;
