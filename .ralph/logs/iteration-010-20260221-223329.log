@@ -1,0 +1,18 @@
+**MIXA-030 (Health Dashboard Tab) is complete.** Here's a summary of what's in place:
+
+**HealthDashboard.tsx** — Full dashboard component with:
+- Uptime grid showing endpoint status (up/down) with 24h/7d/30d uptime percentages
+- Response time chart (24h line chart via the PULSE module's gRPC stream)
+- SSL certificate expiry table with color-coded countdown badges
+- Incident timeline showing up/down events chronologically
+- Endpoint management: Add, Test Now, Check SSL, Remove actions
+- Health score percentage in header
+- All state handling: loading, error, disconnected, empty, full render
+
+**Routing** — TabContent.tsx routes `type === "dashboard"` with `url === "health"` to HealthDashboard, `url === "cost"` (or default) to CostDashboard
+
+**Navigation** — Omnibar has separate "Cost Dashboard" and "Health Dashboard" commands; Sidebar has separate quick actions for both
+
+**Tests** — 41 tests in health-helpers.test.ts covering `parseUptimeRows`, `parseSSLRows`, `parseIncidents`, `getStatusColor`, `getSSLAlertColor`, `getStatusLabel`, `calculateHealthScore`
+
+**All backpressure gates passed:** typecheck, lint, test (171 total), build, go vet, go test
