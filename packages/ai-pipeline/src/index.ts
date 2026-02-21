@@ -34,3 +34,26 @@ export {
   DEFAULT_MODELS,
   DEFAULT_EMBEDDING_MODELS,
 } from "./providers/index.js";
+
+// Tokenizer
+export { countTokens, encode, decode } from "./tokenizer.js";
+
+// Chunker
+export { chunkText, type TextChunk, type ChunkerOptions } from "./chunker.js";
+
+// Embedder
+export {
+  embedChunks,
+  type EmbeddedChunk,
+  type EmbedderOptions,
+} from "./embedder.js";
+
+// Queue
+export {
+  EMBEDDING_QUEUE_NAME,
+  createEmbeddingQueue,
+  createEmbeddingWorker,
+  enqueueEmbeddingJob,
+  type EmbeddingJobData,
+  type EmbeddingJobResult,
+} from "./queue.js";
