@@ -1,0 +1,15 @@
+**MIXA-016 complete.** Here's what was implemented:
+
+**`packages/ai-pipeline/src/retriever.ts`** — Hybrid search module:
+- **Vector search**: Embeds query via configured provider, runs cosine similarity against `chunks.embedding` using pgvector `<=>` operator, returns top K chunks with item metadata
+- **Full-text search**: PostgreSQL `ts_rank` + `plainto_tsquery` against items `title` + `content_text`, with `ts_headline` for highlighted snippets
+- **Hybrid scoring**: Normalizes both score sets to 0-1, combines with configurable weights (default 0.6 vector / 0.4 FTS)
+- **Filtering**: Supports `tagIds`, `projectIds`, `itemTypes`, `dateFrom`, `dateTo`
+- **Graceful degradation**: If embedding provider is unavailable, falls back to FTS-only
+- **Score threshold**: `minScore` parameter filters low-quality matches
+
+**`packages/ai-pipeline/src/retriever.test.ts`** — 20 unit tests covering:
+- `normalizeScores` (empty, zeros, single value, mixed, negatives)
+- `mergeResults` (vector-only, FTS-only, combined, sorting, thresholding, limits, chunk grouping, weight config, snippet handling)
+
+All backpressure gates passed: typecheck, lint, test (116 total), build, go vet, go test.

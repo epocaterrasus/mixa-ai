@@ -1,0 +1,23 @@
+## MIXA-015 Complete
+
+**Task**: Implement auto-summarization and auto-tagging
+
+**Files created:**
+- `packages/ai-pipeline/src/summarizer.ts` — Core `summarizeAndTag()` function that sends content to the cheapest available LLM (gpt-4o-mini, claude-3-haiku, etc.) with a structured JSON prompt for summary + tags. Gracefully returns `null` on failure.
+- `packages/ai-pipeline/src/tag-normalizer.ts` — Tag normalization pipeline: lowercase, special char removal, hyphen-separation, bigram similarity deduplication, score clamping, and max tag limiting.
+- `packages/ai-pipeline/src/summarize-queue.ts` — BullMQ queue (`mixa:summarize`) with `createSummarizeQueue`, `createSummarizeWorker`, and `enqueueSummarizeJob` — designed to run after embedding jobs complete.
+- `packages/ai-pipeline/src/summarizer.test.ts` — 10 tests covering happy path, code fences, empty content, LLM failures, invalid JSON, truncation, title inclusion, and missing score defaults.
+- `packages/ai-pipeline/src/tag-normalizer.test.ts` — 18 tests covering normalization, deduplication, similarity merging, score clamping, and edge cases.
+
+**All acceptance criteria met:**
+- Summarize+tag job runs after embedding via BullMQ queue
+- Summary is 2-3 sentences, stored in `items.summary`
+- Tags are 3-7 topic labels with confidence scores (0-1)
+- Well-structured LLM prompt outputs JSON with summary + tags
+- Tags normalized (lowercase, deduplicated, similar tags merged)
+- Works with all providers (OpenAI, Anthropic, Ollama, Gemini)
+- Graceful degradation: returns null on failure
+- 28 new unit tests for tag normalization and summarization
+- Cost-efficient: uses cheapest model per provider
+
+**Backpressure: All gates pass** (typecheck, lint, 96 ai-pipeline tests, full build, Go vet + test)

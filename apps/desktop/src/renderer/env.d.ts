@@ -81,6 +81,29 @@ interface ElectronEngineAPI {
   readonly onLog: (callback: (entry: string) => void) => () => void;
 }
 
+interface ChatStreamChunkData {
+  readonly conversationId: string;
+  readonly messageId: string;
+  readonly content: string;
+  readonly done: boolean;
+  readonly citations: ReadonlyArray<{
+    readonly index: number;
+    readonly itemId: string;
+    readonly chunkId: string;
+    readonly itemTitle: string;
+    readonly itemUrl: string | null;
+    readonly snippet: string;
+  }>;
+}
+
+interface ElectronChatAPI {
+  readonly sendMessage: (conversationId: string, content: string) => Promise<{
+    userMessageId: string;
+    assistantMessageId: string;
+  }>;
+  readonly onStreamChunk: (callback: (data: ChatStreamChunkData) => void) => () => void;
+}
+
 interface ElectronAPI {
   readonly versions: {
     readonly node: string;
@@ -98,6 +121,7 @@ interface ElectronAPI {
   readonly capture: ElectronCaptureAPI;
   readonly sidebar: ElectronSidebarAPI;
   readonly engine: ElectronEngineAPI;
+  readonly chat: ElectronChatAPI;
 }
 
 interface Window {

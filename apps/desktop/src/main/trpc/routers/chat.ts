@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { router, publicProcedure, TRPCError } from "../trpc.js";
+import * as chatStore from "../../chat/store.js";
 
 const chatScopeSchema = z.object({
   projectIds: z.array(z.string().uuid()).default([]),
@@ -15,12 +16,12 @@ export const chatRouter = router({
         scope: chatScopeSchema.nullish(),
       }),
     )
-    .mutation(async ({ input }) => {
-      // TODO: Implement with PGlite (MIXA-046) + RAG pipeline (MIXA-017)
-      throw new TRPCError({
-        code: "NOT_IMPLEMENTED",
-        message: `chat.createConversation not yet connected: ${input.title ?? "untitled"}`,
-      });
+    .mutation(({ input }) => {
+      const conversation = chatStore.createConversation(
+        input.title ?? null,
+        input.scope ?? null,
+      );
+      return conversation;
     }),
 
   sendMessage: publicProcedure
@@ -30,13 +31,23 @@ export const chatRouter = router({
         content: z.string().min(1),
       }),
     )
-    .mutation(async ({ input }) => {
-      // TODO: Implement with RAG pipeline (MIXA-017)
-      // This will eventually support streaming via tRPC subscriptions
-      throw new TRPCError({
-        code: "NOT_IMPLEMENTED",
-        message: `chat.sendMessage not yet connected: conversation ${input.conversationId}`,
-      });
+    .mutation(({ input }) => {
+      const conversation = chatStore.getConversation(input.conversationId);
+      if (!conversation) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Conversation not found: ${input.conversationId}`,
+        });
+      }
+
+      // Store user message (assistant response is handled via IPC streaming)
+      const userMessage = chatStore.addMessage(
+        input.conversationId,
+        "user",
+        input.content,
+      );
+
+      return { messageId: userMessage.id };
     }),
 
   listConversations: publicProcedure
@@ -48,28 +59,34 @@ export const chatRouter = router({
         })
         .default({}),
     )
-    .query(async ({ input: _input }) => {
-      // TODO: Implement with PGlite (MIXA-046)
-      return { conversations: [], total: 0 };
+    .query(({ input }) => {
+      return chatStore.listConversations(input.limit, input.offset);
     }),
 
   getConversation: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .query(async ({ input }) => {
-      // TODO: Implement with PGlite (MIXA-046)
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: `Conversation not found: ${input.id}`,
-      });
+    .query(({ input }) => {
+      const conversation = chatStore.getConversation(input.id);
+      if (!conversation) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Conversation not found: ${input.id}`,
+        });
+      }
+      const messages = chatStore.getMessages(input.id);
+      return { ...conversation, messages };
     }),
 
   deleteConversation: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      // TODO: Implement with PGlite (MIXA-046)
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: `Conversation not found: ${input.id}`,
-      });
+    .mutation(({ input }) => {
+      const deleted = chatStore.deleteConversation(input.id);
+      if (!deleted) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Conversation not found: ${input.id}`,
+        });
+      }
+      return { success: true };
     }),
 });

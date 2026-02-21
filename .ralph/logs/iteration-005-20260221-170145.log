@@ -1,0 +1,33 @@
+## Iteration Complete
+
+**MIXA-017: RAG chat pipeline** — DONE
+
+### What was implemented:
+
+**`packages/ai-pipeline/src/pipeline.ts`** — Full RAG (Retrieval-Augmented Generation) pipeline:
+- **`ragQuery()`** — Non-streaming: retrieve → pack context → generate → extract citations
+- **`ragStream()`** — Streaming: same pipeline but yields tokens as they arrive
+- **`packContext()`** — Greedy context window packing with token budgets, prioritizing highest-scored chunks
+- **`buildSystemPrompt()`** — Constructs system prompt with numbered `[1]`, `[2]` source citations
+- **`extractCitations()`** — Parses citation markers from LLM response, maps to source items
+- Supports scoped chat (filter by projects/tags)
+- Supports multi-turn conversations via chat history
+- Graceful fallback when no context matches
+
+**`packages/ai-pipeline/src/pipeline.test.ts`** — 23 unit tests:
+- `packContext`: empty results, single chunk, sequential indices, score-based ordering, token budget limits, deduplication, metadata preservation
+- `buildSystemPrompt`: fallback prompt, source formatting, null domain handling
+- `extractCitations`: single/multiple citations, deduplication, non-existent indices, sort order, markdown content, snippet truncation
+
+Also fixed: hybrid search default weights aligned to PRD spec (0.7/0.3 vector/FTS).
+
+### Backpressure gates:
+- TypeScript: zero errors
+- Lint: zero errors
+- Tests: **139 passed** across 12 test files
+- Build: successful
+- Go vet/test: all pass
+
+### Commits:
+1. `f132e2e` — `fix(ai-pipeline): align hybrid search default weights to PRD spec (0.7/0.3)`
+2. `0dc30f6` — `feat(ai-pipeline): implement RAG chat pipeline with context packing and citations (MIXA-017)`

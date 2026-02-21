@@ -152,6 +152,48 @@ const electronAPI = {
       ipcRenderer.invoke("sidebar:set-width", width),
   },
 
+  // Chat streaming IPC
+  chat: {
+    sendMessage: (conversationId: string, content: string): Promise<{
+      userMessageId: string;
+      assistantMessageId: string;
+    }> => ipcRenderer.invoke("chat:send-message", { conversationId, content }),
+
+    onStreamChunk: (callback: (data: {
+      conversationId: string;
+      messageId: string;
+      content: string;
+      done: boolean;
+      citations: Array<{
+        index: number;
+        itemId: string;
+        chunkId: string;
+        itemTitle: string;
+        itemUrl: string | null;
+        snippet: string;
+      }>;
+    }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: {
+        conversationId: string;
+        messageId: string;
+        content: string;
+        done: boolean;
+        citations: Array<{
+          index: number;
+          itemId: string;
+          chunkId: string;
+          itemTitle: string;
+          itemUrl: string | null;
+          snippet: string;
+        }>;
+      }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("chat:stream-chunk", handler);
+      return () => ipcRenderer.removeListener("chat:stream-chunk", handler);
+    },
+  },
+
   // Engine lifecycle events from main → renderer
   engine: {
     onStatusChanged: (callback: (data: {

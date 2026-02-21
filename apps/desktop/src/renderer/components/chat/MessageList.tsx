@@ -1,0 +1,132 @@
+// Chat message list with auto-scroll
+
+import { useEffect, useRef } from "react";
+import type { ChatMessage } from "../../stores/chat";
+import { MarkdownRenderer } from "./MarkdownRenderer";
+import { CitationList } from "./CitationList";
+
+interface MessageListProps {
+  messages: ChatMessage[];
+  isStreaming: boolean;
+}
+
+const containerStyle: React.CSSProperties = {
+  flex: 1,
+  overflowY: "auto",
+  padding: "16px 24px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "16px",
+};
+
+const userMessageStyle: React.CSSProperties = {
+  alignSelf: "flex-end",
+  maxWidth: "80%",
+  backgroundColor: "var(--mixa-accent-primary)",
+  color: "#fff",
+  padding: "10px 14px",
+  borderRadius: "16px 16px 4px 16px",
+  fontSize: "14px",
+  lineHeight: 1.5,
+  wordBreak: "break-word",
+};
+
+const assistantMessageStyle: React.CSSProperties = {
+  alignSelf: "flex-start",
+  maxWidth: "85%",
+  backgroundColor: "var(--mixa-bg-surface)",
+  color: "var(--mixa-text-primary)",
+  padding: "12px 16px",
+  borderRadius: "4px 16px 16px 16px",
+  fontSize: "14px",
+  border: "1px solid var(--mixa-border-default)",
+  wordBreak: "break-word",
+};
+
+const streamingIndicatorStyle: React.CSSProperties = {
+  display: "inline-block",
+  width: "8px",
+  height: "16px",
+  backgroundColor: "var(--mixa-accent-primary)",
+  borderRadius: "1px",
+  marginLeft: "2px",
+  animation: "cursor-blink 1s step-end infinite",
+  verticalAlign: "text-bottom",
+};
+
+const emptyStateStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  flex: 1,
+  color: "var(--mixa-text-muted)",
+  gap: "12px",
+  padding: "48px 24px",
+  textAlign: "center",
+};
+
+export function MessageList({ messages, isStreaming }: MessageListProps): React.ReactElement {
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages arrive or streaming updates
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  if (messages.length === 0) {
+    return (
+      <div style={containerStyle}>
+        <div style={emptyStateStyle}>
+          <div style={{ fontSize: "40px" }}>{"\u{1F4AC}"}</div>
+          <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--mixa-text-primary)" }}>
+            Ask Mixa anything
+          </div>
+          <div style={{ fontSize: "13px", maxWidth: "400px", lineHeight: 1.5 }}>
+            I can search your saved knowledge and give you answers with sources.
+            Try asking a question about content you&apos;ve captured.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} style={containerStyle}>
+      {messages.map((message) => (
+        <div
+          key={message.id}
+          style={message.role === "user" ? userMessageStyle : assistantMessageStyle}
+        >
+          {message.role === "user" ? (
+            <span>{message.content}</span>
+          ) : (
+            <>
+              {message.content ? (
+                <MarkdownRenderer content={message.content} />
+              ) : null}
+              {message.isStreaming && (
+                <span style={streamingIndicatorStyle} />
+              )}
+              {!message.isStreaming && message.citations.length > 0 && (
+                <CitationList citations={message.citations} />
+              )}
+            </>
+          )}
+        </div>
+      ))}
+      {isStreaming && messages.length > 0 && messages[messages.length - 1]?.role === "user" && (
+        <div style={assistantMessageStyle}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={streamingIndicatorStyle} />
+            <span style={{ fontSize: "13px", color: "var(--mixa-text-muted)" }}>
+              Thinking...
+            </span>
+          </div>
+        </div>
+      )}
+      <div ref={bottomRef} />
+    </div>
+  );
+}

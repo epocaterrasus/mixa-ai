@@ -4,6 +4,7 @@ import { setupTRPCHandler } from "./trpc/index.js";
 import { tabManager } from "./tabs/manager.js";
 import { engineLifecycle } from "./engine/index.js";
 import { setupCaptureHandlers } from "./capture/index.js";
+import { setupChatHandlers } from "./chat/handler.js";
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -54,6 +55,7 @@ function createWindow(): BrowserWindow {
 
 void app.whenReady().then(() => {
   setupTRPCHandler();
+  setupChatHandlers();
   const mainWindow = createWindow();
 
   // Set up content capture IPC handlers
