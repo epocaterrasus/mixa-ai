@@ -12,7 +12,7 @@
 | 4 | MIXA-004 | Go engine skeleton + gRPC server | 🟢 DONE | 001 | TERMINAL-ENGINEER |
 | 5 | MIXA-037 | tRPC layer (renderer ↔ main process) | 🟢 DONE | 002, 003, 005 | ARCHITECT |
 | 6 | MIXA-005 | Electron app with basic window | 🟢 DONE | 001, 002 | ELECTRON-ENGINEER |
-| 7 | MIXA-006 | Tab system with Chromium webviews | 🔴 TODO | 005 | ELECTRON-ENGINEER |
+| 7 | MIXA-006 | Tab system with Chromium webviews | 🟢 DONE | 005 | ELECTRON-ENGINEER |
 | 8 | MIXA-007 | Omnibar (URL + commands + search) | 🔴 TODO | 006 | ELECTRON-ENGINEER |
 | 9 | MIXA-008 | Sidebar with tab tree | 🔴 TODO | 006 | ELECTRON-ENGINEER |
 | 10 | MIXA-009 | Browser navigation + history | 🔴 TODO | 006 | ELECTRON-ENGINEER |
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 6
-- Remaining: 45
+- Completed: 7
+- Remaining: 44
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes
