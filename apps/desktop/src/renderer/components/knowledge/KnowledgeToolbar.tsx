@@ -361,6 +361,22 @@ export function KnowledgeToolbar({
           </button>
           <button
             type="button"
+            style={{ ...bulkButtonStyle, opacity: 0.5, cursor: "not-allowed" }}
+            title="Add tag (coming soon)"
+            disabled
+          >
+            Add tag
+          </button>
+          <button
+            type="button"
+            style={{ ...bulkButtonStyle, opacity: 0.5, cursor: "not-allowed" }}
+            title="Move to project (coming soon)"
+            disabled
+          >
+            Move to project
+          </button>
+          <button
+            type="button"
             style={bulkDeleteButtonStyle}
             onClick={onDeleteChecked}
             onMouseEnter={(e) => {

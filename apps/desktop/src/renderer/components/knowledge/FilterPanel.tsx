@@ -69,6 +69,18 @@ const clearButtonStyle: React.CSSProperties = {
   transition: "background-color 0.15s",
 };
 
+const dateInputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "5px 8px",
+  borderRadius: "6px",
+  border: "1px solid var(--mixa-border-default)",
+  backgroundColor: "var(--mixa-bg-base)",
+  color: "var(--mixa-text-secondary)",
+  fontSize: "11px",
+  outline: "none",
+  transition: "border-color 0.15s",
+};
+
 const ITEM_TYPES = [
   { value: "article" as const, label: "Articles", icon: "\u{1F4C4}" },
   { value: "highlight" as const, label: "Highlights", icon: "\u{1F4CC}" },
@@ -78,6 +90,29 @@ const ITEM_TYPES = [
   { value: "image" as const, label: "Images", icon: "\u{1F5BC}" },
 ];
 
+function daysAgoISO(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+type DatePreset = "any" | "today" | "week" | "month" | "custom";
+
+function getActiveDatePreset(dateFrom: string | undefined, dateTo: string | undefined): DatePreset {
+  if (!dateFrom && !dateTo) return "any";
+  if (!dateFrom) return "custom";
+
+  const fromDate = new Date(dateFrom);
+  const now = new Date();
+  const diffDays = Math.round((now.getTime() - fromDate.getTime()) / 86_400_000);
+
+  if (diffDays <= 1 && !dateTo) return "today";
+  if (diffDays <= 7 && !dateTo) return "week";
+  if (diffDays <= 30 && !dateTo) return "month";
+  return "custom";
+}
+
 export function FilterPanel({
   filters,
   onSetFilter,
@@ -86,7 +121,9 @@ export function FilterPanel({
   const hasActiveFilters =
     filters.itemType !== undefined ||
     filters.isFavorite !== undefined ||
-    filters.isArchived !== false;
+    filters.isArchived !== false ||
+    filters.dateFrom !== undefined ||
+    filters.dateTo !== undefined;
 
   const handleTypeClick = useCallback(
     (type: typeof ITEM_TYPES[number]["value"]) => {
@@ -94,6 +131,47 @@ export function FilterPanel({
     },
     [filters.itemType, onSetFilter],
   );
+
+  const activeDatePreset = getActiveDatePreset(filters.dateFrom, filters.dateTo);
+
+  const handleDatePreset = useCallback(
+    (preset: DatePreset) => {
+      if (preset === "any") {
+        onSetFilter("dateFrom", undefined);
+        onSetFilter("dateTo", undefined);
+      } else if (preset === "today") {
+        onSetFilter("dateFrom", daysAgoISO(1));
+        onSetFilter("dateTo", undefined);
+      } else if (preset === "week") {
+        onSetFilter("dateFrom", daysAgoISO(7));
+        onSetFilter("dateTo", undefined);
+      } else if (preset === "month") {
+        onSetFilter("dateFrom", daysAgoISO(30));
+        onSetFilter("dateTo", undefined);
+      }
+    },
+    [onSetFilter],
+  );
+
+  const handleDateFromChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      onSetFilter("dateFrom", val ? new Date(val).toISOString() : undefined);
+    },
+    [onSetFilter],
+  );
+
+  const handleDateToChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      onSetFilter("dateTo", val ? new Date(`${val}T23:59:59.999Z`).toISOString() : undefined);
+    },
+    [onSetFilter],
+  );
+
+  // Convert ISO string to date input value (YYYY-MM-DD)
+  const dateFromValue = filters.dateFrom ? filters.dateFrom.slice(0, 10) : "";
+  const dateToValue = filters.dateTo ? filters.dateTo.slice(0, 10) : "";
 
   return (
     <div style={panelStyle}>
@@ -195,6 +273,103 @@ export function FilterPanel({
           <span>{"\u{1F4E6}"}</span>
           <span>Archived</span>
         </button>
+      </div>
+
+      {/* Date range filter */}
+      <div style={sectionStyle}>
+        <div style={sectionLabelStyle}>Date Range</div>
+        <button
+          type="button"
+          style={activeDatePreset === "any" ? filterButtonActiveStyle : filterButtonStyle}
+          onClick={() => handleDatePreset("any")}
+          onMouseEnter={(e) => {
+            if (activeDatePreset !== "any") {
+              e.currentTarget.style.backgroundColor = "var(--mixa-bg-hover)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeDatePreset !== "any") {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }
+          }}
+        >
+          Any time
+        </button>
+        <button
+          type="button"
+          style={activeDatePreset === "today" ? filterButtonActiveStyle : filterButtonStyle}
+          onClick={() => handleDatePreset("today")}
+          onMouseEnter={(e) => {
+            if (activeDatePreset !== "today") {
+              e.currentTarget.style.backgroundColor = "var(--mixa-bg-hover)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeDatePreset !== "today") {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }
+          }}
+        >
+          Today
+        </button>
+        <button
+          type="button"
+          style={activeDatePreset === "week" ? filterButtonActiveStyle : filterButtonStyle}
+          onClick={() => handleDatePreset("week")}
+          onMouseEnter={(e) => {
+            if (activeDatePreset !== "week") {
+              e.currentTarget.style.backgroundColor = "var(--mixa-bg-hover)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeDatePreset !== "week") {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }
+          }}
+        >
+          This week
+        </button>
+        <button
+          type="button"
+          style={activeDatePreset === "month" ? filterButtonActiveStyle : filterButtonStyle}
+          onClick={() => handleDatePreset("month")}
+          onMouseEnter={(e) => {
+            if (activeDatePreset !== "month") {
+              e.currentTarget.style.backgroundColor = "var(--mixa-bg-hover)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeDatePreset !== "month") {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }
+          }}
+        >
+          This month
+        </button>
+
+        {/* Custom date inputs */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px" }}>
+          <label style={{ fontSize: "10px", color: "var(--mixa-text-muted)" }}>
+            From
+            <input
+              type="date"
+              value={dateFromValue}
+              onChange={handleDateFromChange}
+              style={dateInputStyle}
+              aria-label="Filter from date"
+            />
+          </label>
+          <label style={{ fontSize: "10px", color: "var(--mixa-text-muted)" }}>
+            To
+            <input
+              type="date"
+              value={dateToValue}
+              onChange={handleDateToChange}
+              style={dateInputStyle}
+              aria-label="Filter to date"
+            />
+          </label>
+        </div>
       </div>
 
       {/* Clear filters */}

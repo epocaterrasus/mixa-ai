@@ -328,6 +328,24 @@ export function ItemDetail({
             </div>
           </div>
         )}
+
+        {/* Related items — placeholder until semantic search is connected */}
+        <div>
+          <div style={sectionTitleStyle}>Related Items</div>
+          <div
+            style={{
+              fontSize: "12px",
+              color: "var(--mixa-text-muted)",
+              padding: "12px",
+              backgroundColor: "var(--mixa-bg-base)",
+              borderRadius: "6px",
+              border: "1px solid var(--mixa-border-subtle)",
+              textAlign: "center",
+            }}
+          >
+            Related items will appear here once semantic search is enabled.
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -180,7 +180,9 @@ export function KnowledgeTab(): React.ReactElement {
   const hasActiveFilters =
     filters.itemType !== undefined ||
     filters.isFavorite !== undefined ||
-    filters.isArchived !== false;
+    filters.isArchived !== false ||
+    filters.dateFrom !== undefined ||
+    filters.dateTo !== undefined;
 
   return (
     <div style={containerStyle}>

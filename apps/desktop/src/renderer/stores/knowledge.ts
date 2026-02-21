@@ -126,6 +126,8 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
           itemType: filters.itemType,
           isFavorite: filters.isFavorite,
           isArchived: filters.isArchived,
+          dateFrom: filters.dateFrom,
+          dateTo: filters.dateTo,
           sortBy,
           sortOrder,
         }) as { items: KnowledgeItem[]; total: number };
