@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell } from "electron";
 import { join } from "node:path";
 import { setupTRPCHandler } from "./trpc/index.js";
+import { tabManager } from "./tabs/manager.js";
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -10,6 +11,8 @@ function createWindow(): void {
     minHeight: 600,
     title: "Mixa",
     show: false,
+    titleBarStyle: "hiddenInset",
+    trafficLightPosition: { x: 12, y: 10 },
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
       nodeIntegration: false,
@@ -18,6 +21,9 @@ function createWindow(): void {
       webSecurity: true,
     },
   });
+
+  // Attach tab manager to this window
+  tabManager.attach(mainWindow);
 
   mainWindow.on("ready-to-show", () => {
     mainWindow.show();

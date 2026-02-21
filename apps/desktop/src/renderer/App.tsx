@@ -1,31 +1,89 @@
-export function App(): React.ReactElement {
-  const versions = window.electronAPI?.versions;
+import { TabBar } from "./components/TabBar";
+import { Toolbar } from "./components/Toolbar";
+import { TabContent } from "./components/TabContent";
+import { useTabEvents } from "./hooks/useTabEvents";
+import { useTabShortcuts } from "./hooks/useTabShortcuts";
+import { useTabLifecycle } from "./hooks/useTabLifecycle";
+import { useTabStore } from "./stores/tabs";
+
+const styles = {
+  root: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100vh",
+    overflow: "hidden",
+    backgroundColor: "#0a0a0a",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  } as React.CSSProperties,
+  content: {
+    flex: 1,
+    position: "relative",
+    overflow: "hidden",
+  } as React.CSSProperties,
+  emptyState: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100%",
+    color: "#fafafa",
+  } as React.CSSProperties,
+} as const;
+
+function EmptyState(): React.ReactElement {
+  const addTab = useTabStore((s) => s.addTab);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "100vh",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        backgroundColor: "#0a0a0a",
-        color: "#fafafa",
-      }}
-    >
-      <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>Mixa</h1>
-      <p style={{ color: "#888", marginBottom: "2rem" }}>Developer Browser</p>
-      {versions ? (
-        <div style={{ fontSize: "0.75rem", color: "#555" }}>
-          <span>Electron {versions.electron}</span>
-          {" | "}
-          <span>Chromium {versions.chrome}</span>
-          {" | "}
-          <span>Node {versions.node}</span>
-        </div>
-      ) : null}
+    <div style={styles.emptyState}>
+      <h1 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "8px" }}>
+        Mixa
+      </h1>
+      <p style={{ fontSize: "13px", color: "#888", marginBottom: "24px" }}>
+        Developer Browser
+      </p>
+      <button
+        type="button"
+        onClick={() => addTab("web")}
+        style={{
+          padding: "8px 20px",
+          borderRadius: "8px",
+          border: "1px solid #333",
+          backgroundColor: "#1a1a1a",
+          color: "#fafafa",
+          fontSize: "13px",
+          cursor: "pointer",
+        }}
+      >
+        Open a new tab (Cmd+T)
+      </button>
+    </div>
+  );
+}
+
+export function App(): React.ReactElement {
+  // Wire up event listeners and lifecycle management
+  useTabEvents();
+  useTabShortcuts();
+  useTabLifecycle();
+
+  const activeTab = useTabStore((s) => {
+    const id = s.activeTabId;
+    return s.tabs.find((t) => t.id === id);
+  });
+  const hasTabs = useTabStore((s) => s.tabs.length > 0);
+
+  return (
+    <div style={styles.root}>
+      <TabBar />
+      <Toolbar />
+      <div style={styles.content}>
+        {activeTab ? (
+          <TabContent type={activeTab.type} hasUrl={!!activeTab.url} />
+        ) : hasTabs ? null : (
+          <EmptyState />
+        )}
+      </div>
     </div>
   );
 }
