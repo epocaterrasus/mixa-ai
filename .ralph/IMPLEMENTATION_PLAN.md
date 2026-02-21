@@ -54,7 +54,7 @@
 
 | # | Task ID | Title | Status | Dependencies | Agent |
 |---|---------|-------|--------|--------------|-------|
-| 34 | MIXA-029 | Cost dashboard tab | 🔴 TODO | 027, 006 | FRONTEND-ENGINEER |
+| 34 | MIXA-029 | Cost dashboard tab | 🟢 DONE | 027, 006 | FRONTEND-ENGINEER |
 | 35 | MIXA-030 | Health dashboard tab | 🔴 TODO | 028, 006 | FRONTEND-ENGINEER |
 | 36 | MIXA-031 | Knowledge stats dashboard | 🔴 TODO | 015, 006 | FRONTEND-ENGINEER |
 | 37 | MIXA-035 | Electron packaging + build | 🔴 TODO | 010 | DEVOPS-ENGINEER |
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 33
-- Remaining: 18
+- Completed: 34
+- Remaining: 17
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes

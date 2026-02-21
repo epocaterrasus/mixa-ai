@@ -1,0 +1,21 @@
+## MIXA-027: COST Module — Complete
+
+**Task**: Implement COST module in Go engine (MIXA-027)
+
+**What was built** (`engine/internal/modules/cost/`):
+- **COST module** with full Fenix UI protocol integration
+- **Provider adapters**: ManualAdapter, DigitalOceanAdapter, AWSAdapter (interface-based, ready for real API integration)
+- **Provider configuration**: API key management, enable/disable per provider
+- **Cost polling**: configurable schedule (hourly/daily) with background goroutine
+- **Cost data**: time-series entries stored in encrypted SQLite (AES-256-GCM)
+- **Budget system**: per-scope budgets (total, provider:X, project:X) with 80%/90%/100% threshold alerts
+- **UIView**: MetricRow (monthly spend, projected, budget, entries), area Chart (30-day daily costs), Table (per-service breakdown), Form (add entry), budget alerts
+- **Actions**: Add Entry, Delete Entry, Set Budget, Delete Budget, Export CSV, Configure Provider, Set Schedule, View History, Refresh
+- **Export CSV**: full cost history export
+- **40 tests**: all passing, covering cost calculations, budget thresholds, persistence, UI view, event handling, subscriber pattern
+
+**Backpressure checks**: All pass (go vet, go test, go build, pnpm typecheck, lint, test, build)
+
+**Commits**: `0794203` (initial implementation) + `eccdeb9` (provider adapters and polling)
+
+**Status**: `passes: true` in prd.json, `DONE` in IMPLEMENTATION_PLAN.md

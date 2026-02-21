@@ -1,0 +1,18 @@
+## Summary of this Ralph iteration
+
+**Completed 3 tasks:**
+
+| Task | Description | Details |
+|------|-------------|---------|
+| MIXA-026 | xterm.js shell fallback | Already fully implemented (ShellTerminal, node-pty handler, IPC bridge, omnibar command, Cmd+` shortcut). Verified all 8 acceptance criteria pass. |
+| MIXA-027 | COST module | New Go module with: cost entry CRUD, budget limits with 80/90/100% threshold alerts, provider/project scoping, monthly projections, CSV export, UIView (MetricRow + Chart + Table + Form). **40 tests.** |
+| MIXA-028 | PULSE module | New Go module with: endpoint management, HTTP health checks, SSL certificate expiry tracking (30/14/7 day alerts), uptime % over 24h/7d/30d, response time p50/p95/p99 percentiles, incident detection (down/up transitions), UIView (MetricRow + Table + Chart + List). **30 tests.** |
+
+**All backpressure gates pass:**
+- TypeScript typecheck: 8/8
+- Lint: 8/8
+- Tests: 13/13 JS (105 tests) + 12 Go packages (all pass)
+- Build: 8/8
+- Go vet: clean
+
+**Progress: 33/51 tasks complete (18 remaining)**

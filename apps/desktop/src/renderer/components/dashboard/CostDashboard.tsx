@@ -3,84 +3,19 @@
 // daily cost trends, and per-service breakdown table.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { UIComponent, UIEvent, UIView } from "@mixa-ai/types";
+import type { UIEvent } from "@mixa-ai/types";
 import { MetricRow, Chart, Table } from "@mixa-ai/terminal-renderer";
 import { useTabStore } from "../../stores/tabs";
 import { useEngineStore } from "../../stores/engine";
 import { useTerminalStream } from "../../hooks/useTerminalStream";
-
-// ─── Helpers ────────────────────────────────────────────────────
-
-function findComponent(view: UIView, id: string): UIComponent | undefined {
-  return view.components.find((c) => c.id === id);
-}
-
-function findComponentsByType(view: UIView, type: string): UIComponent[] {
-  return view.components.filter((c) => c.type === type && c.id.startsWith("cost-alert"));
-}
-
-/** Build a pie-chart UIComponent from the breakdown table data */
-function buildProviderPieComponent(tableComponent: UIComponent): UIComponent {
-  const rows = tableComponent.rows ?? [];
-  const providerTotals = new Map<string, number>();
-
-  for (const row of rows) {
-    const provider = row.values["provider"] ?? "unknown";
-    const amountStr = (row.values["amount"] ?? "$0.00").replace(/[$,]/g, "");
-    const amount = parseFloat(amountStr) || 0;
-    providerTotals.set(provider, (providerTotals.get(provider) ?? 0) + amount);
-  }
-
-  const chartData = Array.from(providerTotals.entries()).map(([provider, amount]) => ({
-    values: { provider, amount: amount.toFixed(2) },
-  }));
-
-  return {
-    id: "cost-provider-pie",
-    type: "chart",
-    level: null,
-    content: null,
-    preformatted: null,
-    columns: null,
-    rows: null,
-    metrics: null,
-    chartType: "pie",
-    chartData,
-    items: null,
-    fields: null,
-  };
-}
-
-interface BudgetAlertData {
-  scope: string;
-  spent: string;
-  limit: string;
-  utilization: number;
-  level: string;
-}
-
-/** Parse budget alert headers into structured data */
-function parseBudgetAlerts(alertComponents: UIComponent[]): BudgetAlertData[] {
-  return alertComponents.map((c) => {
-    const text = c.content ?? "";
-    // Format: "Budget Alert (scope): $X.XX of $Y.YY spent (Z%)"
-    const scopeMatch = text.match(/\(([^)]+)\)/);
-    const amountsMatch = text.match(/(\$[\d,.]+)\s+of\s+(\$[\d,.]+)/);
-    const pctMatch = text.match(/(\d+)%/);
-
-    const scope = scopeMatch?.[1] ?? "unknown";
-    const spent = amountsMatch?.[1] ?? "$0.00";
-    const limit = amountsMatch?.[2] ?? "$0.00";
-    const pct = pctMatch?.[1] ? parseInt(pctMatch[1], 10) / 100 : 0;
-
-    let level = "ok";
-    if (pct >= 1.0) level = "exceeded";
-    else if (pct >= 0.9) level = "critical";
-    else if (pct >= 0.8) level = "warning";
-
-    return { scope, spent, limit, utilization: pct, level };
-  });
-}
+import {
+  findComponent,
+  findAlertComponents,
+  parseBudgetAlerts,
+  buildProviderPieComponent,
+  getBudgetColor,
+  type BudgetAlertData,
+} from "./helpers";
 
 // ─── Styles ─────────────────────────────────────────────────────
 
@@ -316,19 +251,6 @@ function BudgetEditor({ onSave, onCancel }: BudgetEditorProps): React.ReactEleme
 
 // ─── Budget utilization bars ────────────────────────────────────
 
-function getBudgetColor(level: string): string {
-  switch (level) {
-    case "exceeded":
-      return "#ef4444";
-    case "critical":
-      return "#f97316";
-    case "warning":
-      return "#f59e0b";
-    default:
-      return "#22c55e";
-  }
-}
-
 function BudgetBars({ alerts }: { alerts: BudgetAlertData[] }): React.ReactElement {
   if (alerts.length === 0) {
     return (
@@ -446,7 +368,7 @@ export function CostDashboard(): React.ReactElement {
   const metricsComponent = view ? findComponent(view, "cost-metrics") : null;
   const chartComponent = view ? findComponent(view, "cost-chart") : null;
   const tableComponent = view ? findComponent(view, "cost-breakdown-table") : null;
-  const alertComponents = view ? findComponentsByType(view, "header") : [];
+  const alertComponents = view ? findAlertComponents(view) : [];
   const budgetAlerts = useMemo(() => parseBudgetAlerts(alertComponents), [alertComponents]);
 
   const providerPieComponent = useMemo(() => {
