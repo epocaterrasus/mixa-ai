@@ -8,7 +8,7 @@
 |---|---------|-------|--------|--------------|-------|
 | 1 | MIXA-001 | Initialize monorepo with Turborepo + pnpm | 🟢 DONE | — | ARCHITECT |
 | 2 | MIXA-002 | Shared TypeScript types | 🟢 DONE | 001 | ARCHITECT |
-| 3 | MIXA-003 | Drizzle schema + Docker dev environment | 🔴 TODO | 001 | ARCHITECT |
+| 3 | MIXA-003 | Drizzle schema + Docker dev environment | 🟢 DONE | 001 | ARCHITECT |
 | 4 | MIXA-004 | Go engine skeleton + gRPC server | 🔴 TODO | 001 | TERMINAL-ENGINEER |
 | 5 | MIXA-037 | tRPC layer (renderer ↔ main process) | 🔴 TODO | 002, 003, 005 | ARCHITECT |
 | 6 | MIXA-005 | Electron app with basic window | 🔴 TODO | 001, 002 | ELECTRON-ENGINEER |
@@ -105,8 +105,8 @@ MIXA-001 (monorepo)
 
 ### Completion Tracking
 - Total tasks: 51
-- Completed: 2
-- Remaining: 49
+- Completed: 3
+- Remaining: 48
 - Target: ~24 weeks (Phase 0 through Phase 8+)
 
 ### Scope Notes

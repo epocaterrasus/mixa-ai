@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: mixa-postgres
+    environment:
+      POSTGRES_USER: mixa
+      POSTGRES_PASSWORD: mixa
+      POSTGRES_DB: mixa
+    ports:
+      - "5432:5432"
+    volumes:
+      - mixa-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mixa -d mixa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: mixa-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - mixa-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mixa-pg-data:
+  mixa-redis-data:
