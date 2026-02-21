@@ -48,7 +48,7 @@ export {
   type EmbedderOptions,
 } from "./embedder.js";
 
-// Queue
+// Queue — Embedding
 export {
   EMBEDDING_QUEUE_NAME,
   createEmbeddingQueue,
@@ -57,3 +57,28 @@ export {
   type EmbeddingJobData,
   type EmbeddingJobResult,
 } from "./queue.js";
+
+// Summarizer
+export {
+  summarizeAndTag,
+  type SummarizeResult,
+  type SummarizerOptions,
+} from "./summarizer.js";
+
+// Tag normalizer
+export {
+  normalizeTagName,
+  normalizeTags,
+  deduplicateTags,
+  type NormalizedTag,
+} from "./tag-normalizer.js";
+
+// Queue — Summarize + Tag
+export {
+  SUMMARIZE_QUEUE_NAME,
+  createSummarizeQueue,
+  createSummarizeWorker,
+  enqueueSummarizeJob,
+  type SummarizeJobData,
+  type SummarizeJobResult,
+} from "./summarize-queue.js";
