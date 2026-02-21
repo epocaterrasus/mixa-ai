@@ -12,9 +12,9 @@ export interface SearchOptions {
   limit?: number;
   /** Minimum relevance score threshold 0-1 (default: 0.1) */
   minScore?: number;
-  /** Weight for vector similarity in hybrid scoring 0-1 (default: 0.6) */
+  /** Weight for vector similarity in hybrid scoring 0-1 (default: 0.7) */
   vectorWeight?: number;
-  /** Weight for full-text search in hybrid scoring 0-1 (default: 0.4) */
+  /** Weight for full-text search in hybrid scoring 0-1 (default: 0.3) */
   ftsWeight?: number;
   /** Filter by tag IDs */
   tagIds?: string[];
@@ -83,8 +83,8 @@ export interface RawFtsHit {
 
 const DEFAULT_LIMIT = 20;
 const DEFAULT_MIN_SCORE = 0.1;
-const DEFAULT_VECTOR_WEIGHT = 0.6;
-const DEFAULT_FTS_WEIGHT = 0.4;
+const DEFAULT_VECTOR_WEIGHT = 0.7;
+const DEFAULT_FTS_WEIGHT = 0.3;
 const MAX_CHUNKS_PER_ITEM = 3;
 
 // ── Score normalization ───────────────────────────────────────────

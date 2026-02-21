@@ -88,8 +88,8 @@ describe("normalizeScores", () => {
 // ── mergeResults ──────────────────────────────────────────────────
 
 describe("mergeResults", () => {
-  const vectorWeight = 0.6;
-  const ftsWeight = 0.4;
+  const vectorWeight = 0.7;
+  const ftsWeight = 0.3;
   const minScore = 0.1;
   const limit = 20;
 
@@ -104,8 +104,8 @@ describe("mergeResults", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]!.item.id).toBe("item-1");
-    // Single vector hit normalized to 1.0, then weighted: 0.6 * 1.0 = 0.6
-    expect(result[0]!.score).toBeCloseTo(0.6);
+    // Single vector hit normalized to 1.0, then weighted: 0.7 * 1.0 = 0.7
+    expect(result[0]!.score).toBeCloseTo(0.7);
     expect(result[0]!.snippet).toBeNull();
     expect(result[0]!.matchingChunks).toHaveLength(1);
   });
@@ -116,8 +116,8 @@ describe("mergeResults", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]!.item.id).toBe("item-1");
-    // Single FTS hit normalized to 1.0, then weighted: 0.4 * 1.0 = 0.4
-    expect(result[0]!.score).toBeCloseTo(0.4);
+    // Single FTS hit normalized to 1.0, then weighted: 0.3 * 1.0 = 0.3
+    expect(result[0]!.score).toBeCloseTo(0.3);
     expect(result[0]!.snippet).toBe("a <<matching>> snippet");
     expect(result[0]!.matchingChunks).toHaveLength(0);
   });
@@ -136,7 +136,7 @@ describe("mergeResults", () => {
     );
 
     expect(result).toHaveLength(1);
-    // Both normalized to 1.0 (single items): 0.6 * 1.0 + 0.4 * 1.0 = 1.0
+    // Both normalized to 1.0 (single items): 0.7 * 1.0 + 0.3 * 1.0 = 1.0
     expect(result[0]!.score).toBeCloseTo(1.0);
     expect(result[0]!.matchingChunks).toHaveLength(1);
     expect(result[0]!.snippet).toBe("matching <b>text</b>");
@@ -170,8 +170,8 @@ describe("mergeResults", () => {
       makeVectorHit("item-bad", "chunk-2", 0.01),
     ];
 
-    // item-good: normalized=1.0, score = 0.6*1.0 = 0.6 (passes minScore=0.1)
-    // item-bad: normalized=0.01, score = 0.6*0.01 = 0.006 (below minScore=0.1)
+    // item-good: normalized=1.0, score = 0.7*1.0 = 0.7 (passes minScore=0.1)
+    // item-bad: normalized=0.01, score = 0.7*0.01 = 0.007 (below minScore=0.1)
     const result = mergeResults(
       vectorHits,
       [],
@@ -273,7 +273,7 @@ describe("mergeResults", () => {
     );
 
     // Best vector chunk score = 1.0 (normalized), FTS = 1.0 (normalized)
-    // hybrid = 0.6 * 1.0 + 0.4 * 1.0 = 1.0
+    // hybrid = 0.7 * 1.0 + 0.3 * 1.0 = 1.0
     expect(result[0]!.score).toBeCloseTo(1.0);
   });
 
