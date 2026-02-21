@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { trpc } from "../trpc";
+import { useSettingsStore } from "./settings";
 
 export type OnboardingStep = "welcome" | "ai-setup" | "explore" | "capture" | "chat";
 
@@ -38,6 +39,10 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
     try {
       const settings = await trpc.settings.get.query();
       const shouldShow = !settings.onboardingCompleted;
+      // Populate the settings store so onboarding steps (e.g. AI Setup) can access it
+      if (shouldShow) {
+        await useSettingsStore.getState().loadSettings();
+      }
       set({
         isOpen: shouldShow,
         isLoading: false,

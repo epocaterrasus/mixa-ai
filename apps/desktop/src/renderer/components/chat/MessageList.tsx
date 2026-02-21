@@ -76,6 +76,30 @@ export function MessageList({ messages, isStreaming }: MessageListProps): React.
   }, [messages]);
 
   if (messages.length === 0) {
+    const suggestionStyle: React.CSSProperties = {
+      padding: "10px 14px",
+      borderRadius: "8px",
+      border: "1px solid var(--mixa-border-default)",
+      backgroundColor: "var(--mixa-bg-base)",
+      fontSize: "13px",
+      color: "var(--mixa-text-primary)",
+      textAlign: "left",
+      lineHeight: 1.4,
+    };
+
+    const tipStyle: React.CSSProperties = {
+      padding: "10px 14px",
+      borderRadius: "8px",
+      backgroundColor: "rgba(99, 102, 241, 0.08)",
+      border: "1px solid rgba(99, 102, 241, 0.2)",
+      fontSize: "12px",
+      color: "var(--mixa-text-secondary)",
+      lineHeight: 1.5,
+      textAlign: "left",
+      maxWidth: "440px",
+      width: "100%",
+    };
+
     return (
       <div style={containerStyle}>
         <div style={emptyStateStyle}>
@@ -83,9 +107,30 @@ export function MessageList({ messages, isStreaming }: MessageListProps): React.
           <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--mixa-text-primary)" }}>
             Ask Mixa anything
           </div>
-          <div style={{ fontSize: "13px", maxWidth: "400px", lineHeight: 1.5 }}>
-            I can search your saved knowledge and give you answers with sources.
-            Try asking a question about content you&apos;ve captured.
+          <div style={{ fontSize: "13px", maxWidth: "440px", lineHeight: 1.5 }}>
+            Chat uses RAG to search your saved knowledge and provide answers with citations.
+            The more you save, the smarter your assistant becomes.
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxWidth: "440px", width: "100%", marginTop: "8px" }}>
+            <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--mixa-text-secondary)", textAlign: "left" }}>
+              Try asking:
+            </div>
+            <div style={suggestionStyle}>
+              &ldquo;Summarize what I saved about React Server Components&rdquo;
+            </div>
+            <div style={suggestionStyle}>
+              &ldquo;What are the key differences between Bun and Node?&rdquo;
+            </div>
+            <div style={suggestionStyle}>
+              &ldquo;Find articles I saved about database optimization&rdquo;
+            </div>
+          </div>
+
+          <div style={tipStyle}>
+            <strong>Tip:</strong> Save some web pages first (browse to a page and press Cmd+S), then come back
+            here to ask questions about what you&apos;ve saved. You can also scope your chat to a specific
+            project or tag using the scope selector above.
           </div>
         </div>
       </div>

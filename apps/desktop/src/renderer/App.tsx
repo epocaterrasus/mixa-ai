@@ -5,6 +5,7 @@ import { FindBar } from "./components/FindBar";
 import { Sidebar } from "./components/Sidebar";
 import { CaptureToast } from "./components/CaptureToast";
 import { UpdateNotification } from "./components/UpdateNotification";
+import { OnboardingOverlay } from "./components/onboarding/OnboardingOverlay";
 import { useTabEvents } from "./hooks/useTabEvents";
 import { useTabShortcuts } from "./hooks/useTabShortcuts";
 import { useTabLifecycle } from "./hooks/useTabLifecycle";
@@ -111,6 +112,7 @@ export function App(): React.ReactElement {
       <RelatedItemsPanel />
       <CaptureToast />
       <UpdateNotification />
+      <OnboardingOverlay />
     </div>
   );
 }

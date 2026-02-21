@@ -132,22 +132,8 @@ export function OnboardingOverlay(): React.ReactElement | null {
 
         {/* Footer with navigation */}
         <div style={footerStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            {isFirst ? (
-              <button
-                type="button"
-                onClick={() => void skipOnboarding()}
-                style={{
-                  ...btnBase,
-                  border: "none",
-                  background: "none",
-                  color: "var(--mixa-text-muted)",
-                  padding: "8px 12px",
-                }}
-              >
-                Skip setup
-              </button>
-            ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {!isFirst && (
               <button
                 type="button"
                 onClick={prevStep}
@@ -161,6 +147,19 @@ export function OnboardingOverlay(): React.ReactElement | null {
                 Back
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => void skipOnboarding()}
+              style={{
+                ...btnBase,
+                border: "none",
+                background: "none",
+                color: "var(--mixa-text-muted)",
+                padding: "8px 12px",
+              }}
+            >
+              Skip
+            </button>
           </div>
 
           <StepIndicator current={currentStepIndex} total={totalSteps} />
