@@ -125,6 +125,31 @@ interface ElectronAugmentedAPI {
   readonly onRelatedItems: (callback: (data: AugmentedRelatedItemsEvent) => void) => () => void;
 }
 
+interface TerminalStreamUpdateData {
+  readonly streamId: string;
+  readonly view: {
+    readonly module: string;
+    readonly components: ReadonlyArray<Record<string, unknown>>;
+    readonly actions: ReadonlyArray<Record<string, unknown>>;
+  } | null;
+  readonly error: string | null;
+  readonly ended: boolean;
+}
+
+interface ElectronTerminalAPI {
+  readonly startStream: (streamId: string, module: string) => Promise<void>;
+  readonly stopStream: (streamId: string) => Promise<void>;
+  readonly sendEvent: (data: {
+    streamId: string;
+    module: string;
+    actionId: string | null;
+    componentId: string | null;
+    eventType: string;
+    data: Record<string, string>;
+  }) => Promise<boolean>;
+  readonly onStreamUpdate: (callback: (data: TerminalStreamUpdateData) => void) => () => void;
+}
+
 interface ElectronAPI {
   readonly versions: {
     readonly node: string;
@@ -144,6 +169,7 @@ interface ElectronAPI {
   readonly engine: ElectronEngineAPI;
   readonly chat: ElectronChatAPI;
   readonly augmented: ElectronAugmentedAPI;
+  readonly terminal: ElectronTerminalAPI;
 }
 
 interface Window {

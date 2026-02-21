@@ -44,6 +44,9 @@ importers:
       '@mixa-ai/db':
         specifier: workspace:^
         version: link:../../packages/db
+      '@mixa-ai/terminal-renderer':
+        specifier: workspace:*
+        version: link:../../packages/terminal-renderer
       '@mixa-ai/types':
         specifier: workspace:*
         version: link:../../packages/types
