@@ -25,6 +25,7 @@ export class TabManager {
   private views = new Map<string, WebViewInfo>();
   private activeTabId: string | null = null;
   private mainWindow: BrowserWindow | null = null;
+  private sidebarWidth = 0;
 
   attach(window: BrowserWindow): void {
     this.mainWindow = window;
@@ -36,15 +37,20 @@ export class TabManager {
     this.registerIPC();
   }
 
+  setSidebarWidth(width: number): void {
+    this.sidebarWidth = Math.max(0, Math.round(width));
+    this.updateActiveViewBounds();
+  }
+
   private getContentBounds(): ContentBounds {
     if (!this.mainWindow) {
-      return { x: 0, y: CHROME_HEIGHT, width: 800, height: 600 };
+      return { x: this.sidebarWidth, y: CHROME_HEIGHT, width: 800, height: 600 };
     }
     const { width, height } = this.mainWindow.getContentBounds();
     return {
-      x: 0,
+      x: this.sidebarWidth,
       y: CHROME_HEIGHT,
-      width,
+      width: Math.max(0, width - this.sidebarWidth),
       height: Math.max(0, height - CHROME_HEIGHT),
     };
   }
@@ -270,6 +276,10 @@ export class TabManager {
     ipcMain.handle("tab:show-active-view", () => {
       this.showActiveView();
     });
+
+    ipcMain.handle("sidebar:set-width", (_event, width: number) => {
+      this.setSidebarWidth(width);
+    });
   }
 
   destroy(): void {
@@ -286,6 +296,7 @@ export class TabManager {
     ipcMain.removeHandler("tab:reload");
     ipcMain.removeHandler("tab:hide-active-view");
     ipcMain.removeHandler("tab:show-active-view");
+    ipcMain.removeHandler("sidebar:set-width");
   }
 }
 

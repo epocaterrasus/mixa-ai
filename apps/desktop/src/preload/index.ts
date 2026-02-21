@@ -72,6 +72,11 @@ const electronAPI = {
       return () => ipcRenderer.removeListener("tab:url-updated", handler);
     },
   },
+
+  sidebar: {
+    setWidth: (width: number): Promise<void> =>
+      ipcRenderer.invoke("sidebar:set-width", width),
+  },
 } as const;
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

@@ -18,6 +18,10 @@ interface ElectronTabsAPI {
   readonly onUrlUpdated: (callback: (data: { tabId: string; url: string; canGoBack: boolean; canGoForward: boolean }) => void) => () => void;
 }
 
+interface ElectronSidebarAPI {
+  readonly setWidth: (width: number) => Promise<void>;
+}
+
 interface ElectronAPI {
   readonly versions: {
     readonly node: string;
@@ -32,6 +36,7 @@ interface ElectronAPI {
     | { error: { code: string; message: string } }
   >;
   readonly tabs: ElectronTabsAPI;
+  readonly sidebar: ElectronSidebarAPI;
 }
 
 interface Window {

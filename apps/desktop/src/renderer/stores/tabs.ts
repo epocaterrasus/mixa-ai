@@ -8,6 +8,7 @@ interface TabStore {
   // Actions
   addTab: (type: TabType, url?: string) => string;
   closeTab: (id: string) => void;
+  closeOtherTabs: (id: string) => void;
   activateTab: (id: string) => void;
   updateTab: (id: string, updates: Partial<Pick<Tab, "title" | "url" | "faviconUrl" | "state" | "canGoBack" | "canGoForward">>) => void;
   moveTab: (fromIndex: number, toIndex: number) => void;
@@ -95,6 +96,17 @@ export const useTabStore = create<TabStore>((set, get) => ({
         isActive: t.id === newActiveId,
       })),
       activeTabId: newActiveId,
+    });
+  },
+
+  closeOtherTabs: (id: string) => {
+    const { tabs } = get();
+    const kept = tabs.filter((t) => t.id === id);
+    if (kept.length === 0) return;
+
+    set({
+      tabs: kept.map((t) => ({ ...t, isActive: true })),
+      activeTabId: id,
     });
   },
 
