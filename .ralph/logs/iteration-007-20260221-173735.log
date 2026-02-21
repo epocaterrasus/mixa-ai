@@ -1,0 +1,15 @@
+## MIXA-018: Chat Tab UI — Complete
+
+**Task**: Build chat tab UI (Chat tab React component with message input, streaming response display, source citations, conversation history sidebar, and scope selector)
+
+**What was done**:
+- All 11 acceptance criteria were already met by existing code from previous iterations
+- Fixed a TypeScript type error in `chat.ts:99` — the tRPC response messages don't include `isStreaming` (renderer-only field), so the cast type was corrected to match the backend `StoredMessage` shape
+- Added 18 tests for the chat backend store covering CRUD operations, auto-titling, message ordering, and timestamp updates
+- Updated `prd.json` (`passes: true`) and `IMPLEMENTATION_PLAN.md` (marked as DONE)
+
+**Backpressure checks**: All pass (typecheck, lint, 202 tests, build, go vet, go test)
+
+**Commit**: `2f21bb2 feat(desktop): complete chat tab UI with tests and type fix (MIXA-018)`
+
+**Completion**: 21/51 tasks done, 30 remaining.
