@@ -104,6 +104,27 @@ interface ElectronChatAPI {
   readonly onStreamChunk: (callback: (data: ChatStreamChunkData) => void) => () => void;
 }
 
+interface AugmentedRelatedItemData {
+  readonly id: string;
+  readonly title: string;
+  readonly url: string | null;
+  readonly domain: string | null;
+  readonly summary: string | null;
+  readonly score: number;
+  readonly capturedAt: string;
+  readonly itemType: string;
+  readonly faviconUrl: string | null;
+}
+
+interface AugmentedRelatedItemsEvent {
+  readonly tabId: string;
+  readonly relatedItems: AugmentedRelatedItemData[];
+}
+
+interface ElectronAugmentedAPI {
+  readonly onRelatedItems: (callback: (data: AugmentedRelatedItemsEvent) => void) => () => void;
+}
+
 interface ElectronAPI {
   readonly versions: {
     readonly node: string;
@@ -122,6 +143,7 @@ interface ElectronAPI {
   readonly sidebar: ElectronSidebarAPI;
   readonly engine: ElectronEngineAPI;
   readonly chat: ElectronChatAPI;
+  readonly augmented: ElectronAugmentedAPI;
 }
 
 interface Window {
