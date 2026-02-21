@@ -13,6 +13,7 @@ import (
 
 	server "github.com/mixa-ai/engine/internal/grpc"
 	"github.com/mixa-ai/engine/internal/module"
+	"github.com/mixa-ai/engine/internal/modules/cost"
 	"github.com/mixa-ai/engine/internal/modules/forge"
 	"github.com/mixa-ai/engine/internal/modules/guard"
 	"github.com/mixa-ai/engine/internal/modules/keys"
@@ -63,6 +64,13 @@ func main() {
 		log.Fatalf("Failed to register keys module: %v", err)
 	}
 
+	// COST module — cloud cost tracking & budget management.
+	costDataDir := costStoragePath()
+	costMod := cost.New(filepath.Join(costDataDir, "cost.db"), guardKey)
+	if err := registry.Register(costMod); err != nil {
+		log.Fatalf("Failed to register cost module: %v", err)
+	}
+
 	if err := registry.StartAll(); err != nil {
 		log.Fatalf("Failed to start modules: %v", err)
 	}
@@ -110,6 +118,15 @@ func keysStoragePath() string {
 		home = "."
 	}
 	return filepath.Join(home, ".mixa", "data", "keys")
+}
+
+// costStoragePath returns the directory where COST stores its database.
+func costStoragePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	return filepath.Join(home, ".mixa", "data", "cost")
 }
 
 // deriveGuardKey creates a deterministic 32-byte AES-256 key from the machine hostname.
