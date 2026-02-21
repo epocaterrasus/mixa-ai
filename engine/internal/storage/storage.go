@@ -14,7 +14,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 // Store wraps a SQLite database with AES-256-GCM encryption for values.
