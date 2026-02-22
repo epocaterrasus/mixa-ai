@@ -40,6 +40,8 @@ const electronAPI = {
       ipcRenderer.invoke("tab:hide-active-view"),
     showActiveView: (): Promise<void> =>
       ipcRenderer.invoke("tab:show-active-view"),
+    captureScreenshot: (tabId: string): Promise<string | null> =>
+      ipcRenderer.invoke("tab:capture-screenshot", tabId),
 
     // Event listeners from main → renderer
     onLoading: (callback: (data: { tabId: string; loading: boolean }) => void) => {

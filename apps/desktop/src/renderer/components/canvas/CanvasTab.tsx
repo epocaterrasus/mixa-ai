@@ -3,8 +3,8 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { Excalidraw, exportToSvg, exportToBlob, serializeAsJSON, convertToExcalidrawElements } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
-import type { ExcalidrawImperativeAPI, AppState, BinaryFiles } from "@excalidraw/excalidraw/types";
-import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
+import type { ExcalidrawImperativeAPI, AppState, BinaryFiles, BinaryFileData, DataURL } from "@excalidraw/excalidraw/types";
+import type { ExcalidrawElement, FileId } from "@excalidraw/excalidraw/element/types";
 import { useTabStore } from "../../stores/tabs";
 import { useCanvasStore, generateCanvasId } from "../../stores/canvas";
 import type { CanvasSaveData } from "../../stores/canvas";
@@ -343,63 +343,138 @@ export function CanvasTab(): React.ReactElement {
   // ─── Embed tab at scene coordinates ──────────────────────────
 
   const embedTabAtPosition = useCallback(
-    (tabId: string, sceneX: number, sceneY: number) => {
+    async (tabId: string, sceneX: number, sceneY: number) => {
       if (!excalidrawRef.current) return;
 
       const tab = tabs.find((t) => t.id === tabId);
       if (!tab) return;
 
-      const currentElements = excalidrawRef.current.getSceneElements();
       const ts = Date.now();
+      const fileId = `screenshot-${tabId}-${ts}` as FileId;
 
-      const newElements = convertToExcalidrawElements(
-        [
-          {
-            type: "rectangle",
-            id: `embed-${tabId}-${ts}`,
-            x: sceneX,
-            y: sceneY,
-            width: 320,
-            height: 200,
-            strokeColor: resolvedMode === "dark" ? "#a5a5a5" : "#333333",
-            backgroundColor: resolvedMode === "dark" ? "#2a2a2a" : "#f5f5f5",
-            fillStyle: "solid",
-            strokeWidth: 2,
-            roughness: 0,
-            roundness: { type: 3 },
-            customData: {
-              embeddedTabId: tabId,
-              embeddedTabUrl: tab.url,
-              embeddedTabTitle: tab.title,
-              embeddedTabType: tab.type,
-              embedMode: "snapshot",
-            },
-          },
-          {
-            type: "text",
-            id: `embed-label-${tabId}-${ts}`,
-            x: sceneX + 10,
-            y: sceneY + 10,
-            width: 300,
-            height: 30,
-            text: `${tab.title}\n${descriptionForTab(tab.type, tab.url)}`,
-            fontSize: 14,
-            fontFamily: 1,
-            textAlign: "left" as const,
-            verticalAlign: "top" as const,
-            strokeColor: resolvedMode === "dark" ? "#e0e0e0" : "#1a1a1a",
-            customData: {
-              embeddedTabId: tabId,
-              isLabel: true,
-            },
-          },
-        ],
-        { regenerateIds: false },
-      );
+      // Try to capture a screenshot from web/app tabs
+      const isWebTab = tab.type === "web" || tab.type === "app";
+      const dataURL = isWebTab
+        ? await window.electronAPI.tabs.captureScreenshot(tabId)
+        : null;
 
-      excalidrawRef.current.updateScene({
-        elements: [...currentElements, ...newElements],
-      });
+      const currentElements = excalidrawRef.current.getSceneElements();
+
+      if (dataURL) {
+        // Load the image to get its natural dimensions
+        const img = new Image();
+        const dimensions = await new Promise<{ w: number; h: number }>((resolve) => {
+          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+          img.onerror = () => resolve({ w: 640, h: 400 });
+          img.src = dataURL;
+        });
+
+        const maxWidth = 640;
+        const scale = dimensions.w > maxWidth ? maxWidth / dimensions.w : 1;
+        const width = Math.round(dimensions.w * scale);
+        const height = Math.round(dimensions.h * scale);
+
+        const fileData: BinaryFileData = {
+          mimeType: "image/png",
+          id: fileId,
+          dataURL: dataURL as DataURL,
+          created: ts,
+        };
+
+        excalidrawRef.current.addFiles([fileData]);
+
+        const imageElements = convertToExcalidrawElements(
+          [
+            {
+              type: "image" as const,
+              id: `embed-${tabId}-${ts}`,
+              fileId,
+              x: sceneX,
+              y: sceneY,
+              width,
+              height,
+              customData: {
+                embeddedTabId: tabId,
+                embeddedTabUrl: tab.url,
+                embeddedTabTitle: tab.title,
+                embeddedTabType: tab.type,
+                embedMode: "screenshot",
+              },
+            },
+            {
+              type: "text" as const,
+              id: `embed-label-${tabId}-${ts}`,
+              x: sceneX,
+              y: sceneY + height + 8,
+              text: tab.title,
+              fontSize: 14,
+              fontFamily: 1,
+              textAlign: "left" as const,
+              verticalAlign: "top" as const,
+              strokeColor: resolvedMode === "dark" ? "#a5a5a5" : "#666666",
+              customData: {
+                embeddedTabId: tabId,
+                isLabel: true,
+              },
+            },
+          ],
+          { regenerateIds: false },
+        );
+
+        excalidrawRef.current.updateScene({
+          elements: [...currentElements, ...imageElements],
+        });
+      } else {
+        // Fallback for non-web tabs: rectangle + title
+        const fallbackElements = convertToExcalidrawElements(
+          [
+            {
+              type: "rectangle",
+              id: `embed-${tabId}-${ts}`,
+              x: sceneX,
+              y: sceneY,
+              width: 320,
+              height: 200,
+              strokeColor: resolvedMode === "dark" ? "#a5a5a5" : "#333333",
+              backgroundColor: resolvedMode === "dark" ? "#2a2a2a" : "#f5f5f5",
+              fillStyle: "solid",
+              strokeWidth: 2,
+              roughness: 0,
+              roundness: { type: 3 },
+              customData: {
+                embeddedTabId: tabId,
+                embeddedTabUrl: tab.url,
+                embeddedTabTitle: tab.title,
+                embeddedTabType: tab.type,
+                embedMode: "snapshot",
+              },
+            },
+            {
+              type: "text",
+              id: `embed-label-${tabId}-${ts}`,
+              x: sceneX + 10,
+              y: sceneY + 10,
+              width: 300,
+              height: 30,
+              text: `${tab.title}\n${descriptionForTab(tab.type, tab.url)}`,
+              fontSize: 14,
+              fontFamily: 1,
+              textAlign: "left" as const,
+              verticalAlign: "top" as const,
+              strokeColor: resolvedMode === "dark" ? "#e0e0e0" : "#1a1a1a",
+              customData: {
+                embeddedTabId: tabId,
+                isLabel: true,
+              },
+            },
+          ],
+          { regenerateIds: false },
+        );
+
+        excalidrawRef.current.updateScene({
+          elements: [...currentElements, ...fallbackElements],
+        });
+      }
     },
     [tabs, resolvedMode],
   );
@@ -411,7 +486,7 @@ export function CanvasTab(): React.ReactElement {
       const appState = excalidrawRef.current.getAppState();
       const centerX = -(appState.scrollX ?? 0) + 200;
       const centerY = -(appState.scrollY ?? 0) + 200;
-      embedTabAtPosition(tabId, centerX, centerY);
+      void embedTabAtPosition(tabId, centerX, centerY);
     },
     [embedTabAtPosition],
   );
@@ -445,7 +520,7 @@ export function CanvasTab(): React.ReactElement {
         const sceneX = (e.clientX - rect.left) / zoom - (appState.scrollX ?? 0);
         const sceneY = (e.clientY - rect.top) / zoom - (appState.scrollY ?? 0);
 
-        embedTabAtPosition(id, sceneX, sceneY);
+        void embedTabAtPosition(id, sceneX, sceneY);
       } catch {
         // ignore malformed drop data
       }

@@ -342,6 +342,15 @@ export class TabManager {
     return info.view.webContents.getTitle();
   }
 
+  /** Capture a screenshot of the tab's web contents as a PNG data URL */
+  async captureScreenshot(tabId: string): Promise<string | null> {
+    const info = this.views.get(tabId);
+    if (!info || info.view.webContents.isDestroyed()) return null;
+    const image = await info.view.webContents.capturePage();
+    if (image.isEmpty()) return null;
+    return image.toDataURL();
+  }
+
   /** Check whether a view exists and its webContents is not destroyed */
   hasActiveView(tabId: string): boolean {
     const info = this.views.get(tabId);
@@ -472,6 +481,10 @@ export class TabManager {
     ipcMain.handle("sidebar:set-width", (_event, width: number) => {
       this.setSidebarWidth(width);
     });
+
+    ipcMain.handle("tab:capture-screenshot", async (_event, tabId: string): Promise<string | null> => {
+      return this.captureScreenshot(tabId);
+    });
   }
 
   destroy(): void {
@@ -493,6 +506,7 @@ export class TabManager {
     ipcMain.removeHandler("tab:hide-active-view");
     ipcMain.removeHandler("tab:show-active-view");
     ipcMain.removeHandler("sidebar:set-width");
+    ipcMain.removeHandler("tab:capture-screenshot");
   }
 }
 
