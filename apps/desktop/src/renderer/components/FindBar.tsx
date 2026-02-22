@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Icon } from "@mixa-ai/ui";
 import { useFindBarStore } from "../stores/findBar";
 import { useTabStore } from "../stores/tabs";
 
@@ -10,9 +11,9 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "4px",
-    padding: "6px 8px",
+    padding: "8px 12px",
     backgroundColor: "var(--mixa-bg-elevated)",
-    border: "1px solid var(--mixa-border-strong)",
+    border: "1px solid var(--mixa-border-subtle)",
     borderTop: "none",
     borderRadius: "0 0 8px 8px",
     boxShadow: "var(--mixa-shadow-float)",
@@ -20,13 +21,13 @@ const styles = {
   } as React.CSSProperties,
   input: {
     width: "200px",
-    height: "26px",
+    height: "28px",
     padding: "0 8px",
     backgroundColor: "var(--mixa-bg-surface)",
-    border: "1px solid var(--mixa-text-faint)",
-    borderRadius: "4px",
+    border: "1px solid var(--mixa-border-default)",
+    borderRadius: "6px",
     color: "var(--mixa-text-primary)",
-    fontSize: "12px",
+    fontSize: "13px",
     outline: "none",
     fontFamily: "inherit",
   } as React.CSSProperties,
@@ -41,14 +42,13 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "24px",
-    height: "24px",
-    borderRadius: "4px",
+    width: "26px",
+    height: "26px",
+    borderRadius: "6px",
     border: "none",
     backgroundColor: "transparent",
     color: "var(--mixa-text-muted)",
     cursor: "pointer",
-    fontSize: "14px",
     padding: 0,
     flexShrink: 0,
   } as React.CSSProperties,
@@ -74,7 +74,6 @@ export function FindBar(): React.ReactElement | null {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Focus input when opened
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
@@ -82,14 +81,12 @@ export function FindBar(): React.ReactElement | null {
     }
   }, [isOpen]);
 
-  // Reset query when closed
   useEffect(() => {
     if (!isOpen) {
       setQuery("");
     }
   }, [isOpen]);
 
-  // Trigger find as the user types
   useEffect(() => {
     if (!isOpen || !activeTabId || activeTab?.type !== "web") return;
 
@@ -179,7 +176,7 @@ export function FindBar(): React.ReactElement | null {
         aria-label="Previous match"
         title="Previous (Shift+Enter)"
       >
-        {"\u2191"}
+        <Icon name="up" size={14} />
       </button>
       <button
         type="button"
@@ -192,7 +189,7 @@ export function FindBar(): React.ReactElement | null {
         aria-label="Next match"
         title="Next (Enter)"
       >
-        {"\u2193"}
+        <Icon name="down" size={14} />
       </button>
       <button
         type="button"
@@ -201,7 +198,7 @@ export function FindBar(): React.ReactElement | null {
         aria-label="Close find bar"
         title="Close (Escape)"
       >
-        {"\u00D7"}
+        <Icon name="close" size={14} />
       </button>
     </div>
   );

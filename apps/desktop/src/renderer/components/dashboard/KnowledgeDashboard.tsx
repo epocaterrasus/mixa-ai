@@ -2,6 +2,7 @@
 // Data is fetched via tRPC from the in-memory capture store (will use PGlite in MIXA-046).
 
 import { useCallback, useEffect, useState } from "react";
+import { Icon } from "@mixa-ai/ui";
 import { useTabStore } from "../../stores/tabs";
 import { trpc } from "../../trpc";
 
@@ -64,7 +65,7 @@ const subtitleStyle: React.CSSProperties = {
 const actionButtonStyle: React.CSSProperties = {
   padding: "6px 14px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-elevated)",
   color: "var(--mixa-text-primary)",
   fontSize: "12px",
@@ -87,7 +88,7 @@ const metricsGridStyle: React.CSSProperties = {
 
 const metricCardStyle: React.CSSProperties = {
   backgroundColor: "var(--mixa-bg-surface)",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   borderRadius: "8px",
   padding: "16px",
 };
@@ -119,7 +120,7 @@ const chartGridStyle: React.CSSProperties = {
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "var(--mixa-bg-surface)",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   borderRadius: "8px",
   padding: "16px",
 };
@@ -400,7 +401,7 @@ export function KnowledgeDashboard(): React.ReactElement {
     return (
       <div style={containerStyle}>
         <div style={centerStyle}>
-          <div style={{ fontSize: "32px" }}>{"\u274C"}</div>
+          <Icon name="error" size={32} />
           <div style={{ fontSize: "16px", fontWeight: 600 }}>Failed to load stats</div>
           <div style={{ fontSize: "14px", color: "#ef4444", textAlign: "center", maxWidth: "400px" }}>
             {error}
@@ -426,7 +427,7 @@ export function KnowledgeDashboard(): React.ReactElement {
         </div>
         <div style={contentStyle}>
           <div style={emptyStateStyle}>
-            <div style={{ fontSize: "48px", marginBottom: "8px" }}>{"\uD83D\uDCDA"}</div>
+            <Icon name="knowledge" size={48} style={{ marginBottom: "8px" }} />
             <div style={{ fontSize: "16px", fontWeight: 600, marginBottom: "4px" }}>No Items Yet</div>
             <div style={{ fontSize: "13px", color: "var(--mixa-text-muted)", maxWidth: "400px" }}>
               Start capturing web pages, highlights, and code snippets to see your knowledge base stats here.
@@ -572,7 +573,7 @@ export function KnowledgeDashboard(): React.ReactElement {
                       alignItems: "center",
                       gap: "8px",
                       padding: "6px 0",
-                      borderBottom: "1px solid var(--mixa-border-default)",
+                      borderBottom: "1px solid var(--mixa-border-subtle)",
                     }}
                   >
                     <span

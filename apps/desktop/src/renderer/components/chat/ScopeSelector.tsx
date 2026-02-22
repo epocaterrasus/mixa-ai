@@ -1,6 +1,7 @@
 // Scope selector for filtering chat context to specific projects/tags
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Icon } from "@mixa-ai/ui";
 import type { ChatScope } from "@mixa-ai/types";
 
 interface ScopeSelectorProps {
@@ -14,7 +15,7 @@ const buttonStyle: React.CSSProperties = {
   gap: "4px",
   padding: "4px 10px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "transparent",
   color: "var(--mixa-text-muted)",
   fontSize: "12px",
@@ -61,7 +62,7 @@ const infoStyle: React.CSSProperties = {
 const clearButtonStyle: React.CSSProperties = {
   padding: "4px 10px",
   borderRadius: "4px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "transparent",
   color: "var(--mixa-text-secondary)",
   fontSize: "11px",
@@ -107,12 +108,12 @@ export function ScopeSelector({ scope, onChange }: ScopeSelectorProps): React.Re
         }}
         onMouseLeave={(e) => {
           if (!active) {
-            e.currentTarget.style.borderColor = "var(--mixa-border-default)";
+            e.currentTarget.style.borderColor = "var(--mixa-border-subtle)";
             e.currentTarget.style.color = "var(--mixa-text-muted)";
           }
         }}
       >
-        {"\u{1F50D}"} {active ? "Scoped" : "All Knowledge"}
+        <Icon name="search" size={14} /> {active ? "Scoped" : "All Knowledge"}
       </button>
 
       {isOpen && (

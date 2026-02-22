@@ -1,6 +1,8 @@
 // Settings tab — main settings panel with sidebar navigation
 
 import { useEffect } from "react";
+import { Icon } from "@mixa-ai/ui";
+import type { IconName } from "@mixa-ai/ui";
 import { useSettingsStore, type SettingsSection } from "../../stores/settings";
 import { AIProvidersSection } from "./AIProvidersSection";
 import { AppearanceSection } from "./AppearanceSection";
@@ -21,7 +23,7 @@ const containerStyle: React.CSSProperties = {
 const navStyle: React.CSSProperties = {
   width: "200px",
   flexShrink: 0,
-  borderRight: "1px solid var(--mixa-border-default)",
+  borderRight: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-surface)",
   padding: "16px 0",
   overflowY: "auto",
@@ -67,17 +69,17 @@ const errorBannerStyle: React.CSSProperties = {
 interface NavItem {
   id: SettingsSection;
   label: string;
-  icon: string;
+  icon: IconName;
 }
 
 const navItems: NavItem[] = [
-  { id: "ai-providers", label: "AI Providers", icon: "\u2728" },
-  { id: "appearance", label: "Appearance", icon: "\u{1F3A8}" },
-  { id: "general", label: "General", icon: "\u2699\uFE0F" },
-  { id: "engine", label: "Engine", icon: "\u26A1" },
-  { id: "shortcuts", label: "Shortcuts", icon: "\u2328\uFE0F" },
-  { id: "data", label: "Data", icon: "\u{1F4BE}" },
-  { id: "about", label: "About", icon: "\u2139\uFE0F" },
+  { id: "ai-providers", label: "AI Providers", icon: "forge" },
+  { id: "appearance", label: "Appearance", icon: "canvas" },
+  { id: "general", label: "General", icon: "settings" },
+  { id: "engine", label: "Engine", icon: "pulse" },
+  { id: "shortcuts", label: "Shortcuts", icon: "keys" },
+  { id: "data", label: "Data", icon: "archive" },
+  { id: "about", label: "About", icon: "externalLink" },
 ];
 
 function NavButton({
@@ -122,9 +124,7 @@ function NavButton({
           : "transparent";
       }}
     >
-      <span style={{ fontSize: "14px", width: "20px", textAlign: "center" }}>
-        {item.icon}
-      </span>
+      <Icon name={item.icon} size={16} />
       {item.label}
     </button>
   );
@@ -206,7 +206,7 @@ export function SettingsTab(): React.ReactElement {
               }}
               aria-label="Dismiss error"
             >
-              x
+              <Icon name="close" size={16} />
             </button>
           </div>
         )}

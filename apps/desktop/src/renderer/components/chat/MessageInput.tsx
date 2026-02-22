@@ -1,6 +1,7 @@
 // Chat message input with send button
 
 import { useState, useRef, useCallback } from "react";
+import { Icon } from "@mixa-ai/ui";
 
 interface MessageInputProps {
   onSend: (content: string) => void;
@@ -12,7 +13,7 @@ const containerStyle: React.CSSProperties = {
   alignItems: "flex-end",
   gap: "8px",
   padding: "12px 24px 16px",
-  borderTop: "1px solid var(--mixa-border-default)",
+  borderTop: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-base)",
 };
 
@@ -120,7 +121,7 @@ export function MessageInput({ onSend, disabled }: MessageInputProps): React.Rea
         style={canSend ? sendButtonStyle : sendButtonDisabledStyle}
         title="Send message (Enter)"
       >
-        {"\u2191"}
+        <Icon name="send" size={16} />
       </button>
     </div>
   );

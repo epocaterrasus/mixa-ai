@@ -1,5 +1,8 @@
 // Onboarding Step 3: Explore — quick tour of tab types
 
+import { Icon } from "@mixa-ai/ui";
+import type { IconName } from "@mixa-ai/ui";
+
 const containerStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
@@ -32,7 +35,7 @@ const tabCardStyle: React.CSSProperties = {
   gap: "14px",
   padding: "14px 16px",
   borderRadius: "8px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-base)",
 };
 
@@ -51,7 +54,7 @@ const tabNameStyle: React.CSSProperties = {
 };
 
 const tabDescStyle: React.CSSProperties = {
-  fontSize: "12px",
+  fontSize: "13px",
   color: "var(--mixa-text-muted)",
   lineHeight: 1.4,
 };
@@ -60,7 +63,7 @@ const shortcutStyle: React.CSSProperties = {
   display: "inline-block",
   padding: "1px 6px",
   borderRadius: "3px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-surface)",
   fontFamily: "'SF Mono', Menlo, monospace",
   fontSize: "11px",
@@ -69,7 +72,7 @@ const shortcutStyle: React.CSSProperties = {
 };
 
 interface TabInfo {
-  icon: string;
+  iconName: IconName;
   name: string;
   description: string;
   shortcut: string | null;
@@ -77,25 +80,25 @@ interface TabInfo {
 
 const tabTypes: TabInfo[] = [
   {
-    icon: "\u{1F310}",
+    iconName: "web",
     name: "Web Tabs",
     description: "Browse the web like any browser. Pages you visit can be saved to your knowledge base.",
     shortcut: "Cmd+T",
   },
   {
-    icon: "\u{1F5A5}",
+    iconName: "terminal",
     name: "Terminal",
     description: "Built-in terminal with shell access and Fenix engine modules for secrets, Git, and more.",
     shortcut: null,
   },
   {
-    icon: "\u{1F4DA}",
+    iconName: "knowledge",
     name: "Knowledge",
     description: "Browse, search, and manage everything you've saved. Supports full-text and semantic search.",
     shortcut: null,
   },
   {
-    icon: "\u{1F4AC}",
+    iconName: "chat",
     name: "Chat",
     description: "Ask questions about your saved knowledge. The AI uses RAG to find relevant context.",
     shortcut: null,
@@ -114,7 +117,9 @@ export function ExploreStep(): React.ReactElement {
       <div style={tabListStyle}>
         {tabTypes.map((tab) => (
           <div key={tab.name} style={tabCardStyle}>
-            <span style={iconStyle} aria-hidden="true">{tab.icon}</span>
+            <span style={iconStyle} aria-hidden="true">
+              <Icon name={tab.iconName} size={24} />
+            </span>
             <div>
               <div style={tabNameStyle}>
                 {tab.name}

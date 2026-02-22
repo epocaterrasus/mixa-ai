@@ -128,6 +128,13 @@ export function useTabShortcuts(): void {
         return;
       }
 
+      // Cmd+Shift+E: Open new canvas tab
+      if (e.key === "e" && e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        addTab("canvas");
+        return;
+      }
+
       // Cmd+1-9: Switch to tab by index
       const num = parseInt(e.key, 10);
       if (num >= 1 && num <= 9 && !e.shiftKey && !e.altKey) {

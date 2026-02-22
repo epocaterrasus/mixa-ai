@@ -1,3 +1,5 @@
+import { Icon } from "@mixa-ai/ui";
+import type { IconName } from "@mixa-ai/ui";
 import { useCaptureStore } from "../stores/capture";
 
 const containerStyles: React.CSSProperties = {
@@ -14,7 +16,7 @@ const containerStyles: React.CSSProperties = {
 const toastStyles: React.CSSProperties = {
   padding: "10px 16px",
   borderRadius: 8,
-  fontSize: 13,
+  fontSize: 14,
   maxWidth: 320,
   boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
   pointerEvents: "auto",
@@ -47,14 +49,14 @@ function getToastColors(type: "success" | "error" | "duplicate"): React.CSSPrope
   }
 }
 
-function getIcon(type: "success" | "error" | "duplicate"): string {
+function getIconName(type: "success" | "error" | "duplicate"): IconName {
   switch (type) {
     case "success":
-      return "\u2713";
+      return "check";
     case "duplicate":
-      return "\u21BB";
+      return "refresh";
     case "error":
-      return "\u2717";
+      return "error";
   }
 }
 
@@ -80,14 +82,14 @@ export function CaptureToast(): React.ReactElement | null {
             onClick={() => removeToast(toast.id)}
             role="alert"
           >
-            <span style={{ fontSize: 16, lineHeight: "20px", flexShrink: 0 }}>
-              {getIcon(toast.type)}
+            <span style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
+              <Icon name={getIconName(toast.type)} size={16} />
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 600, marginBottom: 2 }}>{toast.title}</div>
               <div
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
                   color: "var(--mixa-text-muted, #94a3b8)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",

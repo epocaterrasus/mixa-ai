@@ -204,6 +204,7 @@ interface ElectronMediaAPI {
   readonly getState: () => Promise<MediaBarStateData>;
   readonly executeControl: (tabId: string, action: string) => Promise<boolean>;
   readonly setBarHeight: (height: number) => Promise<void>;
+  readonly setBarPosition: (position: string) => Promise<void>;
   readonly onStateChanged: (callback: (data: MediaBarStateData) => void) => () => void;
 }
 
@@ -230,6 +231,26 @@ interface ElectronAPI {
   readonly terminal: ElectronTerminalAPI;
   readonly shell: ElectronShellAPI;
   readonly media: ElectronMediaAPI;
+  readonly canvas: ElectronCanvasAPI;
+}
+
+interface CanvasMetaData {
+  readonly id: string;
+  readonly name: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+interface ElectronCanvasAPI {
+  readonly save: (canvasId: string, data: string) => Promise<{ success: boolean; error?: string }>;
+  readonly load: (canvasId: string) => Promise<{ success: boolean; data?: string; error?: string }>;
+  readonly list: () => Promise<{ success: boolean; canvases?: CanvasMetaData[]; error?: string }>;
+  readonly delete: (canvasId: string) => Promise<{ success: boolean; error?: string }>;
+  readonly exportFile: (
+    defaultName: string,
+    format: string,
+    data: string,
+  ) => Promise<{ success: boolean; filePath?: string; error?: string }>;
 }
 
 interface Window {

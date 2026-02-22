@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UIEvent } from "@mixa-ai/types";
+import { Icon } from "@mixa-ai/ui";
 import { MetricRow, Chart, Table } from "@mixa-ai/terminal-renderer";
 import { useTabStore } from "../../stores/tabs";
 import { useEngineStore } from "../../stores/engine";
@@ -61,7 +62,7 @@ const actionsBarStyle: React.CSSProperties = {
 const actionButtonStyle: React.CSSProperties = {
   padding: "6px 14px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-elevated)",
   color: "var(--mixa-text-primary)",
   fontSize: "12px",
@@ -91,7 +92,7 @@ const sectionTitleStyle: React.CSSProperties = {
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "var(--mixa-bg-surface)",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   borderRadius: "8px",
   padding: "16px",
 };
@@ -118,7 +119,7 @@ const errorBoxStyle: React.CSSProperties = {
 const reconnectButtonStyle: React.CSSProperties = {
   padding: "6px 16px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-elevated)",
   color: "var(--mixa-text-primary)",
   fontSize: "13px",
@@ -158,7 +159,7 @@ const incidentItemStyle: React.CSSProperties = {
   alignItems: "flex-start",
   gap: "8px",
   padding: "8px 0",
-  borderBottom: "1px solid var(--mixa-border-default)",
+  borderBottom: "1px solid var(--mixa-border-subtle)",
   fontSize: "13px",
 };
 
@@ -256,7 +257,7 @@ function UptimeGrid({
                   style={{ ...actionButtonStyle, padding: "3px 8px", fontSize: "11px", color: "#ef4444" }}
                   title="Remove this endpoint"
                 >
-                  &#x2715;
+                  <Icon name="close" size={14} />
                 </button>
               </div>
             </div>
@@ -285,21 +286,21 @@ function SSLExpirySection({
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
           <thead>
             <tr>
-              <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid var(--mixa-border-default)", fontSize: "11px", color: "var(--mixa-text-muted)", fontWeight: 600 }}>Endpoint</th>
-              <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid var(--mixa-border-default)", fontSize: "11px", color: "var(--mixa-text-muted)", fontWeight: 600 }}>Issuer</th>
-              <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid var(--mixa-border-default)", fontSize: "11px", color: "var(--mixa-text-muted)", fontWeight: 600 }}>Expires</th>
-              <th style={{ textAlign: "center", padding: "8px", borderBottom: "1px solid var(--mixa-border-default)", fontSize: "11px", color: "var(--mixa-text-muted)", fontWeight: 600 }}>Days Left</th>
+              <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid var(--mixa-border-subtle)", fontSize: "11px", color: "var(--mixa-text-muted)", fontWeight: 600 }}>Endpoint</th>
+              <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid var(--mixa-border-subtle)", fontSize: "11px", color: "var(--mixa-text-muted)", fontWeight: 600 }}>Issuer</th>
+              <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid var(--mixa-border-subtle)", fontSize: "11px", color: "var(--mixa-text-muted)", fontWeight: 600 }}>Expires</th>
+              <th style={{ textAlign: "center", padding: "8px", borderBottom: "1px solid var(--mixa-border-subtle)", fontSize: "11px", color: "var(--mixa-text-muted)", fontWeight: 600 }}>Days Left</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row, i) => (
               <tr key={`${row.name}-${i}`}>
-                <td style={{ padding: "8px", borderBottom: "1px solid var(--mixa-border-default)" }}>{row.name}</td>
-                <td style={{ padding: "8px", borderBottom: "1px solid var(--mixa-border-default)", color: "var(--mixa-text-muted)" }}>{row.issuer}</td>
-                <td style={{ padding: "8px", borderBottom: "1px solid var(--mixa-border-default)", color: "var(--mixa-text-muted)" }}>
+                <td style={{ padding: "8px", borderBottom: "1px solid var(--mixa-border-subtle)" }}>{row.name}</td>
+                <td style={{ padding: "8px", borderBottom: "1px solid var(--mixa-border-subtle)", color: "var(--mixa-text-muted)" }}>{row.issuer}</td>
+                <td style={{ padding: "8px", borderBottom: "1px solid var(--mixa-border-subtle)", color: "var(--mixa-text-muted)" }}>
                   {row.expires ? new Date(row.expires).toLocaleDateString() : "—"}
                 </td>
-                <td style={{ padding: "8px", borderBottom: "1px solid var(--mixa-border-default)", textAlign: "center" }}>
+                <td style={{ padding: "8px", borderBottom: "1px solid var(--mixa-border-subtle)", textAlign: "center" }}>
                   <span style={{ ...sslBadgeStyle, backgroundColor: `${getSSLAlertColor(row.alertLevel)}20`, color: getSSLAlertColor(row.alertLevel) }}>
                     {row.daysLeft}d
                   </span>
@@ -330,7 +331,7 @@ function IncidentTimeline({
       <div style={{ maxHeight: "300px", overflowY: "auto" }}>
         {incidents.map((inc, i) => (
           <div key={i} style={incidentItemStyle}>
-            <span style={{ fontSize: "14px", flexShrink: 0 }}>{inc.icon}</span>
+            <Icon name={inc.icon} size={14} style={{ flexShrink: 0 }} />
             <span style={{ color: "var(--mixa-text-muted)" }}>{inc.text}</span>
           </div>
         ))}
@@ -366,7 +367,7 @@ function AddEndpointForm({ onAdd, onCancel }: AddEndpointFormProps): React.React
     width: "100%",
     padding: "6px 8px",
     borderRadius: "6px",
-    border: "1px solid var(--mixa-border-default)",
+    border: "1px solid var(--mixa-border-subtle)",
     backgroundColor: "var(--mixa-bg-elevated)",
     color: "var(--mixa-text-primary)",
     fontSize: "13px",
@@ -561,7 +562,7 @@ export function HealthDashboard(): React.ReactElement {
     return (
       <div style={containerStyle}>
         <div style={centerStyle}>
-          <div style={{ fontSize: "32px" }}>&#x26A0;&#xFE0F;</div>
+          <Icon name="warning" size={32} />
           <div style={{ fontSize: "16px", fontWeight: 600 }}>Engine Not Connected</div>
           <div style={{ fontSize: "13px", color: "var(--mixa-text-muted)" }}>
             The Fenix engine is not running. Health data is unavailable.
@@ -591,7 +592,7 @@ export function HealthDashboard(): React.ReactElement {
     return (
       <div style={containerStyle}>
         <div style={errorBoxStyle}>
-          <div style={{ fontSize: "32px" }}>&#x274C;</div>
+          <Icon name="error" size={32} />
           <div style={{ fontSize: "16px", fontWeight: 600 }}>Connection Error</div>
           <div style={{ fontSize: "14px", color: "#ef4444", textAlign: "center", maxWidth: "400px" }}>
             {error}
@@ -610,7 +611,7 @@ export function HealthDashboard(): React.ReactElement {
     return (
       <div style={containerStyle}>
         <div style={errorBoxStyle}>
-          <div style={{ fontSize: "32px" }}>&#x1F50C;</div>
+          <Icon name="wifiOff" size={32} />
           <div style={{ fontSize: "16px", fontWeight: 600 }}>Disconnected</div>
           <div style={{ fontSize: "13px", color: "var(--mixa-text-muted)" }}>
             Lost connection to the health module.
@@ -648,7 +649,7 @@ export function HealthDashboard(): React.ReactElement {
           {metricsComponent && <MetricRow component={metricsComponent} />}
           {showAddForm && <AddEndpointForm onAdd={handleAddEndpoint} onCancel={hideAddForm} />}
           <div style={emptyStateStyle}>
-            <div style={{ fontSize: "48px", marginBottom: "8px" }}>&#x1F3E5;</div>
+            <Icon name="pulse" size={48} style={{ marginBottom: "8px" }} />
             <div style={{ fontSize: "16px", fontWeight: 600, marginBottom: "4px" }}>No Endpoints Monitored</div>
             <div style={{ fontSize: "13px", color: "var(--mixa-text-muted)", maxWidth: "400px" }}>
               Add HTTP(S) endpoints to monitor their uptime, response times, and SSL certificate status. Click &quot;Add Endpoint&quot; to get started.

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { Icon } from "@mixa-ai/ui";
 import { useTabStore } from "../stores/tabs";
 import {
   useAugmentedStore,
@@ -16,7 +17,7 @@ const styles = {
     bottom: 0,
     width: "340px",
     backgroundColor: "var(--mixa-bg-surface)",
-    borderLeft: "1px solid var(--mixa-border-default)",
+    borderLeft: "1px solid var(--mixa-border-subtle)",
     display: "flex",
     flexDirection: "column",
     zIndex: 100,
@@ -101,7 +102,7 @@ const styles = {
     color: "var(--mixa-text-disabled)",
   } as React.CSSProperties,
   itemSummary: {
-    fontSize: "11px",
+    fontSize: "13px",
     color: "var(--mixa-text-muted)",
     lineHeight: "1.4",
     overflow: "hidden",
@@ -124,7 +125,7 @@ const styles = {
     justifyContent: "center",
     padding: "40px 20px",
     color: "var(--mixa-text-subtle)",
-    fontSize: "12px",
+    fontSize: "13px",
     textAlign: "center",
     gap: "8px",
   } as React.CSSProperties,
@@ -187,8 +188,8 @@ function RelatedItemCard({
             }}
           />
         ) : (
-          <span style={{ ...styles.itemFavicon, fontSize: "11px", textAlign: "center" }}>
-            {item.itemType === "highlight" ? "\u{1F4CC}" : "\u{1F4C4}"}
+          <span style={{ ...styles.itemFavicon, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon name={item.itemType === "highlight" ? "highlight" : "article"} size={14} />
           </span>
         )}
         <span style={styles.itemTitle}>{item.title}</span>

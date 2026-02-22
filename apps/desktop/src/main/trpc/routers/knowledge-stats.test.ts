@@ -97,9 +97,7 @@ describe("knowledgeStatsRouter", () => {
     });
 
     it("computes total word count and reading time", async () => {
-      const itemNullCounts = makeItem({});
-      itemNullCounts.wordCount = null;
-      itemNullCounts.readingTime = null;
+      const itemNullCounts = makeItem({ wordCount: null, readingTime: null });
       mockSelectRows.mockResolvedValue([
         makeItem({ wordCount: 500, readingTime: 3 }),
         makeItem({ wordCount: 300, readingTime: 2 }),

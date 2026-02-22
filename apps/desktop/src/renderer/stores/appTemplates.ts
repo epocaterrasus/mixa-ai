@@ -7,6 +7,7 @@ export const APP_TEMPLATES: AppTemplate[] = [
     name: "WhatsApp",
     url: "https://web.whatsapp.com",
     icon: "\uD83D\uDCAC",
+    iconName: "chat",
     partitionStrategy: "per-instance",
   },
   {
@@ -14,6 +15,7 @@ export const APP_TEMPLATES: AppTemplate[] = [
     name: "Slack",
     url: "https://app.slack.com",
     icon: "\uD83D\uDCAD",
+    iconName: "app",
     partitionStrategy: "per-instance",
   },
   {
@@ -21,6 +23,7 @@ export const APP_TEMPLATES: AppTemplate[] = [
     name: "Discord",
     url: "https://discord.com/app",
     icon: "\uD83C\uDFAE",
+    iconName: "play",
     partitionStrategy: "per-instance",
   },
   {
@@ -28,6 +31,7 @@ export const APP_TEMPLATES: AppTemplate[] = [
     name: "Gmail",
     url: "https://mail.google.com",
     icon: "\u2709\uFE0F",
+    iconName: "inbox",
     partitionStrategy: "per-instance",
   },
   {
@@ -35,6 +39,7 @@ export const APP_TEMPLATES: AppTemplate[] = [
     name: "Google Meet",
     url: "https://meet.google.com",
     icon: "\uD83C\uDFA5",
+    iconName: "camera",
     partitionStrategy: "per-instance",
   },
   {
@@ -42,6 +47,7 @@ export const APP_TEMPLATES: AppTemplate[] = [
     name: "Notion",
     url: "https://www.notion.so",
     icon: "\uD83D\uDCDD",
+    iconName: "article",
     partitionStrategy: "per-instance",
   },
 ];

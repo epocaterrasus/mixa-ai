@@ -1,4 +1,5 @@
 import type { TabType } from "@mixa-ai/types";
+import { CanvasTab } from "./canvas/CanvasTab";
 import { ChatTab } from "./chat/ChatTab";
 import { CostDashboard } from "./dashboard/CostDashboard";
 import { HealthDashboard } from "./dashboard/HealthDashboard";
@@ -69,6 +70,11 @@ export function TabContent({
   // Settings tab renders the full settings panel
   if (type === "settings") {
     return <SettingsTab />;
+  }
+
+  // Canvas tab renders the Excalidraw visual workspace
+  if (type === "canvas") {
+    return <CanvasTab />;
   }
 
   // Terminal tab renders the Fenix engine UI via gRPC streaming

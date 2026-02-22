@@ -1,13 +1,12 @@
-// @mixa-ai/ui — Theme token definitions
-// These define the semantic design tokens used throughout the app.
-// Color tokens vary per theme (dark/light) via CSS custom properties.
+// @mixa-ai/ui — Sumi & Washi Design Token Definitions
+// Sumi (墨) = Dark  |  Washi (和紙) = Light
+// Color tokens vary per theme via CSS custom properties.
 // Spacing, typography, and radii tokens are constant across themes.
 
 import type { ThemeMode } from "@mixa-ai/types";
 
 /** All semantic CSS variable names for color tokens (theme-dependent) */
 export const themeTokens = {
-  // Backgrounds
   bgBase: "--mixa-bg-base",
   bgSurface: "--mixa-bg-surface",
   bgElevated: "--mixa-bg-elevated",
@@ -16,14 +15,12 @@ export const themeTokens = {
   bgOverlay: "--mixa-bg-overlay",
   bgActiveAccent: "--mixa-bg-active-accent",
 
-  // Borders
   borderDefault: "--mixa-border-default",
   borderSubtle: "--mixa-border-subtle",
   borderStrong: "--mixa-border-strong",
   borderFocus: "--mixa-border-focus",
   borderOverlay: "--mixa-border-overlay",
 
-  // Text
   textPrimary: "--mixa-text-primary",
   textSecondary: "--mixa-text-secondary",
   textTertiary: "--mixa-text-tertiary",
@@ -32,21 +29,19 @@ export const themeTokens = {
   textSubtle: "--mixa-text-subtle",
   textFaint: "--mixa-text-faint",
 
-  // Accent (user-configurable)
   accentPrimary: "--mixa-accent-primary",
   accentLight: "--mixa-accent-light",
-
-  // Functional accent colors (fixed)
   accentBlue: "--mixa-accent-blue",
   accentGreen: "--mixa-accent-green",
+  accentWarm: "--mixa-accent-warm",
+  accentRed: "--mixa-accent-red",
 
-  // Shadows
   shadowDropdown: "--mixa-shadow-dropdown",
   shadowOverlay: "--mixa-shadow-overlay",
   shadowFloat: "--mixa-shadow-float",
 } as const;
 
-/** Spacing scale (in px) — consistent across themes */
+/** Spacing scale (Ma — generous whitespace) */
 export const spacing = {
   0: "0px",
   1: "4px",
@@ -61,19 +56,19 @@ export const spacing = {
   16: "64px",
 } as const;
 
-/** Typography scale — consistent across themes */
+/** Typography scale */
 export const typography = {
   fontFamily: {
-    sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    mono: "'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
+    sans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    mono: "'JetBrains Mono', 'SF Mono', Menlo, monospace",
   },
   fontSize: {
     xs: "11px",
     sm: "12px",
-    base: "13px",
+    base: "14px",
     md: "14px",
     lg: "16px",
-    xl: "18px",
+    xl: "20px",
     "2xl": "24px",
     "3xl": "30px",
   },
@@ -81,16 +76,15 @@ export const typography = {
     normal: "400",
     medium: "500",
     semibold: "600",
-    bold: "700",
   },
   lineHeight: {
-    tight: "1.2",
-    normal: "1.5",
+    tight: "1.3",
+    body: "1.6",
     relaxed: "1.75",
   },
 } as const;
 
-/** Border radius scale — consistent across themes */
+/** Border radius scale */
 export const radii = {
   none: "0px",
   sm: "4px",
@@ -136,77 +130,83 @@ export interface ThemeColors {
   accentLight: string;
   accentBlue: string;
   accentGreen: string;
+  accentWarm: string;
+  accentRed: string;
 
   shadowDropdown: string;
   shadowOverlay: string;
   shadowFloat: string;
 }
 
-/** Dark theme color values */
+/** Sumi (墨) — Dark theme: warm charcoals, muted accents */
 export const darkColors: ThemeColors = {
-  bgBase: "#0a0a0a",
-  bgSurface: "#111111",
-  bgElevated: "#1a1a1a",
-  bgActive: "#2a2a2a",
-  bgHover: "#222222",
-  bgOverlay: "#252525",
-  bgActiveAccent: "#1e1e2e",
+  bgBase: "#1a1a1e",
+  bgSurface: "#222226",
+  bgElevated: "#2a2a2e",
+  bgActive: "#32323a",
+  bgHover: "#28282e",
+  bgOverlay: "#2a2a2e",
+  bgActiveAccent: "#2a2a36",
 
-  borderDefault: "#2a2a2a",
-  borderSubtle: "#222222",
-  borderStrong: "#333333",
-  borderFocus: "#555555",
-  borderOverlay: "#3a3a3a",
+  borderDefault: "#2e2e34",
+  borderSubtle: "#26262c",
+  borderStrong: "#36363e",
+  borderFocus: "#4a4a54",
+  borderOverlay: "#34343c",
 
-  textPrimary: "#fafafa",
-  textSecondary: "#cccccc",
-  textTertiary: "#aaaaaa",
-  textMuted: "#888888",
-  textDisabled: "#666666",
-  textSubtle: "#555555",
-  textFaint: "#444444",
+  textPrimary: "#e8e4df",
+  textSecondary: "#c4c0bb",
+  textTertiary: "#a09c97",
+  textMuted: "#8a8680",
+  textDisabled: "#6a6662",
+  textSubtle: "#5a5854",
+  textFaint: "#4a4844",
 
-  accentPrimary: "#6366f1",
-  accentLight: "#818cf8",
-  accentBlue: "#3b82f6",
-  accentGreen: "#4ade80",
+  accentPrimary: "#8b8ec4",
+  accentLight: "#a0a3d4",
+  accentBlue: "#7b9ec8",
+  accentGreen: "#7d9b85",
+  accentWarm: "#c4956a",
+  accentRed: "#b87070",
 
-  shadowDropdown: "0 8px 24px rgba(0,0,0,0.6)",
-  shadowOverlay: "0 4px 16px rgba(0,0,0,0.4)",
-  shadowFloat: "0 2px 8px rgba(0,0,0,0.4)",
+  shadowDropdown: "0 8px 24px rgba(0,0,0,0.5)",
+  shadowOverlay: "0 8px 24px rgba(0,0,0,0.5)",
+  shadowFloat: "0 2px 8px rgba(0,0,0,0.3)",
 };
 
-/** Light theme color values */
+/** Washi (和紙) — Light theme: warm parchment, deeper accents */
 export const lightColors: ThemeColors = {
-  bgBase: "#f8f8f8",
-  bgSurface: "#f0f0f0",
+  bgBase: "#f5f2ed",
+  bgSurface: "#ebe7e1",
   bgElevated: "#ffffff",
-  bgActive: "#e4e4e7",
-  bgHover: "#f4f4f5",
+  bgActive: "#e0dbd4",
+  bgHover: "#eee9e3",
   bgOverlay: "#ffffff",
-  bgActiveAccent: "#e8e8ff",
+  bgActiveAccent: "#e4e4f0",
 
-  borderDefault: "#e4e4e7",
-  borderSubtle: "#e8e8ea",
-  borderStrong: "#d4d4d8",
-  borderFocus: "#a1a1aa",
-  borderOverlay: "#d4d4d8",
+  borderDefault: "#ddd8d2",
+  borderSubtle: "#e8e3dd",
+  borderStrong: "#d0cbc5",
+  borderFocus: "#b0aaa4",
+  borderOverlay: "#d4cfc9",
 
-  textPrimary: "#09090b",
-  textSecondary: "#3f3f46",
-  textTertiary: "#52525b",
-  textMuted: "#71717a",
-  textDisabled: "#a1a1aa",
-  textSubtle: "#d4d4d8",
-  textFaint: "#e4e4e7",
+  textPrimary: "#2c2a27",
+  textSecondary: "#5c5955",
+  textTertiary: "#6e6b67",
+  textMuted: "#8a8580",
+  textDisabled: "#aaa5a0",
+  textSubtle: "#c4bfb9",
+  textFaint: "#d8d3cd",
 
-  accentPrimary: "#6366f1",
-  accentLight: "#4f46e5",
-  accentBlue: "#2563eb",
-  accentGreen: "#16a34a",
+  accentPrimary: "#5c5f99",
+  accentLight: "#4a4d85",
+  accentBlue: "#4a7098",
+  accentGreen: "#4a7a55",
+  accentWarm: "#a07040",
+  accentRed: "#995555",
 
   shadowDropdown: "0 8px 24px rgba(0,0,0,0.12)",
-  shadowOverlay: "0 4px 16px rgba(0,0,0,0.08)",
+  shadowOverlay: "0 8px 24px rgba(0,0,0,0.12)",
   shadowFloat: "0 2px 8px rgba(0,0,0,0.08)",
 };
 
@@ -215,23 +215,20 @@ export function getColorsForTheme(mode: Exclude<ThemeMode, "system">): ThemeColo
   return mode === "dark" ? darkColors : lightColors;
 }
 
-/** Preset accent colors users can choose from */
+/** Preset accent colors — muted palette matching the Ma aesthetic */
 export const accentPresets = [
-  { name: "Indigo", value: "#6366f1" },
-  { name: "Blue", value: "#3b82f6" },
-  { name: "Cyan", value: "#06b6d4" },
-  { name: "Teal", value: "#14b8a6" },
-  { name: "Green", value: "#22c55e" },
-  { name: "Amber", value: "#f59e0b" },
-  { name: "Orange", value: "#f97316" },
-  { name: "Red", value: "#ef4444" },
-  { name: "Pink", value: "#ec4899" },
-  { name: "Purple", value: "#a855f7" },
+  { name: "Indigo", value: "#8b8ec4" },
+  { name: "Blue", value: "#7b9ec8" },
+  { name: "Sage", value: "#7d9b85" },
+  { name: "Warm", value: "#c4956a" },
+  { name: "Rose", value: "#b87070" },
+  { name: "Lavender", value: "#a08cc4" },
+  { name: "Teal", value: "#6a9e9e" },
+  { name: "Slate", value: "#8a8e9c" },
 ] as const;
 
 /** Generate a lighter variant of an accent color for hover states */
 export function accentToLight(hex: string): string {
-  // Simple lightening: blend with white at ~30%
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
@@ -242,36 +239,36 @@ export function accentToLight(hex: string): string {
   return `#${lr}${lg}${lb}`;
 }
 
-/** Validate a hex color string (e.g. "#6366f1") */
+/** Validate a hex color string (e.g. "#8b8ec4") */
 export function isValidHexColor(value: string): boolean {
   return /^#[0-9a-fA-F]{6}$/.test(value);
 }
 
-/** Theme-aware chart color palettes for dashboard visualizations */
+/** Theme-aware chart color palettes — muted tones for long-duration comfort */
 export const chartPalette = {
   dark: [
-    "#6366f1", // Indigo
-    "#3b82f6", // Blue
-    "#06b6d4", // Cyan
-    "#22c55e", // Green
-    "#f59e0b", // Amber
-    "#ef4444", // Red
-    "#a855f7", // Purple
-    "#ec4899", // Pink
-    "#f97316", // Orange
-    "#14b8a6", // Teal
+    "#8b8ec4",
+    "#7b9ec8",
+    "#6a9e9e",
+    "#7d9b85",
+    "#c4956a",
+    "#b87070",
+    "#a08cc4",
+    "#c48ba0",
+    "#8a8e9c",
+    "#a0956a",
   ],
   light: [
-    "#4f46e5", // Indigo (deeper for light bg)
-    "#2563eb", // Blue
-    "#0891b2", // Cyan
-    "#16a34a", // Green
-    "#d97706", // Amber
-    "#dc2626", // Red
-    "#9333ea", // Purple
-    "#db2777", // Pink
-    "#ea580c", // Orange
-    "#0d9488", // Teal
+    "#5c5f99",
+    "#4a7098",
+    "#3a7a7a",
+    "#4a7a55",
+    "#a07040",
+    "#995555",
+    "#7a5f99",
+    "#994a70",
+    "#6a6e7c",
+    "#7a7040",
   ],
 } as const;
 

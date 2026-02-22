@@ -1,6 +1,7 @@
 // Pure helper functions for the Health Dashboard
 // Extracted for testability.
 
+import type { IconName } from "@mixa-ai/ui";
 import type { UIComponent, UIView } from "@mixa-ai/types";
 
 /** Find a component in a UIView by its id */
@@ -95,7 +96,7 @@ function parseSSLAlertLevel(value: string | undefined): SSLAlertLevel {
 // ─── Incident helpers ─────────────────────────────────────────
 
 export interface IncidentData {
-  icon: string;
+  icon: IconName;
   text: string;
 }
 
@@ -110,7 +111,7 @@ export function parseIncidents(
     // The icon is the first character(s) (emoji)
     const isUp = item.includes("\u{1F7E2}"); // green circle
     return {
-      icon: isUp ? "\u{1F7E2}" : "\u{1F534}",
+      icon: (isUp ? "success" : "error") as IconName,
       text: item,
     };
   });

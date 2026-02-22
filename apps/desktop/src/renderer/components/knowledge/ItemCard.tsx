@@ -1,6 +1,8 @@
 // Knowledge item card — grid view
 
 import { useCallback } from "react";
+import { Icon } from "@mixa-ai/ui";
+import type { IconName } from "@mixa-ai/ui";
 import type { KnowledgeItem } from "../../stores/knowledge";
 
 interface ItemCardProps {
@@ -16,7 +18,7 @@ const cardStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   borderRadius: "8px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-surface)",
   overflow: "hidden",
   cursor: "pointer",
@@ -43,7 +45,6 @@ const thumbnailPlaceholderStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: "32px",
   color: "var(--mixa-text-muted)",
 };
 
@@ -68,7 +69,7 @@ const titleStyle: React.CSSProperties = {
 };
 
 const excerptStyle: React.CSSProperties = {
-  fontSize: "12px",
+  fontSize: "13px",
   color: "var(--mixa-text-secondary)",
   lineHeight: 1.4,
   overflow: "hidden",
@@ -175,16 +176,16 @@ const tagStyle: React.CSSProperties = {
   color: "var(--mixa-text-muted)",
 };
 
-function itemTypeIcon(type: string): string {
+function itemTypeIconName(type: string): IconName {
   switch (type) {
-    case "article": return "\u{1F4C4}";
-    case "highlight": return "\u{1F4CC}";
-    case "youtube": return "\u{1F4F9}";
-    case "pdf": return "\u{1F4D1}";
-    case "code": return "\u{1F4BB}";
-    case "image": return "\u{1F5BC}";
-    case "terminal": return "\u{2328}";
-    default: return "\u{1F4C4}";
+    case "article": return "article";
+    case "highlight": return "highlight";
+    case "youtube": return "youtube";
+    case "pdf": return "pdf";
+    case "code": return "code";
+    case "image": return "image";
+    case "terminal": return "terminal";
+    default: return "article";
   }
 }
 
@@ -242,7 +243,7 @@ export function ItemCard({
       }}
       onMouseLeave={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.borderColor = "var(--mixa-border-default)";
+          e.currentTarget.style.borderColor = "var(--mixa-border-subtle)";
         }
       }}
       role="button"
@@ -270,7 +271,7 @@ export function ItemCard({
           }
         }}
       >
-        {isChecked ? "\u2713" : ""}
+        {isChecked ? <Icon name="check" size={12} /> : null}
       </div>
 
       {/* Favorite */}
@@ -281,7 +282,7 @@ export function ItemCard({
         title={item.isFavorite ? "Remove from favorites" : "Add to favorites"}
         aria-label={item.isFavorite ? "Remove from favorites" : "Add to favorites"}
       >
-        {item.isFavorite ? "\u2605" : "\u2606"}
+        <Icon name="favorite" size={12} fill={item.isFavorite ? "currentColor" : "none"} />
       </button>
 
       {/* Thumbnail */}
@@ -305,7 +306,7 @@ export function ItemCard({
           display: item.thumbnailUrl ? "none" : "flex",
         }}
       >
-        {itemTypeIcon(item.itemType)}
+        <Icon name={itemTypeIconName(item.itemType)} size={32} />
       </div>
 
       {/* Body */}

@@ -1,6 +1,7 @@
 // Knowledge toolbar — search input, view mode toggle, sort controls, filter toggle, bulk actions
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { Icon } from "@mixa-ai/ui";
 import type { SortField, ViewMode, AvailableTag, AvailableProject } from "../../stores/knowledge";
 
 interface KnowledgeToolbarProps {
@@ -29,7 +30,7 @@ const toolbarStyle: React.CSSProperties = {
   alignItems: "center",
   gap: "8px",
   padding: "8px 16px",
-  borderBottom: "1px solid var(--mixa-border-default)",
+  borderBottom: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-surface)",
   flexShrink: 0,
 };
@@ -45,7 +46,7 @@ const searchInputStyle: React.CSSProperties = {
   width: "100%",
   padding: "6px 12px 6px 32px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-base)",
   color: "var(--mixa-text-primary)",
   fontSize: "13px",
@@ -56,7 +57,8 @@ const searchInputStyle: React.CSSProperties = {
 const searchIconStyle: React.CSSProperties = {
   position: "absolute",
   left: "10px",
-  fontSize: "13px",
+  display: "flex",
+  alignItems: "center",
   color: "var(--mixa-text-muted)",
   pointerEvents: "none",
 };
@@ -64,7 +66,7 @@ const searchIconStyle: React.CSSProperties = {
 const buttonGroupStyle: React.CSSProperties = {
   display: "flex",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   overflow: "hidden",
 };
 
@@ -88,7 +90,7 @@ const iconButtonStyle: React.CSSProperties = {
   width: "30px",
   height: "30px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "transparent",
   color: "var(--mixa-text-muted)",
   fontSize: "13px",
@@ -109,7 +111,7 @@ const iconButtonActiveStyle: React.CSSProperties = {
 const sortSelectStyle: React.CSSProperties = {
   padding: "5px 8px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-base)",
   color: "var(--mixa-text-secondary)",
   fontSize: "12px",
@@ -129,7 +131,7 @@ const bulkBarStyle: React.CSSProperties = {
   alignItems: "center",
   gap: "8px",
   padding: "6px 16px",
-  borderBottom: "1px solid var(--mixa-border-default)",
+  borderBottom: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-active-accent)",
   fontSize: "12px",
   color: "var(--mixa-text-primary)",
@@ -139,7 +141,7 @@ const bulkBarStyle: React.CSSProperties = {
 const bulkButtonStyle: React.CSSProperties = {
   padding: "3px 8px",
   borderRadius: "4px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "transparent",
   color: "var(--mixa-text-secondary)",
   fontSize: "11px",
@@ -163,7 +165,7 @@ const dropdownStyle: React.CSSProperties = {
   maxHeight: "200px",
   overflowY: "auto",
   backgroundColor: "var(--mixa-bg-elevated)",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   borderRadius: "6px",
   boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
   zIndex: 100,
@@ -328,12 +330,14 @@ export function KnowledgeToolbar({
             }
           }}
         >
-          {"\u2630"}
+          <Icon name="filter" size={16} />
         </button>
 
         {/* Search */}
         <div style={searchContainerStyle}>
-          <span style={searchIconStyle}>{"\u{1F50D}"}</span>
+          <span style={searchIconStyle}>
+            <Icon name="search" size={16} />
+          </span>
           <input
             type="text"
             value={inputValue}
@@ -345,7 +349,7 @@ export function KnowledgeToolbar({
               e.currentTarget.style.borderColor = "var(--mixa-accent-primary)";
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = "var(--mixa-border-default)";
+              e.currentTarget.style.borderColor = "var(--mixa-border-subtle)";
             }}
             aria-label="Search knowledge base"
           />
@@ -380,7 +384,7 @@ export function KnowledgeToolbar({
             title="Grid view"
             aria-label="Grid view"
           >
-            {"\u25A6"}
+            <Icon name="layers" size={14} />
           </button>
           <button
             type="button"
@@ -389,7 +393,7 @@ export function KnowledgeToolbar({
             title="List view"
             aria-label="List view"
           >
-            {"\u2630"}
+            <Icon name="inbox" size={14} />
           </button>
         </div>
       </div>

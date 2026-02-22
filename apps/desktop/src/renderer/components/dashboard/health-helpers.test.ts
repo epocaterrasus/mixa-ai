@@ -308,8 +308,8 @@ describe("parseIncidents", () => {
 
     const result = parseIncidents(list);
     expect(result).toHaveLength(2);
-    expect(result[0]!.icon).toBe("\u{1F534}");
-    expect(result[1]!.icon).toBe("\u{1F7E2}");
+    expect(result[0]!.icon).toBe("error");
+    expect(result[1]!.icon).toBe("success");
   });
 
   it("returns empty array for undefined component", () => {

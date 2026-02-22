@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { Icon } from "@mixa-ai/ui";
 import { useTabStore } from "../stores/tabs";
 import { useAugmentedStore } from "../stores/augmented";
 import { useSettingsStore } from "../stores/settings";
@@ -17,7 +18,7 @@ const styles = {
     border: "none",
     backgroundColor: "transparent",
     cursor: "pointer",
-    fontSize: "14px",
+    fontSize: "13px",
     padding: 0,
     flexShrink: 0,
   } as React.CSSProperties,
@@ -100,8 +101,7 @@ export function AugmentedIndicator(): React.ReactElement | null {
           : "No related items in knowledge base"
       }
     >
-      {/* Book/knowledge icon */}
-      {"\u{1F4D6}"}
+      <Icon name="knowledge" size={14} />
       {hasRelated && (
         <span style={styles.badge} aria-hidden="true">
           {count > 9 ? "9+" : count}

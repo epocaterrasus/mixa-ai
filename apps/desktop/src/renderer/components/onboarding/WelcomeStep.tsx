@@ -1,5 +1,8 @@
 // Onboarding Step 1: Welcome — branding and value proposition
 
+import { Icon } from "@mixa-ai/ui";
+import type { IconName } from "@mixa-ai/ui";
+
 const containerStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
@@ -48,7 +51,7 @@ const featureGridStyle: React.CSSProperties = {
 const featureCardStyle: React.CSSProperties = {
   padding: "14px 16px",
   borderRadius: "8px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-base)",
   textAlign: "left",
 };
@@ -61,35 +64,35 @@ const featureTitleStyle: React.CSSProperties = {
 };
 
 const featureDescStyle: React.CSSProperties = {
-  fontSize: "12px",
+  fontSize: "13px",
   color: "var(--mixa-text-muted)",
   lineHeight: 1.4,
 };
 
 interface Feature {
-  icon: string;
+  iconName: IconName;
   title: string;
   description: string;
 }
 
 const features: Feature[] = [
   {
-    icon: "\u{1F310}",
+    iconName: "web",
     title: "Smart Browsing",
     description: "Full Chromium browser with AI-powered page understanding",
   },
   {
-    icon: "\u{1F4DA}",
+    iconName: "knowledge",
     title: "Knowledge Base",
     description: "Save and search everything you read with semantic search",
   },
   {
-    icon: "\u{1F4AC}",
+    iconName: "chat",
     title: "AI Chat",
     description: "Ask questions about your saved knowledge using RAG",
   },
   {
-    icon: "\u{1F5A5}",
+    iconName: "terminal",
     title: "Dev Tools",
     description: "Terminal, secrets, Git, and infrastructure at your fingertips",
   },
@@ -107,8 +110,9 @@ export function WelcomeStep(): React.ReactElement {
       <div style={featureGridStyle}>
         {features.map((f) => (
           <div key={f.title} style={featureCardStyle}>
-            <div style={featureTitleStyle}>
-              <span aria-hidden="true">{f.icon}</span> {f.title}
+            <div style={{ ...featureTitleStyle, display: "flex", alignItems: "center", gap: "6px" }}>
+              <Icon name={f.iconName} size={14} />
+              {f.title}
             </div>
             <div style={featureDescStyle}>{f.description}</div>
           </div>

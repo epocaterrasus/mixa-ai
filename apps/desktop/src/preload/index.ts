@@ -468,6 +468,36 @@ const electronAPI = {
       return () => ipcRenderer.removeListener("media:state-changed", handler);
     },
   },
+
+  // Canvas persistence IPC
+  canvas: {
+    save: (canvasId: string, data: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke("canvas:save", canvasId, data),
+
+    load: (canvasId: string): Promise<{ success: boolean; data?: string; error?: string }> =>
+      ipcRenderer.invoke("canvas:load", canvasId),
+
+    list: (): Promise<{
+      success: boolean;
+      canvases?: Array<{
+        id: string;
+        name: string;
+        createdAt: string;
+        updatedAt: string;
+      }>;
+      error?: string;
+    }> => ipcRenderer.invoke("canvas:list"),
+
+    delete: (canvasId: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke("canvas:delete", canvasId),
+
+    exportFile: (
+      defaultName: string,
+      format: string,
+      data: string,
+    ): Promise<{ success: boolean; filePath?: string; error?: string }> =>
+      ipcRenderer.invoke("canvas:export", defaultName, format, data),
+  },
 } as const;
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

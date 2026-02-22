@@ -1,6 +1,8 @@
 // Knowledge item row — list view
 
 import { useCallback } from "react";
+import { Icon } from "@mixa-ai/ui";
+import type { IconName } from "@mixa-ai/ui";
 import type { KnowledgeItem } from "../../stores/knowledge";
 
 interface ItemRowProps {
@@ -62,7 +64,6 @@ const iconPlaceholderStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: "14px",
   flexShrink: 0,
 };
 
@@ -103,7 +104,7 @@ const domainCellStyle: React.CSSProperties = {
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
-  fontSize: "12px",
+  fontSize: "13px",
   color: "var(--mixa-text-muted)",
 };
 
@@ -122,7 +123,7 @@ const typeCellStyle: React.CSSProperties = {
 const dateCellStyle: React.CSSProperties = {
   width: "80px",
   flexShrink: 0,
-  fontSize: "12px",
+  fontSize: "13px",
   color: "var(--mixa-text-muted)",
   textAlign: "right",
 };
@@ -143,16 +144,16 @@ const favoriteButtonStyle: React.CSSProperties = {
   transition: "background-color 0.1s",
 };
 
-function itemTypeIcon(type: string): string {
+function itemTypeIconName(type: string): IconName {
   switch (type) {
-    case "article": return "\u{1F4C4}";
-    case "highlight": return "\u{1F4CC}";
-    case "youtube": return "\u{1F4F9}";
-    case "pdf": return "\u{1F4D1}";
-    case "code": return "\u{1F4BB}";
-    case "image": return "\u{1F5BC}";
-    case "terminal": return "\u{2328}";
-    default: return "\u{1F4C4}";
+    case "article": return "article";
+    case "highlight": return "highlight";
+    case "youtube": return "youtube";
+    case "pdf": return "pdf";
+    case "code": return "code";
+    case "image": return "image";
+    case "terminal": return "terminal";
+    default: return "article";
   }
 }
 
@@ -238,14 +239,16 @@ export function ItemRow({
           }
         }}
       >
-        {isChecked ? "\u2713" : ""}
+        {isChecked ? <Icon name="check" size={10} /> : null}
       </div>
 
       {/* Icon */}
       {item.faviconUrl ? (
         <img src={item.faviconUrl} alt="" style={faviconStyle} />
       ) : (
-        <div style={iconPlaceholderStyle}>{itemTypeIcon(item.itemType)}</div>
+        <div style={iconPlaceholderStyle}>
+          <Icon name={itemTypeIconName(item.itemType)} size={14} />
+        </div>
       )}
 
       {/* Title + Tags */}
@@ -298,7 +301,7 @@ export function ItemRow({
           e.currentTarget.style.backgroundColor = "transparent";
         }}
       >
-        {item.isFavorite ? "\u2605" : "\u2606"}
+        <Icon name="favorite" size={14} fill={item.isFavorite ? "currentColor" : "none"} />
       </button>
     </div>
   );

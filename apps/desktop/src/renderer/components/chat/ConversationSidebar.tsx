@@ -1,5 +1,6 @@
 // Conversation history sidebar for the chat tab
 
+import { Icon } from "@mixa-ai/ui";
 import type { ChatConversation } from "../../stores/chat";
 
 interface ConversationSidebarProps {
@@ -12,7 +13,7 @@ interface ConversationSidebarProps {
 
 const sidebarStyle: React.CSSProperties = {
   width: "240px",
-  borderRight: "1px solid var(--mixa-border-default)",
+  borderRight: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-surface)",
   display: "flex",
   flexDirection: "column",
@@ -25,7 +26,7 @@ const headerStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "space-between",
   padding: "12px 12px 8px",
-  borderBottom: "1px solid var(--mixa-border-default)",
+  borderBottom: "1px solid var(--mixa-border-subtle)",
 };
 
 const titleStyle: React.CSSProperties = {
@@ -40,7 +41,7 @@ const newButtonStyle: React.CSSProperties = {
   width: "24px",
   height: "24px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "transparent",
   color: "var(--mixa-text-secondary)",
   fontSize: "14px",
@@ -63,7 +64,7 @@ const itemStyle: React.CSSProperties = {
   justifyContent: "space-between",
   padding: "8px 12px",
   cursor: "pointer",
-  fontSize: "13px",
+  fontSize: "14px",
   color: "var(--mixa-text-secondary)",
   transition: "background-color 0.1s",
   borderLeft: "2px solid transparent",
@@ -150,7 +151,7 @@ export function ConversationSidebar({
             e.currentTarget.style.backgroundColor = "transparent";
           }}
         >
-          +
+          <Icon name="add" size={14} />
         </button>
       </div>
       <div style={listStyle}>
@@ -199,7 +200,7 @@ export function ConversationSidebar({
                   }}
                   title="Delete conversation"
                 >
-                  {"\u00D7"}
+                  <Icon name="close" size={14} />
                 </button>
               </div>
             );

@@ -1,5 +1,7 @@
 // Knowledge pagination controls
 
+import { Icon } from "@mixa-ai/ui";
+
 interface PaginationProps {
   page: number;
   pageSize: number;
@@ -13,7 +15,7 @@ const containerStyle: React.CSSProperties = {
   justifyContent: "center",
   gap: "4px",
   padding: "12px 16px",
-  borderTop: "1px solid var(--mixa-border-default)",
+  borderTop: "1px solid var(--mixa-border-subtle)",
   flexShrink: 0,
 };
 
@@ -21,7 +23,7 @@ const pageButtonStyle: React.CSSProperties = {
   minWidth: "30px",
   height: "30px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "transparent",
   color: "var(--mixa-text-secondary)",
   fontSize: "12px",
@@ -46,7 +48,7 @@ const pageButtonDisabledStyle: React.CSSProperties = {
 };
 
 const infoStyle: React.CSSProperties = {
-  fontSize: "12px",
+  fontSize: "13px",
   color: "var(--mixa-text-muted)",
   padding: "0 12px",
 };
@@ -99,7 +101,7 @@ export function Pagination({
           }
         }}
       >
-        {"\u2039"}
+        <Icon name="arrowLeft" size={14} />
       </button>
 
       {/* Page numbers */}
@@ -119,7 +121,9 @@ export function Pagination({
             1
           </button>
           {startPage > 1 && (
-            <span style={{ ...infoStyle, padding: "0 2px" }}>{"\u2026"}</span>
+            <span style={{ ...infoStyle, padding: "0 2px", display: "flex", alignItems: "center" }}>
+              <Icon name="more" size={14} />
+            </span>
           )}
         </>
       )}
@@ -150,7 +154,9 @@ export function Pagination({
       {endPage < totalPages && (
         <>
           {endPage < totalPages - 1 && (
-            <span style={{ ...infoStyle, padding: "0 2px" }}>{"\u2026"}</span>
+            <span style={{ ...infoStyle, padding: "0 2px", display: "flex", alignItems: "center" }}>
+              <Icon name="more" size={14} />
+            </span>
           )}
           <button
             type="button"
@@ -189,7 +195,7 @@ export function Pagination({
           }
         }}
       >
-        {"\u203A"}
+        <Icon name="arrowRight" size={14} />
       </button>
 
       {/* Info */}

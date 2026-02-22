@@ -1,6 +1,7 @@
 // Chat message list with auto-scroll
 
 import { useEffect, useRef } from "react";
+import { Icon } from "@mixa-ai/ui";
 import type { ChatMessage } from "../../stores/chat";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { CitationList } from "./CitationList";
@@ -39,7 +40,7 @@ const assistantMessageStyle: React.CSSProperties = {
   padding: "12px 16px",
   borderRadius: "4px 16px 16px 16px",
   fontSize: "14px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   wordBreak: "break-word",
 };
 
@@ -79,9 +80,9 @@ export function MessageList({ messages, isStreaming }: MessageListProps): React.
     const suggestionStyle: React.CSSProperties = {
       padding: "10px 14px",
       borderRadius: "8px",
-      border: "1px solid var(--mixa-border-default)",
+      border: "1px solid var(--mixa-border-subtle)",
       backgroundColor: "var(--mixa-bg-base)",
-      fontSize: "13px",
+      fontSize: "14px",
       color: "var(--mixa-text-primary)",
       textAlign: "left",
       lineHeight: 1.4,
@@ -103,11 +104,13 @@ export function MessageList({ messages, isStreaming }: MessageListProps): React.
     return (
       <div style={containerStyle}>
         <div style={emptyStateStyle}>
-          <div style={{ fontSize: "40px" }}>{"\u{1F4AC}"}</div>
-          <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--mixa-text-primary)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon name="chat" size={40} />
+          </div>
+          <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--mixa-text-primary)" }}>
             Ask Mixa anything
           </div>
-          <div style={{ fontSize: "13px", maxWidth: "440px", lineHeight: 1.5 }}>
+          <div style={{ fontSize: "14px", maxWidth: "440px", lineHeight: 1.5 }}>
             Chat uses RAG to search your saved knowledge and provide answers with citations.
             The more you save, the smarter your assistant becomes.
           </div>

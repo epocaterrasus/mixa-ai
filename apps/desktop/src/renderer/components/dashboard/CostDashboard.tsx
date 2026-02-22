@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UIEvent } from "@mixa-ai/types";
+import { Icon } from "@mixa-ai/ui";
 import { MetricRow, Chart, Table } from "@mixa-ai/terminal-renderer";
 import { useTabStore } from "../../stores/tabs";
 import { useEngineStore } from "../../stores/engine";
@@ -59,7 +60,7 @@ const actionsBarStyle: React.CSSProperties = {
 const actionButtonStyle: React.CSSProperties = {
   padding: "6px 14px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-elevated)",
   color: "var(--mixa-text-primary)",
   fontSize: "12px",
@@ -89,7 +90,7 @@ const sectionTitleStyle: React.CSSProperties = {
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "var(--mixa-bg-surface)",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   borderRadius: "8px",
   padding: "16px",
 };
@@ -142,7 +143,7 @@ const errorBoxStyle: React.CSSProperties = {
 const reconnectButtonStyle: React.CSSProperties = {
   padding: "6px 16px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-elevated)",
   color: "var(--mixa-text-primary)",
   fontSize: "13px",
@@ -199,7 +200,7 @@ function BudgetEditor({ onSave, onCancel }: BudgetEditorProps): React.ReactEleme
               width: "100%",
               padding: "6px 8px",
               borderRadius: "6px",
-              border: "1px solid var(--mixa-border-default)",
+              border: "1px solid var(--mixa-border-subtle)",
               backgroundColor: "var(--mixa-bg-elevated)",
               color: "var(--mixa-text-primary)",
               fontSize: "13px",
@@ -230,7 +231,7 @@ function BudgetEditor({ onSave, onCancel }: BudgetEditorProps): React.ReactEleme
               width: "100%",
               padding: "6px 8px",
               borderRadius: "6px",
-              border: "1px solid var(--mixa-border-default)",
+              border: "1px solid var(--mixa-border-subtle)",
               backgroundColor: "var(--mixa-bg-elevated)",
               color: "var(--mixa-text-primary)",
               fontSize: "13px",
@@ -397,7 +398,7 @@ export function CostDashboard(): React.ReactElement {
     return (
       <div style={containerStyle}>
         <div style={centerStyle}>
-          <div style={{ fontSize: "32px" }}>&#x26A0;&#xFE0F;</div>
+          <Icon name="warning" size={32} />
           <div style={{ fontSize: "16px", fontWeight: 600 }}>Engine Not Connected</div>
           <div style={{ fontSize: "13px", color: "var(--mixa-text-muted)" }}>
             The Fenix engine is not running. Cost data is unavailable.
@@ -427,7 +428,7 @@ export function CostDashboard(): React.ReactElement {
     return (
       <div style={containerStyle}>
         <div style={errorBoxStyle}>
-          <div style={{ fontSize: "32px" }}>&#x274C;</div>
+          <Icon name="error" size={32} />
           <div style={{ fontSize: "16px", fontWeight: 600 }}>Connection Error</div>
           <div style={{ fontSize: "14px", color: "#ef4444", textAlign: "center", maxWidth: "400px" }}>
             {error}
@@ -446,7 +447,7 @@ export function CostDashboard(): React.ReactElement {
     return (
       <div style={containerStyle}>
         <div style={errorBoxStyle}>
-          <div style={{ fontSize: "32px" }}>&#x1F50C;</div>
+          <Icon name="wifiOff" size={32} />
           <div style={{ fontSize: "16px", fontWeight: 600 }}>Disconnected</div>
           <div style={{ fontSize: "13px", color: "var(--mixa-text-muted)" }}>
             Lost connection to the cost module.
@@ -480,7 +481,7 @@ export function CostDashboard(): React.ReactElement {
         <div style={contentStyle}>
           {metricsComponent && <MetricRow component={metricsComponent} />}
           <div style={emptyStateStyle}>
-            <div style={{ fontSize: "48px", marginBottom: "8px" }}>&#x1F4B0;</div>
+            <Icon name="cost" size={48} style={{ marginBottom: "8px" }} />
             <div style={{ fontSize: "16px", fontWeight: 600, marginBottom: "4px" }}>No Cost Data Yet</div>
             <div style={{ fontSize: "13px", color: "var(--mixa-text-muted)", maxWidth: "400px" }}>
               Add cost entries manually or configure a cloud provider (DigitalOcean, AWS) in the Terminal &gt; COST module to start tracking your spending.
@@ -509,7 +510,7 @@ export function CostDashboard(): React.ReactElement {
                   fontWeight: 500,
                 }}
               >
-                {momData.trend === "up" ? "\u2191" : momData.trend === "down" ? "\u2193" : "\u2192"}
+                {momData.trend === "up" ? <Icon name="up" size={14} style={{ verticalAlign: "middle", display: "inline-block", marginRight: "4px" }} /> : momData.trend === "down" ? <Icon name="down" size={14} style={{ verticalAlign: "middle", display: "inline-block", marginRight: "4px" }} /> : <Icon name="arrowRight" size={14} style={{ verticalAlign: "middle", display: "inline-block", marginRight: "4px" }} />}
                 {Math.abs(momData.changePercent).toFixed(1)}% vs last month
               </span>
             )}

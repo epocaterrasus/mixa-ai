@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Tab, TabType } from "@mixa-ai/types";
+import { Icon } from "@mixa-ai/ui";
+import type { IconName } from "@mixa-ai/ui";
 import { useTabStore } from "../stores/tabs";
 import {
   useSidebarStore,
@@ -12,18 +14,19 @@ import { APP_TEMPLATES, getAppTemplate, generatePartitionId } from "../stores/ap
 // ─── Tab type metadata ───────────────────────────────────────────
 
 interface TabTypeInfo {
-  icon: string;
+  icon: IconName;
   label: string;
 }
 
 const TAB_TYPE_INFO: Record<TabType, TabTypeInfo> = {
-  web: { icon: "\u{1F310}", label: "Web" },
-  app: { icon: "\u{1F4F1}", label: "Apps" },
-  terminal: { icon: "\u25B6", label: "Terminal" },
-  knowledge: { icon: "\u{1F4DA}", label: "Knowledge" },
-  chat: { icon: "\u{1F4AC}", label: "Chat" },
-  dashboard: { icon: "\u{1F4CA}", label: "Dashboard" },
-  settings: { icon: "\u2699", label: "Settings" },
+  web: { icon: "web", label: "Web" },
+  app: { icon: "app", label: "Apps" },
+  terminal: { icon: "terminal", label: "Terminal" },
+  knowledge: { icon: "knowledge", label: "Knowledge" },
+  chat: { icon: "chat", label: "Chat" },
+  canvas: { icon: "canvas", label: "Canvas" },
+  dashboard: { icon: "dashboard", label: "Dashboard" },
+  settings: { icon: "settings", label: "Settings" },
 };
 
 const TAB_TYPE_ORDER: TabType[] = [
@@ -32,6 +35,7 @@ const TAB_TYPE_ORDER: TabType[] = [
   "terminal",
   "knowledge",
   "chat",
+  "canvas",
   "dashboard",
   "settings",
 ];
@@ -40,29 +44,31 @@ const TAB_TYPE_ORDER: TabType[] = [
 
 interface QuickAction {
   type: TabType;
-  icon: string;
+  iconName: IconName;
   label: string;
   url?: string;
   appTemplateId?: string;
+  appIcon?: string;
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
-  { type: "terminal", icon: "\u25B6", label: "Terminal" },
-  { type: "knowledge", icon: "\u{1F4DA}", label: "Knowledge" },
-  { type: "chat", icon: "\u{1F4AC}", label: "Chat" },
-  { type: "dashboard", icon: "\u{1F4CA}", label: "Cost Dashboard" },
-  { type: "dashboard", icon: "\u{1F3E5}", label: "Health Dashboard", url: "health" },
-  { type: "dashboard", icon: "\u{1F4DA}", label: "Knowledge Stats", url: "knowledge" },
-  { type: "settings", icon: "\u2699", label: "Settings" },
+  { type: "terminal", iconName: "terminal", label: "Terminal" },
+  { type: "knowledge", iconName: "knowledge", label: "Knowledge" },
+  { type: "chat", iconName: "chat", label: "Chat" },
+  { type: "dashboard", iconName: "cost", label: "Cost Dashboard" },
+  { type: "dashboard", iconName: "pulse", label: "Health Dashboard", url: "health" },
+  { type: "dashboard", iconName: "knowledge", label: "Knowledge Stats", url: "knowledge" },
+  { type: "canvas", iconName: "canvas", label: "Canvas" },
+  { type: "settings", iconName: "settings", label: "Settings" },
   ...APP_TEMPLATES.map((t) => ({
     type: "app" as TabType,
-    icon: t.icon,
+    iconName: t.iconName as IconName,
     label: t.name,
     appTemplateId: t.id,
+    appIcon: t.icon,
   })),
 ];
 
-/** Helper to handle quick action clicks (handles both regular tabs and app tabs) */
 function handleQuickAction(
   action: QuickAction,
   addTab: (type: TabType, url?: string) => string,
@@ -90,7 +96,7 @@ function handleQuickAction(
   }
 }
 
-// ─── Styles ──────────────────────────────────────────────────────
+// ─── Styles (Ma spacing, whisper-thin borders) ──────────────────
 
 const styles = {
   container: {
@@ -98,7 +104,7 @@ const styles = {
     flexDirection: "column",
     height: "100%",
     backgroundColor: "var(--mixa-bg-surface)",
-    borderRight: "1px solid var(--mixa-border-default)",
+    borderRight: "1px solid var(--mixa-border-subtle)",
     overflow: "hidden",
     position: "relative",
     userSelect: "none",
@@ -107,13 +113,13 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "8px 10px",
-    borderBottom: "1px solid var(--mixa-border-subtle)",
+    padding: "8px 12px 8px",
+    paddingTop: "38px",
     flexShrink: 0,
   } as React.CSSProperties,
   headerTitle: {
     fontSize: "11px",
-    fontWeight: 600,
+    fontWeight: 500,
     color: "var(--mixa-text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.5px",
@@ -122,14 +128,13 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "22px",
-    height: "22px",
-    borderRadius: "4px",
+    width: "24px",
+    height: "24px",
+    borderRadius: "6px",
     border: "none",
     backgroundColor: "transparent",
-    color: "var(--mixa-text-disabled)",
+    color: "var(--mixa-text-muted)",
     cursor: "pointer",
-    fontSize: "12px",
     padding: 0,
   } as React.CSSProperties,
   scrollArea: {
@@ -138,15 +143,16 @@ const styles = {
     overflowX: "hidden",
   } as React.CSSProperties,
   section: {
-    padding: "6px 0",
+    padding: "8px 0",
   } as React.CSSProperties,
   sectionHeader: {
     display: "flex",
     alignItems: "center",
-    padding: "4px 10px",
-    fontSize: "10px",
-    fontWeight: 600,
-    color: "var(--mixa-text-disabled)",
+    gap: "6px",
+    padding: "4px 12px",
+    fontSize: "11px",
+    fontWeight: 500,
+    color: "var(--mixa-text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.5px",
   } as React.CSSProperties,
@@ -154,32 +160,30 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    padding: "5px 10px",
+    padding: "6px 12px",
     cursor: "pointer",
-    fontSize: "12px",
-    color: "var(--mixa-text-tertiary)",
+    fontSize: "13px",
+    color: "var(--mixa-text-secondary)",
     border: "none",
     backgroundColor: "transparent",
     width: "100%",
     textAlign: "left",
     borderRadius: 0,
     overflow: "hidden",
+    lineHeight: "1.3",
   } as React.CSSProperties,
   tabItemActive: {
     backgroundColor: "var(--mixa-bg-active-accent)",
     color: "var(--mixa-text-primary)",
   } as React.CSSProperties,
   tabItemHover: {
-    backgroundColor: "var(--mixa-bg-elevated)",
+    backgroundColor: "var(--mixa-bg-hover)",
   } as React.CSSProperties,
   tabFavicon: {
-    width: "14px",
-    height: "14px",
+    width: "16px",
+    height: "16px",
     flexShrink: 0,
     borderRadius: "2px",
-    fontSize: "11px",
-    textAlign: "center",
-    lineHeight: "14px",
   } as React.CSSProperties,
   tabTitle: {
     flex: 1,
@@ -191,21 +195,18 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "16px",
-    height: "16px",
-    borderRadius: "3px",
+    width: "18px",
+    height: "18px",
+    borderRadius: "4px",
     border: "none",
     backgroundColor: "transparent",
-    color: "var(--mixa-text-subtle)",
+    color: "var(--mixa-text-muted)",
     cursor: "pointer",
-    fontSize: "13px",
     padding: 0,
     flexShrink: 0,
-    lineHeight: "1",
   } as React.CSSProperties,
   quickActions: {
-    borderTop: "1px solid var(--mixa-border-subtle)",
-    padding: "6px 0",
+    padding: "8px 0",
     flexShrink: 0,
   } as React.CSSProperties,
   quickActionButton: {
@@ -213,19 +214,13 @@ const styles = {
     alignItems: "center",
     gap: "8px",
     width: "100%",
-    padding: "6px 10px",
+    padding: "6px 12px",
     border: "none",
     backgroundColor: "transparent",
     color: "var(--mixa-text-muted)",
     cursor: "pointer",
-    fontSize: "12px",
+    fontSize: "13px",
     textAlign: "left",
-  } as React.CSSProperties,
-  quickActionIcon: {
-    width: "14px",
-    textAlign: "center",
-    fontSize: "12px",
-    flexShrink: 0,
   } as React.CSSProperties,
   resizeHandle: {
     position: "absolute",
@@ -236,17 +231,17 @@ const styles = {
     cursor: "col-resize",
     zIndex: 10,
   } as React.CSSProperties,
-  // Collapsed state
   collapsedContainer: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     height: "100%",
     backgroundColor: "var(--mixa-bg-surface)",
-    borderRight: "1px solid var(--mixa-border-default)",
+    borderRight: "1px solid var(--mixa-border-subtle)",
     overflow: "hidden",
     userSelect: "none",
     width: `${COLLAPSED_WIDTH}px`,
+    paddingTop: "32px",
   } as React.CSSProperties,
   collapsedToggle: {
     display: "flex",
@@ -254,41 +249,38 @@ const styles = {
     justifyContent: "center",
     width: "32px",
     height: "32px",
-    margin: "6px 0",
+    margin: "8px 0",
     borderRadius: "6px",
     border: "none",
     backgroundColor: "transparent",
-    color: "var(--mixa-text-disabled)",
+    color: "var(--mixa-text-muted)",
     cursor: "pointer",
-    fontSize: "14px",
     padding: 0,
   } as React.CSSProperties,
   collapsedDivider: {
     width: "24px",
     height: "1px",
     backgroundColor: "var(--mixa-border-subtle)",
-    margin: "2px 0",
+    margin: "4px 0",
   } as React.CSSProperties,
   collapsedTabIcon: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     width: "32px",
-    height: "28px",
+    height: "32px",
     borderRadius: "6px",
     border: "none",
     backgroundColor: "transparent",
     color: "var(--mixa-text-muted)",
     cursor: "pointer",
-    fontSize: "13px",
     padding: 0,
   } as React.CSSProperties,
-  // Context menu
   contextMenu: {
     position: "fixed",
-    backgroundColor: "var(--mixa-bg-overlay)",
-    border: "1px solid var(--mixa-border-overlay)",
-    borderRadius: "6px",
+    backgroundColor: "var(--mixa-bg-elevated)",
+    border: "1px solid var(--mixa-border-subtle)",
+    borderRadius: "8px",
     padding: "4px 0",
     zIndex: 9999,
     minWidth: "160px",
@@ -297,22 +289,17 @@ const styles = {
   contextMenuItem: {
     display: "block",
     width: "100%",
-    padding: "6px 12px",
+    padding: "8px 12px",
     border: "none",
     backgroundColor: "transparent",
     color: "var(--mixa-text-secondary)",
-    fontSize: "12px",
+    fontSize: "13px",
     textAlign: "left",
     cursor: "pointer",
   } as React.CSSProperties,
   contextMenuItemHover: {
-    backgroundColor: "var(--mixa-border-strong)",
+    backgroundColor: "var(--mixa-bg-hover)",
     color: "var(--mixa-text-primary)",
-  } as React.CSSProperties,
-  contextMenuSeparator: {
-    height: "1px",
-    backgroundColor: "var(--mixa-border-overlay)",
-    margin: "4px 0",
   } as React.CSSProperties,
 } as const;
 
@@ -429,16 +416,7 @@ function SidebarTabItem({
     [onContextMenu, tab.id],
   );
 
-  // For app tabs, always use the template icon (not the site favicon)
-  const appTemplateIcon = tab.type === "app" && tab.appTemplateId
-    ? getAppTemplate(tab.appTemplateId)?.icon
-    : undefined;
-
-  const faviconContent = appTemplateIcon ? (
-    <span style={styles.tabFavicon}>
-      {appTemplateIcon}
-    </span>
-  ) : tab.faviconUrl ? (
+  const faviconContent = tab.faviconUrl ? (
     <img
       src={tab.faviconUrl}
       alt=""
@@ -448,9 +426,7 @@ function SidebarTabItem({
       }}
     />
   ) : (
-    <span style={styles.tabFavicon}>
-      {TAB_TYPE_INFO[tab.type].icon}
-    </span>
+    <Icon name={TAB_TYPE_INFO[tab.type].icon} size={14} />
   );
 
   return (
@@ -475,14 +451,14 @@ function SidebarTabItem({
         aria-label={`Close ${tab.title}`}
         style={{
           ...styles.tabClose,
-          ...(closeHovered ? { backgroundColor: "var(--mixa-text-faint)", color: "var(--mixa-text-primary)" } : {}),
+          ...(closeHovered ? { backgroundColor: "var(--mixa-bg-active)", color: "var(--mixa-text-primary)" } : {}),
           opacity: hovered || tab.isActive ? 1 : 0,
         }}
         onClick={handleClose}
         onMouseEnter={() => setCloseHovered(true)}
         onMouseLeave={() => setCloseHovered(false)}
       >
-        ×
+        <Icon name="close" size={12} />
       </button>
     </button>
   );
@@ -504,7 +480,7 @@ function CollapsedSidebar(): React.ReactElement {
         type="button"
         style={{
           ...styles.collapsedToggle,
-          ...(hoveredId === "expand" ? { backgroundColor: "var(--mixa-bg-elevated)" } : {}),
+          ...(hoveredId === "expand" ? { backgroundColor: "var(--mixa-bg-hover)" } : {}),
         }}
         onClick={toggle}
         onMouseEnter={() => setHoveredId("expand")}
@@ -512,11 +488,10 @@ function CollapsedSidebar(): React.ReactElement {
         aria-label="Expand sidebar"
         title="Expand sidebar (Cmd+B)"
       >
-        &#x25B6;
+        <Icon name="expand" size={16} />
       </button>
       <div style={styles.collapsedDivider} />
 
-      {/* Show icons for open tabs */}
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -524,7 +499,7 @@ function CollapsedSidebar(): React.ReactElement {
           style={{
             ...styles.collapsedTabIcon,
             ...(tab.isActive ? { backgroundColor: "var(--mixa-bg-active-accent)", color: "var(--mixa-text-primary)" } : {}),
-            ...(hoveredId === tab.id && !tab.isActive ? { backgroundColor: "var(--mixa-bg-elevated)" } : {}),
+            ...(hoveredId === tab.id && !tab.isActive ? { backgroundColor: "var(--mixa-bg-hover)" } : {}),
           }}
           onClick={() => activateTab(tab.id)}
           onMouseEnter={() => setHoveredId(tab.id)}
@@ -532,34 +507,31 @@ function CollapsedSidebar(): React.ReactElement {
           aria-label={tab.title}
           title={tab.title}
         >
-          {tab.type === "app" && tab.appTemplateId
-            ? (getAppTemplate(tab.appTemplateId)?.icon ?? TAB_TYPE_INFO[tab.type].icon)
-            : tab.faviconUrl ? (
-              <img
-                src={tab.faviconUrl}
-                alt=""
-                style={{ width: "14px", height: "14px", borderRadius: "2px" }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
-              />
-            ) : (
-              TAB_TYPE_INFO[tab.type].icon
-            )}
+          {tab.faviconUrl ? (
+            <img
+              src={tab.faviconUrl}
+              alt=""
+              style={{ width: "16px", height: "16px", borderRadius: "2px" }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          ) : (
+            <Icon name={TAB_TYPE_INFO[tab.type].icon} size={16} />
+          )}
         </button>
       ))}
 
       <div style={{ flex: 1 }} />
       <div style={styles.collapsedDivider} />
 
-      {/* Quick action icons */}
       {QUICK_ACTIONS.map((action) => (
         <button
           key={action.label}
           type="button"
           style={{
             ...styles.collapsedTabIcon,
-            ...(hoveredId === `qa-${action.label}` ? { backgroundColor: "var(--mixa-bg-elevated)" } : {}),
+            ...(hoveredId === `qa-${action.label}` ? { backgroundColor: "var(--mixa-bg-hover)" } : {}),
           }}
           onClick={() => handleQuickAction(action, addTab, addAppTab)}
           onMouseEnter={() => setHoveredId(`qa-${action.label}`)}
@@ -567,10 +539,10 @@ function CollapsedSidebar(): React.ReactElement {
           aria-label={`New ${action.label}`}
           title={`New ${action.label}`}
         >
-          {action.icon}
+          <Icon name={action.iconName} size={16} />
         </button>
       ))}
-      <div style={{ height: "6px" }} />
+      <div style={{ height: "8px" }} />
     </div>
   );
 }
@@ -593,13 +565,11 @@ export function Sidebar(): React.ReactElement {
   const resizeStartX = useRef(0);
   const resizeStartWidth = useRef(0);
 
-  // Notify main process of sidebar width changes
   const effectiveWidth = isCollapsed ? COLLAPSED_WIDTH : width;
   useEffect(() => {
     window.electronAPI.sidebar.setWidth(effectiveWidth);
   }, [effectiveWidth]);
 
-  // Cmd+B toggle shortcut
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
       if ((e.metaKey || e.ctrlKey) && e.key === "b" && !e.shiftKey && !e.altKey) {
@@ -611,7 +581,6 @@ export function Sidebar(): React.ReactElement {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [toggle]);
 
-  // Resize drag handling
   const handleResizeStart = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -643,7 +612,6 @@ export function Sidebar(): React.ReactElement {
     };
   }, [resizing, setWidth]);
 
-  // Context menu handler
   const handleContextMenu = useCallback((tabId: string, x: number, y: number) => {
     setContextMenu({ tabId, x, y });
   }, []);
@@ -652,7 +620,6 @@ export function Sidebar(): React.ReactElement {
     setContextMenu(null);
   }, []);
 
-  // Collapsed view
   if (isCollapsed) {
     return (
       <>
@@ -664,7 +631,6 @@ export function Sidebar(): React.ReactElement {
     );
   }
 
-  // Group tabs by type
   const tabsByType = new Map<TabType, Tab[]>();
   for (const tab of tabs) {
     const existing = tabsByType.get(tab.type);
@@ -684,14 +650,13 @@ export function Sidebar(): React.ReactElement {
         maxWidth: `${MAX_WIDTH}px`,
       }}
     >
-      {/* Header */}
       <div style={styles.header}>
         <span style={styles.headerTitle}>Tabs</span>
         <button
           type="button"
           style={{
             ...styles.collapseButton,
-            ...(collapseHovered ? { backgroundColor: "var(--mixa-bg-elevated)" } : {}),
+            ...(collapseHovered ? { backgroundColor: "var(--mixa-bg-hover)" } : {}),
           }}
           onClick={toggle}
           onMouseEnter={() => setCollapseHovered(true)}
@@ -699,11 +664,10 @@ export function Sidebar(): React.ReactElement {
           aria-label="Collapse sidebar"
           title="Collapse sidebar (Cmd+B)"
         >
-          &#x25C0;
+          <Icon name="collapse" size={16} />
         </button>
       </div>
 
-      {/* Tab tree */}
       <div style={styles.scrollArea}>
         {TAB_TYPE_ORDER.map((type) => {
           const typeTabs = tabsByType.get(type);
@@ -712,7 +676,7 @@ export function Sidebar(): React.ReactElement {
           return (
             <div key={type} style={styles.section}>
               <div style={styles.sectionHeader}>
-                <span style={{ marginRight: "4px" }}>{TAB_TYPE_INFO[type].icon}</span>
+                <Icon name={TAB_TYPE_INFO[type].icon} size={12} />
                 {TAB_TYPE_INFO[type].label} ({typeTabs.length})
               </div>
               {typeTabs.map((tab) => (
@@ -729,9 +693,9 @@ export function Sidebar(): React.ReactElement {
         {tabs.length === 0 && (
           <div
             style={{
-              padding: "20px 10px",
-              color: "var(--mixa-text-subtle)",
-              fontSize: "12px",
+              padding: "24px 12px",
+              color: "var(--mixa-text-muted)",
+              fontSize: "13px",
               textAlign: "center",
             }}
           >
@@ -740,7 +704,6 @@ export function Sidebar(): React.ReactElement {
         )}
       </div>
 
-      {/* Quick-access actions */}
       <div style={styles.quickActions}>
         {QUICK_ACTIONS.map((action) => (
           <button
@@ -748,7 +711,7 @@ export function Sidebar(): React.ReactElement {
             type="button"
             style={{
               ...styles.quickActionButton,
-              ...(qaHovered === action.label ? { backgroundColor: "var(--mixa-bg-elevated)", color: "var(--mixa-text-secondary)" } : {}),
+              ...(qaHovered === action.label ? { backgroundColor: "var(--mixa-bg-hover)", color: "var(--mixa-text-secondary)" } : {}),
             }}
             onClick={() => handleQuickAction(action, addTab, addAppTab)}
             onMouseEnter={() => setQaHovered(action.label)}
@@ -756,13 +719,12 @@ export function Sidebar(): React.ReactElement {
             aria-label={`New ${action.label}`}
             title={`New ${action.label}`}
           >
-            <span style={styles.quickActionIcon}>{action.icon}</span>
+            <Icon name={action.iconName} size={14} />
             <span>{action.label}</span>
           </button>
         ))}
       </div>
 
-      {/* Resize handle */}
       <div
         style={{
           ...styles.resizeHandle,
@@ -784,7 +746,6 @@ export function Sidebar(): React.ReactElement {
         }}
       />
 
-      {/* Context menu overlay */}
       {contextMenu && (
         <ContextMenu state={contextMenu} onClose={closeContextMenu} />
       )}

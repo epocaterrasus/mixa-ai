@@ -28,7 +28,7 @@ const thStyle: React.CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: "0.5px",
   padding: "8px 12px",
-  borderBottom: "1px solid var(--mixa-border-default)",
+  borderBottom: "1px solid var(--mixa-border-subtle)",
 };
 
 const tdStyle: React.CSSProperties = {
@@ -42,7 +42,7 @@ const kbdStyle: React.CSSProperties = {
   display: "inline-block",
   padding: "2px 8px",
   borderRadius: "4px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-elevated)",
   fontSize: "12px",
   fontFamily: "'SF Mono', 'Fira Code', Menlo, monospace",
@@ -212,7 +212,7 @@ export function ShortcutsSection(): React.ReactElement {
           style={{
             padding: "6px 14px",
             borderRadius: "6px",
-            border: "1px solid var(--mixa-border-default)",
+            border: "1px solid var(--mixa-border-subtle)",
             backgroundColor: "var(--mixa-bg-elevated)",
             color: "var(--mixa-text-secondary)",
             fontSize: "12px",

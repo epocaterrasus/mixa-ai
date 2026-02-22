@@ -26,8 +26,7 @@ const styles = {
     height: "100vh",
     overflow: "hidden",
     backgroundColor: "var(--mixa-bg-base)",
-    fontFamily:
-      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    fontFamily: "var(--mixa-font-sans)",
   } as React.CSSProperties,
   main: {
     display: "flex",

@@ -1,6 +1,7 @@
 // Knowledge item detail panel — shown when an item is selected
 
 import { useCallback } from "react";
+import { Icon } from "@mixa-ai/ui";
 import type { KnowledgeItem } from "../../stores/knowledge";
 
 interface ItemDetailProps {
@@ -13,7 +14,7 @@ interface ItemDetailProps {
 
 const panelStyle: React.CSSProperties = {
   width: "400px",
-  borderLeft: "1px solid var(--mixa-border-default)",
+  borderLeft: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-surface)",
   display: "flex",
   flexDirection: "column",
@@ -26,7 +27,7 @@ const headerStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "space-between",
   padding: "12px 16px",
-  borderBottom: "1px solid var(--mixa-border-default)",
+  borderBottom: "1px solid var(--mixa-border-subtle)",
   flexShrink: 0,
 };
 
@@ -53,7 +54,7 @@ const actionsStyle: React.CSSProperties = {
 const actionButtonStyle: React.CSSProperties = {
   padding: "4px 8px",
   borderRadius: "4px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "transparent",
   color: "var(--mixa-text-secondary)",
   fontSize: "11px",
@@ -108,7 +109,7 @@ const sectionTitleStyle: React.CSSProperties = {
 };
 
 const excerptStyle: React.CSSProperties = {
-  fontSize: "13px",
+  fontSize: "14px",
   lineHeight: 1.6,
   color: "var(--mixa-text-secondary)",
   wordBreak: "break-word",
@@ -125,7 +126,7 @@ const urlLinkStyle: React.CSSProperties = {
 };
 
 const contentBodyStyle: React.CSSProperties = {
-  fontSize: "13px",
+  fontSize: "14px",
   lineHeight: 1.7,
   color: "var(--mixa-text-primary)",
   wordBreak: "break-word",
@@ -141,10 +142,10 @@ const detailTagStyle: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: "4px",
-  fontSize: "11px",
+  fontSize: "12px",
   padding: "3px 8px",
   borderRadius: "10px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-active)",
   color: "var(--mixa-text-secondary)",
 };
@@ -202,7 +203,8 @@ export function ItemDetail({
               e.currentTarget.style.backgroundColor = "transparent";
             }}
           >
-            {item.isFavorite ? "\u2605 Favorited" : "\u2606 Favorite"}
+            <Icon name="favorite" size={12} fill={item.isFavorite ? "currentColor" : "none"} />
+            {item.isFavorite ? " Favorited" : " Favorite"}
           </button>
           <button
             type="button"
@@ -246,7 +248,7 @@ export function ItemDetail({
             e.currentTarget.style.backgroundColor = "transparent";
           }}
         >
-          {"\u2715"}
+          <Icon name="close" size={16} />
         </button>
       </div>
 

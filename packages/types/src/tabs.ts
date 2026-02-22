@@ -7,6 +7,7 @@ export type TabType =
   | "terminal"
   | "knowledge"
   | "chat"
+  | "canvas"
   | "dashboard"
   | "settings";
 
@@ -49,7 +50,10 @@ export interface AppTemplate {
   id: string;
   name: string;
   url: string;
+  /** Emoji string for Electron WebContentsView titles */
   icon: string;
+  /** Icon name for renderer UI (Lucide icon) */
+  iconName: string;
   /** Partition strategy: per-instance creates a unique partition per tab, shared uses the same partition */
   partitionStrategy: AppPartitionStrategy;
 }

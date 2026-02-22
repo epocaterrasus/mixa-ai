@@ -86,7 +86,7 @@ describe("getColorsForTheme", () => {
 
 describe("accentPresets", () => {
   it("has 10 presets", () => {
-    expect(accentPresets).toHaveLength(10);
+    expect(accentPresets).toHaveLength(8);
   });
 
   it("all presets have valid hex colors", () => {
@@ -192,18 +192,18 @@ describe("typography", () => {
 
   it("has font size scale", () => {
     expect(typography.fontSize.xs).toBe("11px");
-    expect(typography.fontSize.base).toBe("13px");
+    expect(typography.fontSize.base).toBe("14px");
     expect(typography.fontSize["3xl"]).toBe("30px");
   });
 
   it("has font weights", () => {
     expect(typography.fontWeight.normal).toBe("400");
-    expect(typography.fontWeight.bold).toBe("700");
+    expect(typography.fontWeight.semibold).toBe("600");
   });
 
   it("has line heights", () => {
-    expect(typography.lineHeight.tight).toBe("1.2");
-    expect(typography.lineHeight.normal).toBe("1.5");
+    expect(typography.lineHeight.tight).toBe("1.3");
+    expect(typography.lineHeight.body).toBe("1.6");
   });
 });
 

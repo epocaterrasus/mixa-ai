@@ -1,4 +1,5 @@
-/* Mixa AI — Theme CSS Custom Properties */
+/* Mixa AI — Sumi & Washi Design System */
+/* Sumi (墨) = Dark  |  Washi (和紙) = Light */
 /* Applied via data-theme attribute on <html> */
 
 *, *::before, *::after {
@@ -7,41 +8,43 @@
   box-sizing: border-box;
 }
 
-/* Dark theme (default) */
+/* Sumi — Dark theme (default) */
 :root,
 [data-theme="dark"] {
-  --mixa-bg-base: #0a0a0a;
-  --mixa-bg-surface: #111111;
-  --mixa-bg-elevated: #1a1a1a;
-  --mixa-bg-active: #2a2a2a;
-  --mixa-bg-hover: #222222;
-  --mixa-bg-overlay: #252525;
-  --mixa-bg-active-accent: #1e1e2e;
+  --mixa-bg-base: #1a1a1e;
+  --mixa-bg-surface: #222226;
+  --mixa-bg-elevated: #2a2a2e;
+  --mixa-bg-active: #32323a;
+  --mixa-bg-hover: #28282e;
+  --mixa-bg-overlay: #2a2a2e;
+  --mixa-bg-active-accent: #2a2a36;
 
-  --mixa-border-default: #2a2a2a;
-  --mixa-border-subtle: #222222;
-  --mixa-border-strong: #333333;
-  --mixa-border-focus: #555555;
-  --mixa-border-overlay: #3a3a3a;
+  --mixa-border-default: #2e2e34;
+  --mixa-border-subtle: #26262c;
+  --mixa-border-strong: #36363e;
+  --mixa-border-focus: #4a4a54;
+  --mixa-border-overlay: #34343c;
 
-  --mixa-text-primary: #fafafa;
-  --mixa-text-secondary: #cccccc;
-  --mixa-text-tertiary: #aaaaaa;
-  --mixa-text-muted: #888888;
-  --mixa-text-disabled: #666666;
-  --mixa-text-subtle: #555555;
-  --mixa-text-faint: #444444;
+  --mixa-text-primary: #e8e4df;
+  --mixa-text-secondary: #c4c0bb;
+  --mixa-text-tertiary: #a09c97;
+  --mixa-text-muted: #8a8680;
+  --mixa-text-disabled: #6a6662;
+  --mixa-text-subtle: #5a5854;
+  --mixa-text-faint: #4a4844;
 
-  --mixa-accent-primary: #6366f1;
-  --mixa-accent-light: #818cf8;
-  --mixa-accent-blue: #3b82f6;
-  --mixa-accent-green: #4ade80;
+  --mixa-accent-primary: #8b8ec4;
+  --mixa-accent-light: #a0a3d4;
+  --mixa-accent-blue: #7b9ec8;
+  --mixa-accent-green: #7d9b85;
+  --mixa-accent-warm: #c4956a;
+  --mixa-accent-red: #b87070;
 
-  --mixa-shadow-dropdown: 0 8px 24px rgba(0,0,0,0.6);
-  --mixa-shadow-overlay: 0 4px 16px rgba(0,0,0,0.4);
-  --mixa-shadow-float: 0 2px 8px rgba(0,0,0,0.4);
+  --mixa-shadow-dropdown: 0 8px 24px rgba(0,0,0,0.5);
+  --mixa-shadow-overlay: 0 8px 24px rgba(0,0,0,0.5);
+  --mixa-shadow-float: 0 2px 8px rgba(0,0,0,0.3);
 
-  /* Spacing scale */
+  /* Spacing scale (Ma) */
   --mixa-space-0: 0px;
   --mixa-space-1: 4px;
   --mixa-space-2: 8px;
@@ -55,16 +58,23 @@
   --mixa-space-16: 64px;
 
   /* Typography */
-  --mixa-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --mixa-font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace;
+  --mixa-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mixa-font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   --mixa-text-xs: 11px;
   --mixa-text-sm: 12px;
-  --mixa-text-base: 13px;
+  --mixa-text-base: 14px;
   --mixa-text-md: 14px;
   --mixa-text-lg: 16px;
-  --mixa-text-xl: 18px;
+  --mixa-text-xl: 20px;
   --mixa-text-2xl: 24px;
   --mixa-text-3xl: 30px;
+
+  --mixa-line-height-body: 1.6;
+  --mixa-line-height-tight: 1.3;
+
+  --mixa-weight-normal: 400;
+  --mixa-weight-medium: 500;
+  --mixa-weight-semibold: 600;
 
   /* Border radii */
   --mixa-radius-none: 0px;
@@ -77,37 +87,39 @@
   color-scheme: dark;
 }
 
-/* Light theme */
+/* Washi — Light theme */
 [data-theme="light"] {
-  --mixa-bg-base: #f8f8f8;
-  --mixa-bg-surface: #f0f0f0;
+  --mixa-bg-base: #f5f2ed;
+  --mixa-bg-surface: #ebe7e1;
   --mixa-bg-elevated: #ffffff;
-  --mixa-bg-active: #e4e4e7;
-  --mixa-bg-hover: #f4f4f5;
+  --mixa-bg-active: #e0dbd4;
+  --mixa-bg-hover: #eee9e3;
   --mixa-bg-overlay: #ffffff;
-  --mixa-bg-active-accent: #e8e8ff;
+  --mixa-bg-active-accent: #e4e4f0;
 
-  --mixa-border-default: #e4e4e7;
-  --mixa-border-subtle: #e8e8ea;
-  --mixa-border-strong: #d4d4d8;
-  --mixa-border-focus: #a1a1aa;
-  --mixa-border-overlay: #d4d4d8;
+  --mixa-border-default: #ddd8d2;
+  --mixa-border-subtle: #e8e3dd;
+  --mixa-border-strong: #d0cbc5;
+  --mixa-border-focus: #b0aaa4;
+  --mixa-border-overlay: #d4cfc9;
 
-  --mixa-text-primary: #09090b;
-  --mixa-text-secondary: #3f3f46;
-  --mixa-text-tertiary: #52525b;
-  --mixa-text-muted: #71717a;
-  --mixa-text-disabled: #a1a1aa;
-  --mixa-text-subtle: #d4d4d8;
-  --mixa-text-faint: #e4e4e7;
+  --mixa-text-primary: #2c2a27;
+  --mixa-text-secondary: #5c5955;
+  --mixa-text-tertiary: #6e6b67;
+  --mixa-text-muted: #8a8580;
+  --mixa-text-disabled: #aaa5a0;
+  --mixa-text-subtle: #c4bfb9;
+  --mixa-text-faint: #d8d3cd;
 
-  --mixa-accent-primary: #6366f1;
-  --mixa-accent-light: #4f46e5;
-  --mixa-accent-blue: #2563eb;
-  --mixa-accent-green: #16a34a;
+  --mixa-accent-primary: #5c5f99;
+  --mixa-accent-light: #4a4d85;
+  --mixa-accent-blue: #4a7098;
+  --mixa-accent-green: #4a7a55;
+  --mixa-accent-warm: #a07040;
+  --mixa-accent-red: #995555;
 
   --mixa-shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12);
-  --mixa-shadow-overlay: 0 4px 16px rgba(0,0,0,0.08);
+  --mixa-shadow-overlay: 0 8px 24px rgba(0,0,0,0.12);
   --mixa-shadow-float: 0 2px 8px rgba(0,0,0,0.08);
 
   color-scheme: light;
@@ -117,7 +129,17 @@ body {
   overflow: hidden;
   background: var(--mixa-bg-base);
   color: var(--mixa-text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--mixa-font-sans);
+  font-size: var(--mixa-text-base);
+  line-height: var(--mixa-line-height-body);
+  font-weight: var(--mixa-weight-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Transitions — felt, not seen */
+button, a, input, select, textarea {
+  transition: background-color 100ms ease, color 100ms ease, border-color 100ms ease, opacity 150ms ease;
 }
 
 /* Shared keyframe animations */
@@ -131,6 +153,16 @@ body {
   100% { transform: translateX(-100%); }
 }
 
+@keyframes pulse-opacity {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* Scrollbar theming */
 ::-webkit-scrollbar {
   width: 6px;
@@ -142,10 +174,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--mixa-border-strong);
+  background: var(--mixa-border-default);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--mixa-border-focus);
+  background: var(--mixa-border-strong);
 }

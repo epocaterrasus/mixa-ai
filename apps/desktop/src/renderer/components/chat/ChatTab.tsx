@@ -1,6 +1,7 @@
 // Chat tab — full-height RAG chat interface
 
 import { useEffect, useCallback } from "react";
+import { Icon } from "@mixa-ai/ui";
 import { useChatStore } from "../../stores/chat";
 import { MessageList } from "./MessageList";
 import { MessageInput } from "./MessageInput";
@@ -28,7 +29,7 @@ const toolbarStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "space-between",
   padding: "8px 24px",
-  borderBottom: "1px solid var(--mixa-border-default)",
+  borderBottom: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-surface)",
   flexShrink: 0,
 };
@@ -49,10 +50,10 @@ const sidebarToggleStyle: React.CSSProperties = {
   width: "28px",
   height: "28px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "transparent",
   color: "var(--mixa-text-muted)",
-  fontSize: "14px",
+  fontSize: "13px",
   cursor: "pointer",
   display: "flex",
   alignItems: "center",
@@ -61,9 +62,12 @@ const sidebarToggleStyle: React.CSSProperties = {
 };
 
 const newChatButtonStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
   padding: "4px 10px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "transparent",
   color: "var(--mixa-text-secondary)",
   fontSize: "12px",
@@ -207,7 +211,7 @@ export function ChatTab(): React.ReactElement {
                 e.currentTarget.style.backgroundColor = "transparent";
               }}
             >
-              {"\u2630"}
+              <Icon name={showSidebar ? "collapse" : "expand"} size={16} />
             </button>
             <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--mixa-text-primary)" }}>
               Chat
@@ -232,7 +236,7 @@ export function ChatTab(): React.ReactElement {
                 e.currentTarget.style.backgroundColor = "transparent";
               }}
             >
-              + New Chat
+              <Icon name="add" size={12} /> New Chat
             </button>
           </div>
         </div>

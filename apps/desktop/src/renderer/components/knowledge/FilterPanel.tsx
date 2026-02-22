@@ -1,6 +1,8 @@
 // Knowledge filter sidebar panel
 
 import { useCallback, useEffect } from "react";
+import { Icon } from "@mixa-ai/ui";
+import type { IconName } from "@mixa-ai/ui";
 import type { KnowledgeFilters, AvailableTag, AvailableProject } from "../../stores/knowledge";
 
 interface FilterPanelProps {
@@ -15,7 +17,7 @@ interface FilterPanelProps {
 
 const panelStyle: React.CSSProperties = {
   width: "200px",
-  borderRight: "1px solid var(--mixa-border-default)",
+  borderRight: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-surface)",
   padding: "12px",
   display: "flex",
@@ -32,7 +34,7 @@ const sectionStyle: React.CSSProperties = {
 };
 
 const sectionLabelStyle: React.CSSProperties = {
-  fontSize: "11px",
+  fontSize: "12px",
   fontWeight: 600,
   color: "var(--mixa-text-muted)",
   textTransform: "uppercase",
@@ -48,7 +50,7 @@ const filterButtonStyle: React.CSSProperties = {
   border: "none",
   backgroundColor: "transparent",
   color: "var(--mixa-text-secondary)",
-  fontSize: "12px",
+  fontSize: "13px",
   cursor: "pointer",
   textAlign: "left",
   width: "100%",
@@ -65,7 +67,7 @@ const filterButtonActiveStyle: React.CSSProperties = {
 const clearButtonStyle: React.CSSProperties = {
   padding: "6px 10px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "transparent",
   color: "var(--mixa-text-muted)",
   fontSize: "11px",
@@ -77,7 +79,7 @@ const dateInputStyle: React.CSSProperties = {
   width: "100%",
   padding: "5px 8px",
   borderRadius: "6px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "var(--mixa-bg-base)",
   color: "var(--mixa-text-secondary)",
   fontSize: "11px",
@@ -98,7 +100,7 @@ const tagChipStyle: React.CSSProperties = {
   gap: "4px",
   padding: "3px 8px",
   borderRadius: "10px",
-  border: "1px solid var(--mixa-border-default)",
+  border: "1px solid var(--mixa-border-subtle)",
   backgroundColor: "transparent",
   color: "var(--mixa-text-secondary)",
   fontSize: "11px",
@@ -114,13 +116,13 @@ const tagChipActiveStyle: React.CSSProperties = {
   fontWeight: 500,
 };
 
-const ITEM_TYPES = [
-  { value: "article" as const, label: "Articles", icon: "\u{1F4C4}" },
-  { value: "highlight" as const, label: "Highlights", icon: "\u{1F4CC}" },
-  { value: "code" as const, label: "Code", icon: "\u{1F4BB}" },
-  { value: "youtube" as const, label: "YouTube", icon: "\u{1F4F9}" },
-  { value: "pdf" as const, label: "PDFs", icon: "\u{1F4D1}" },
-  { value: "image" as const, label: "Images", icon: "\u{1F5BC}" },
+const ITEM_TYPES: { value: "article" | "highlight" | "code" | "youtube" | "pdf" | "image"; label: string; icon: IconName }[] = [
+  { value: "article", label: "Articles", icon: "article" },
+  { value: "highlight", label: "Highlights", icon: "highlight" },
+  { value: "code", label: "Code", icon: "code" },
+  { value: "youtube", label: "YouTube", icon: "youtube" },
+  { value: "pdf", label: "PDFs", icon: "pdf" },
+  { value: "image", label: "Images", icon: "image" },
 ];
 
 function daysAgoISO(days: number): string {
@@ -280,7 +282,7 @@ export function FilterPanel({
               }
             }}
           >
-            <span>{type.icon}</span>
+            <Icon name={type.icon} size={14} />
             <span>{type.label}</span>
           </button>
         ))}
@@ -405,7 +407,7 @@ export function FilterPanel({
             }
           }}
         >
-          <span>{"\u2605"}</span>
+          <Icon name="favorite" size={14} />
           <span>Favorites</span>
         </button>
         <button
@@ -429,7 +431,7 @@ export function FilterPanel({
             }
           }}
         >
-          <span>{"\u{1F4E6}"}</span>
+          <Icon name="archive" size={14} />
           <span>Archived</span>
         </button>
       </div>

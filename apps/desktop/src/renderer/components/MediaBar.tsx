@@ -1,8 +1,8 @@
 import type { MeetSessionInfo, AudioTabInfo, MeetControlAction, MediaBarPosition } from "@mixa-ai/types";
+import { Icon } from "@mixa-ai/ui";
 import { useMediaBarStore } from "../stores/mediaBar";
 import { useTabStore } from "../stores/tabs";
 
-/** Format seconds into mm:ss or hh:mm:ss */
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -30,7 +30,7 @@ const styles = {
     padding: "0 12px",
     backgroundColor: "var(--mixa-bg-elevated)",
     gap: "12px",
-    fontSize: "12px",
+    fontSize: "13px",
     color: "var(--mixa-text-primary)",
     flexShrink: 0,
   } as React.CSSProperties,
@@ -40,10 +40,6 @@ const styles = {
     gap: "8px",
     flex: 1,
     minWidth: 0,
-  } as React.CSSProperties,
-  meetIcon: {
-    fontSize: "14px",
-    flexShrink: 0,
   } as React.CSSProperties,
   meetTitle: {
     fontWeight: 500,
@@ -58,6 +54,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "6px",
+    fontSize: "12px",
   } as React.CSSProperties,
   controls: {
     display: "flex",
@@ -69,28 +66,26 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "28px",
-    height: "28px",
+    width: "30px",
+    height: "30px",
     borderRadius: "6px",
     border: "none",
     backgroundColor: "transparent",
     color: "var(--mixa-text-primary)",
     cursor: "pointer",
-    fontSize: "14px",
     padding: 0,
   } as React.CSSProperties,
   controlBtnMuted: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "28px",
-    height: "28px",
+    width: "30px",
+    height: "30px",
     borderRadius: "6px",
     border: "none",
-    backgroundColor: "rgba(239, 68, 68, 0.2)",
-    color: "#ef4444",
+    backgroundColor: "rgba(184, 112, 112, 0.2)",
+    color: "var(--mixa-accent-red)",
     cursor: "pointer",
-    fontSize: "14px",
     padding: 0,
   } as React.CSSProperties,
   leaveBtn: {
@@ -98,13 +93,13 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     height: "28px",
-    padding: "0 10px",
+    padding: "0 12px",
     borderRadius: "6px",
     border: "none",
-    backgroundColor: "#ef4444",
+    backgroundColor: "var(--mixa-accent-red)",
     color: "#fff",
     cursor: "pointer",
-    fontSize: "11px",
+    fontSize: "12px",
     fontWeight: 500,
   } as React.CSSProperties,
   divider: {
@@ -122,14 +117,14 @@ const styles = {
   audioTab: {
     display: "flex",
     alignItems: "center",
-    gap: "4px",
-    padding: "2px 8px",
-    borderRadius: "4px",
-    backgroundColor: "var(--mixa-bg-base)",
+    gap: "6px",
+    padding: "4px 8px",
+    borderRadius: "6px",
+    backgroundColor: "var(--mixa-bg-surface)",
     cursor: "pointer",
     border: "none",
     color: "var(--mixa-text-primary)",
-    fontSize: "11px",
+    fontSize: "12px",
     maxWidth: "150px",
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -139,14 +134,13 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "20px",
-    height: "20px",
-    borderRadius: "4px",
+    width: "24px",
+    height: "24px",
+    borderRadius: "6px",
     border: "none",
     backgroundColor: "transparent",
     color: "var(--mixa-text-muted)",
     cursor: "pointer",
-    fontSize: "10px",
     padding: 0,
     flexShrink: 0,
   } as React.CSSProperties,
@@ -166,7 +160,7 @@ function MeetControls({ session }: { session: MeetSessionInfo }): React.ReactEle
         title={session.isMuted ? "Unmute microphone" : "Mute microphone"}
         aria-label={session.isMuted ? "Unmute microphone" : "Mute microphone"}
       >
-        {session.isMuted ? "\uD83D\uDD07" : "\uD83C\uDF99\uFE0F"}
+        <Icon name={session.isMuted ? "micOff" : "mic"} size={16} />
       </button>
       <button
         type="button"
@@ -175,7 +169,7 @@ function MeetControls({ session }: { session: MeetSessionInfo }): React.ReactEle
         title={session.isCameraOff ? "Turn on camera" : "Turn off camera"}
         aria-label={session.isCameraOff ? "Turn on camera" : "Turn off camera"}
       >
-        {session.isCameraOff ? "\uD83D\uDEB7" : "\uD83C\uDFA5"}
+        <Icon name={session.isCameraOff ? "cameraOff" : "camera"} size={16} />
       </button>
       <button
         type="button"
@@ -184,7 +178,8 @@ function MeetControls({ session }: { session: MeetSessionInfo }): React.ReactEle
         title="Leave meeting"
         aria-label="Leave meeting"
       >
-        Leave
+        <Icon name="phoneOff" size={14} />
+        <span style={{ marginLeft: "4px" }}>Leave</span>
       </button>
     </div>
   );
@@ -201,7 +196,7 @@ function AudioTabChip({ tab }: { tab: AudioTabInfo }): React.ReactElement {
       title={tab.title}
       aria-label={`Switch to ${tab.title}`}
     >
-      <span style={{ fontSize: "10px" }}>{"\uD83D\uDD0A"}</span>
+      <Icon name="volume" size={12} />
       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {tab.title}
       </span>
@@ -225,10 +220,6 @@ export function MediaBar(): React.ReactElement | null {
     ...getContainerBorder(position),
   };
 
-  // Collapsed arrow direction: point toward expanded direction
-  const expandArrow = position === "top" ? "\u25BC" : "\u25B2";
-  const collapseArrow = position === "top" ? "\u25B2" : "\u25BC";
-
   if (isCollapsed) {
     return (
       <div
@@ -244,17 +235,25 @@ export function MediaBar(): React.ReactElement | null {
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") toggle(); }}
         aria-label="Expand media bar"
       >
-        <span style={{ fontSize: "10px", color: "var(--mixa-text-muted)" }}>
-          {meetSessions.length > 0 ? `\uD83C\uDFA5 ${meetSessions.length} meeting${meetSessions.length > 1 ? "s" : ""}` : ""}
-          {meetSessions.length > 0 && audioTabs.length > 0 ? " \u00B7 " : ""}
-          {audioTabs.length > 0 ? `\uD83D\uDD0A ${audioTabs.length} playing` : ""}
-          {" "}{expandArrow}
+        <span style={{ fontSize: "11px", color: "var(--mixa-text-muted)", display: "flex", alignItems: "center", gap: "6px" }}>
+          {meetSessions.length > 0 && (
+            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <Icon name="camera" size={12} />
+              {meetSessions.length} meeting{meetSessions.length > 1 ? "s" : ""}
+            </span>
+          )}
+          {audioTabs.length > 0 && (
+            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <Icon name="volume" size={12} />
+              {audioTabs.length} playing
+            </span>
+          )}
+          <Icon name={position === "top" ? "down" : "up"} size={12} />
         </span>
       </div>
     );
   }
 
-  // Filter audio tabs: exclude Meet tabs already shown in meetSessions
   const meetTabIds = new Set(meetSessions.map((s) => s.tabId));
   const nonMeetAudioTabs = audioTabs.filter((t) => !meetTabIds.has(t.tabId));
 
@@ -262,7 +261,7 @@ export function MediaBar(): React.ReactElement | null {
     <div style={containerStyle} role="region" aria-label="Media bar">
       {meetSessions.map((session) => (
         <div key={session.tabId} style={styles.meetSection}>
-          <span style={styles.meetIcon}>{"\uD83C\uDFA5"}</span>
+          <Icon name="camera" size={16} />
           <span style={styles.meetTitle}>{session.meetingName}</span>
           <div style={styles.meetMeta}>
             {session.durationSeconds > 0 && (
@@ -297,7 +296,7 @@ export function MediaBar(): React.ReactElement | null {
         title="Collapse media bar"
         aria-label="Collapse media bar"
       >
-        {collapseArrow}
+        <Icon name={position === "top" ? "up" : "down"} size={14} />
       </button>
     </div>
   );

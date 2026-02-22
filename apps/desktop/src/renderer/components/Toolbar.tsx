@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { Icon } from "@mixa-ai/ui";
 import { useTabStore } from "../stores/tabs";
 import { useCaptureStore } from "../stores/capture";
 import { Omnibar } from "./Omnibar";
@@ -9,9 +10,9 @@ const styles = {
   container: {
     display: "flex",
     alignItems: "center",
-    height: "36px",
+    height: "40px",
     backgroundColor: "var(--mixa-bg-surface)",
-    borderBottom: "1px solid var(--mixa-border-default)",
+    borderBottom: "1px solid var(--mixa-border-subtle)",
     padding: "0 8px",
     gap: "4px",
   } as React.CSSProperties,
@@ -19,14 +20,13 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "28px",
-    height: "28px",
+    width: "30px",
+    height: "30px",
     borderRadius: "6px",
     border: "none",
     backgroundColor: "transparent",
     color: "var(--mixa-text-muted)",
     cursor: "pointer",
-    fontSize: "14px",
     padding: 0,
     flexShrink: 0,
   } as React.CSSProperties,
@@ -100,7 +100,6 @@ export function Toolbar(): React.ReactElement {
 
   return (
     <div style={styles.container}>
-      {/* Navigation buttons */}
       <button
         type="button"
         style={{
@@ -112,7 +111,7 @@ export function Toolbar(): React.ReactElement {
         aria-label="Go back"
         title="Back (Cmd+[)"
       >
-        {"\u2190"}
+        <Icon name="back" size={16} />
       </button>
       <button
         type="button"
@@ -125,7 +124,7 @@ export function Toolbar(): React.ReactElement {
         aria-label="Go forward"
         title="Forward (Cmd+])"
       >
-        {"\u2192"}
+        <Icon name="forward" size={16} />
       </button>
       <button
         type="button"
@@ -135,13 +134,11 @@ export function Toolbar(): React.ReactElement {
         aria-label={isLoading ? "Stop loading" : "Reload page"}
         title={isLoading ? "Stop (Esc)" : "Reload (Cmd+R)"}
       >
-        {isLoading ? "\u00D7" : "\u21BB"}
+        {isLoading ? <Icon name="stop" size={16} /> : <Icon name="reload" size={16} />}
       </button>
 
-      {/* Omnibar (URL + command palette + search) */}
       <Omnibar />
 
-      {/* Save to Mixa button */}
       <button
         type="button"
         style={{
@@ -153,13 +150,10 @@ export function Toolbar(): React.ReactElement {
         aria-label="Save page to Mixa"
         title="Save to Mixa (Cmd+S)"
       >
-        {isCapturing ? "\u22EF" : "\u2B07"}
+        {isCapturing ? <Icon name="loading" size={16} /> : <Icon name="capture" size={16} />}
       </button>
 
-      {/* Augmented browsing indicator (related items in knowledge base) */}
       <AugmentedIndicator />
-
-      {/* Engine health indicator */}
       <EngineStatusIndicator />
     </div>
   );

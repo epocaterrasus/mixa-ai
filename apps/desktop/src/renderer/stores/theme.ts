@@ -35,7 +35,7 @@ function loadPersisted(): PersistedTheme {
   } catch {
     // ignore
   }
-  return { mode: "dark", accentColor: "#6366f1" };
+  return { mode: "dark", accentColor: "#8b8ec4" };
 }
 
 function persist(state: PersistedTheme): void {

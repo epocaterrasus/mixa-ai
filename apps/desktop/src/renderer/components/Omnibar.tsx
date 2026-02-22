@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { Icon } from "@mixa-ai/ui";
+import type { IconName } from "@mixa-ai/ui";
 import { useTabStore } from "../stores/tabs";
 import { useHistoryStore } from "../stores/history";
 import { APP_TEMPLATES, generatePartitionId } from "../stores/appTemplates";
 import type { TabType } from "@mixa-ai/types";
-
-// --- Types ---
 
 type SuggestionKind = "tab" | "command" | "url" | "search" | "history";
 
@@ -13,23 +13,16 @@ interface Suggestion {
   kind: SuggestionKind;
   label: string;
   description: string;
-  icon: string;
-  /** For tab suggestions, the tab id to activate */
+  iconName?: IconName;
+  iconEmoji?: string;
   tabId?: string;
-  /** For history suggestions, the full URL to navigate to */
   url?: string;
-  /** For command suggestions, the action to execute */
   action?: () => void;
 }
 
-// --- Helpers ---
-
 function isLikelyUrl(input: string): boolean {
-  // Starts with protocol
   if (/^https?:\/\//i.test(input)) return true;
-  // Has a dot and no spaces (e.g. "google.com", "localhost:3000")
   if (/^[^\s]+\.[^\s]+$/.test(input)) return true;
-  // localhost with optional port
   if (/^localhost(:\d+)?/i.test(input)) return true;
   return false;
 }
@@ -44,7 +37,120 @@ function searchUrl(query: string): string {
   return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
 }
 
-// --- Styles ---
+const TAB_TYPE_ICONS: Record<TabType, IconName> = {
+  web: "web",
+  app: "app",
+  terminal: "terminal",
+  knowledge: "knowledge",
+  chat: "chat",
+  canvas: "canvas",
+  dashboard: "dashboard",
+  settings: "settings",
+};
+
+interface CommandDef {
+  id: string;
+  label: string;
+  description: string;
+  iconName: IconName;
+  action: (addTab: (type: TabType, url?: string) => string) => void;
+}
+
+const COMMANDS: CommandDef[] = [
+  {
+    id: "cmd-new-tab",
+    label: "New Tab",
+    description: "Open a new web tab",
+    iconName: "add",
+    action: (addTab) => addTab("web"),
+  },
+  {
+    id: "cmd-new-terminal",
+    label: "New Terminal",
+    description: "Open a terminal tab",
+    iconName: "terminal",
+    action: (addTab) => addTab("terminal"),
+  },
+  {
+    id: "cmd-open-shell",
+    label: "Open Shell",
+    description: "Open a raw shell tab",
+    iconName: "terminal",
+    action: (addTab) => addTab("terminal", "shell"),
+  },
+  {
+    id: "cmd-knowledge",
+    label: "Knowledge Base",
+    description: "Open the knowledge base",
+    iconName: "knowledge",
+    action: (addTab) => addTab("knowledge"),
+  },
+  {
+    id: "cmd-chat",
+    label: "Chat",
+    description: "Open AI chat",
+    iconName: "chat",
+    action: (addTab) => addTab("chat"),
+  },
+  {
+    id: "cmd-dashboard-cost",
+    label: "Cost Dashboard",
+    description: "Open cost tracking dashboard",
+    iconName: "cost",
+    action: (addTab) => addTab("dashboard", "cost"),
+  },
+  {
+    id: "cmd-dashboard-health",
+    label: "Health Dashboard",
+    description: "Open uptime & health monitoring dashboard",
+    iconName: "pulse",
+    action: (addTab) => addTab("dashboard", "health"),
+  },
+  {
+    id: "cmd-dashboard-knowledge",
+    label: "Knowledge Stats",
+    description: "View knowledge base statistics & insights",
+    iconName: "knowledge",
+    action: (addTab) => addTab("dashboard", "knowledge"),
+  },
+  {
+    id: "cmd-canvas",
+    label: "New Canvas",
+    description: "Open a new canvas for drawing and diagramming",
+    iconName: "canvas",
+    action: (addTab) => addTab("canvas"),
+  },
+  {
+    id: "cmd-drawing",
+    label: "New Drawing",
+    description: "Open a new visual drawing workspace",
+    iconName: "canvas",
+    action: (addTab) => addTab("canvas"),
+  },
+  {
+    id: "cmd-settings",
+    label: "Settings",
+    description: "Open settings",
+    iconName: "settings",
+    action: (addTab) => addTab("settings"),
+  },
+  ...APP_TEMPLATES.map((template) => ({
+    id: `cmd-app-${template.id}`,
+    label: `New App ${template.name}`,
+    description: `Open ${template.name} in an isolated app tab`,
+    iconName: "app" as IconName,
+    action: () => {
+      const partitionId = generatePartitionId(template.id);
+      useTabStore.getState().addAppTab({
+        templateId: template.id,
+        title: template.name,
+        url: template.url,
+        icon: template.icon,
+        partitionId,
+      });
+    },
+  })),
+];
 
 const styles = {
   wrapper: {
@@ -55,12 +161,12 @@ const styles = {
   } as React.CSSProperties,
 
   display: {
-    height: "26px",
+    height: "28px",
     backgroundColor: "var(--mixa-bg-elevated)",
     borderRadius: "6px",
-    border: "1px solid var(--mixa-border-default)",
+    border: "1px solid var(--mixa-border-subtle)",
     color: "var(--mixa-text-secondary)",
-    fontSize: "12px",
+    fontSize: "13px",
     padding: "0 10px",
     display: "flex",
     alignItems: "center",
@@ -82,7 +188,7 @@ const styles = {
     outline: "none",
     backgroundColor: "transparent",
     color: "var(--mixa-text-primary)",
-    fontSize: "12px",
+    fontSize: "13px",
     fontFamily: "inherit",
     padding: 0,
     margin: 0,
@@ -98,9 +204,9 @@ const styles = {
 
   lockIcon: {
     marginRight: "6px",
-    fontSize: "10px",
-    color: "var(--mixa-accent-green)",
     flexShrink: 0,
+    display: "flex",
+    color: "var(--mixa-accent-green)",
   } as React.CSSProperties,
 
   loadingBar: {
@@ -111,13 +217,13 @@ const styles = {
     height: "2px",
     borderRadius: "1px",
     overflow: "hidden",
-    backgroundColor: "var(--mixa-border-strong)",
+    backgroundColor: "var(--mixa-border-default)",
   } as React.CSSProperties,
 
   loadingFill: {
     height: "100%",
     width: "30%",
-    backgroundColor: "var(--mixa-accent-blue)",
+    backgroundColor: "var(--mixa-accent-primary)",
     borderRadius: "1px",
     animation: "omnibar-loading 1.5s ease-in-out infinite",
   } as React.CSSProperties,
@@ -128,7 +234,7 @@ const styles = {
     left: 0,
     right: 0,
     backgroundColor: "var(--mixa-bg-elevated)",
-    border: "1px solid var(--mixa-border-strong)",
+    border: "1px solid var(--mixa-border-subtle)",
     borderRadius: "8px",
     boxShadow: "var(--mixa-shadow-dropdown)",
     maxHeight: "320px",
@@ -141,9 +247,9 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    padding: "6px 12px",
+    padding: "8px 12px",
     cursor: "pointer",
-    fontSize: "12px",
+    fontSize: "13px",
     color: "var(--mixa-text-secondary)",
   } as React.CSSProperties,
 
@@ -153,9 +259,10 @@ const styles = {
   } as React.CSSProperties,
 
   suggestionIcon: {
-    fontSize: "13px",
     width: "18px",
-    textAlign: "center",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     flexShrink: 0,
   } as React.CSSProperties,
 
@@ -167,7 +274,7 @@ const styles = {
   } as React.CSSProperties,
 
   suggestionDescription: {
-    color: "var(--mixa-text-disabled)",
+    color: "var(--mixa-text-muted)",
     fontSize: "11px",
     flexShrink: 0,
     maxWidth: "200px",
@@ -178,122 +285,20 @@ const styles = {
 
   suggestionKindBadge: {
     fontSize: "10px",
-    color: "var(--mixa-text-subtle)",
-    border: "1px solid var(--mixa-border-strong)",
-    borderRadius: "3px",
-    padding: "1px 4px",
+    color: "var(--mixa-text-muted)",
+    border: "1px solid var(--mixa-border-default)",
+    borderRadius: "4px",
+    padding: "1px 5px",
     flexShrink: 0,
   } as React.CSSProperties,
 } as const;
 
-// Keyframe animations are defined in globals.css
-
-// --- Tab type icons ---
-
-const TAB_TYPE_ICONS: Record<TabType, string> = {
-  web: "\u{1F310}",
-  app: "\u{1F4F1}",
-  terminal: "\u25B6\uFE0F",
-  knowledge: "\u{1F4DA}",
-  chat: "\u{1F4AC}",
-  dashboard: "\u{1F4CA}",
-  settings: "\u2699\uFE0F",
-};
-
-// --- Command definitions ---
-
-interface CommandDef {
-  id: string;
-  label: string;
-  description: string;
-  icon: string;
-  action: (addTab: (type: TabType, url?: string) => string) => void;
+function SuggestionIconDisplay({ suggestion }: { suggestion: Suggestion }): React.ReactElement {
+  if (suggestion.iconName) {
+    return <Icon name={suggestion.iconName} size={14} />;
+  }
+  return <span style={{ fontSize: "13px" }}>{suggestion.iconEmoji ?? ""}</span>;
 }
-
-const COMMANDS: CommandDef[] = [
-  {
-    id: "cmd-new-tab",
-    label: "New Tab",
-    description: "Open a new web tab",
-    icon: "+",
-    action: (addTab) => addTab("web"),
-  },
-  {
-    id: "cmd-new-terminal",
-    label: "New Terminal",
-    description: "Open a terminal tab",
-    icon: "\u25B6\uFE0F",
-    action: (addTab) => addTab("terminal"),
-  },
-  {
-    id: "cmd-open-shell",
-    label: "Open Shell",
-    description: "Open a raw shell tab",
-    icon: ">_",
-    action: (addTab) => addTab("terminal", "shell"),
-  },
-  {
-    id: "cmd-knowledge",
-    label: "Knowledge Base",
-    description: "Open the knowledge base",
-    icon: "\u{1F4DA}",
-    action: (addTab) => addTab("knowledge"),
-  },
-  {
-    id: "cmd-chat",
-    label: "Chat",
-    description: "Open AI chat",
-    icon: "\u{1F4AC}",
-    action: (addTab) => addTab("chat"),
-  },
-  {
-    id: "cmd-dashboard-cost",
-    label: "Cost Dashboard",
-    description: "Open cost tracking dashboard",
-    icon: "\u{1F4CA}",
-    action: (addTab) => addTab("dashboard", "cost"),
-  },
-  {
-    id: "cmd-dashboard-health",
-    label: "Health Dashboard",
-    description: "Open uptime & health monitoring dashboard",
-    icon: "\u{1F3E5}",
-    action: (addTab) => addTab("dashboard", "health"),
-  },
-  {
-    id: "cmd-dashboard-knowledge",
-    label: "Knowledge Stats",
-    description: "View knowledge base statistics & insights",
-    icon: "\u{1F4DA}",
-    action: (addTab) => addTab("dashboard", "knowledge"),
-  },
-  {
-    id: "cmd-settings",
-    label: "Settings",
-    description: "Open settings",
-    icon: "\u2699\uFE0F",
-    action: (addTab) => addTab("settings"),
-  },
-  // App tab commands — generated from templates
-  ...APP_TEMPLATES.map((template) => ({
-    id: `cmd-app-${template.id}`,
-    label: `New App ${template.name}`,
-    description: `Open ${template.name} in an isolated app tab`,
-    icon: template.icon,
-    action: () => {
-      const partitionId = generatePartitionId(template.id);
-      useTabStore.getState().addAppTab({
-        templateId: template.id,
-        title: template.name,
-        url: template.url,
-        icon: template.icon,
-        partitionId,
-      });
-    },
-  })),
-];
-
-// --- Component ---
 
 export function Omnibar(): React.ReactElement {
   const [isFocused, setIsFocused] = useState(false);
@@ -311,7 +316,6 @@ export function Omnibar(): React.ReactElement {
   const activateTab = useTabStore((s) => s.activateTab);
   const searchHistory = useHistoryStore((s) => s.search);
 
-  // Derived state — app tabs also show their URL in the omnibar
   const isWebTab = activeTab?.type === "web" || activeTab?.type === "app";
   const url = activeTab?.url ?? "";
   const isHttps = url.startsWith("https://");
@@ -319,7 +323,6 @@ export function Omnibar(): React.ReactElement {
   const displayUrl = url.replace(/^https?:\/\//, "");
   const isCommandMode = inputValue.startsWith(">");
 
-  // Build suggestions based on input
   const suggestions = useMemo((): Suggestion[] => {
     const results: Suggestion[] = [];
     const query = inputValue.trim();
@@ -327,7 +330,6 @@ export function Omnibar(): React.ReactElement {
     if (!query) return results;
 
     if (isCommandMode) {
-      // Command mode: filter commands by query after ">"
       const cmdQuery = query.slice(1).trim().toLowerCase();
       for (const cmd of COMMANDS) {
         if (!cmdQuery || cmd.label.toLowerCase().includes(cmdQuery)) {
@@ -336,7 +338,7 @@ export function Omnibar(): React.ReactElement {
             kind: "command",
             label: cmd.label,
             description: cmd.description,
-            icon: cmd.icon,
+            iconName: cmd.iconName,
             action: () => cmd.action(addTab),
           });
         }
@@ -346,7 +348,6 @@ export function Omnibar(): React.ReactElement {
 
     const lowerQuery = query.toLowerCase();
 
-    // Open tabs matching the query
     for (const tab of tabs) {
       const titleMatch = tab.title.toLowerCase().includes(lowerQuery);
       const urlMatch = tab.url?.toLowerCase().includes(lowerQuery) ?? false;
@@ -356,57 +357,51 @@ export function Omnibar(): React.ReactElement {
           kind: "tab",
           label: tab.title,
           description: tab.url ?? `mixa://${tab.type}`,
-          icon: TAB_TYPE_ICONS[tab.type],
+          iconName: TAB_TYPE_ICONS[tab.type],
           tabId: tab.id,
         });
       }
     }
 
-    // History entries matching the query
     const openTabUrls = new Set(tabs.map((t) => t.url).filter(Boolean));
     const historyResults = searchHistory(query, 5);
     for (const entry of historyResults) {
-      // Skip entries that are already shown as open tabs
       if (openTabUrls.has(entry.url)) continue;
       results.push({
         id: `history-${entry.url}-${entry.visitedAt}`,
         kind: "history",
         label: entry.title,
         description: entry.url.replace(/^https?:\/\//, ""),
-        icon: "\u{1F553}",
+        iconName: "clock",
         url: entry.url,
       });
     }
 
-    // If it looks like a URL, offer to navigate
     if (isLikelyUrl(query)) {
       results.push({
         id: "navigate-url",
         kind: "url",
         label: query,
         description: "Go to URL",
-        icon: "\u2192",
+        iconName: "externalLink",
       });
     }
 
-    // Always offer search as fallback
     results.push({
       id: "search",
       kind: "search",
       label: query,
       description: "Search Google",
-      icon: "\u{1F50D}",
+      iconName: "search",
     });
 
     return results;
   }, [inputValue, tabs, addTab, isCommandMode, searchHistory]);
 
-  // Reset active index when suggestions change
   useEffect(() => {
     setActiveIndex(0);
   }, [suggestions.length]);
 
-  // Execute a suggestion
   const executeSuggestion = useCallback(
     (suggestion: Suggestion) => {
       switch (suggestion.kind) {
@@ -445,18 +440,15 @@ export function Omnibar(): React.ReactElement {
     [activeTab, activateTab, addTab],
   );
 
-  // Focus/blur handlers
   const focus = useCallback(
     (commandMode?: boolean) => {
       setIsFocused(true);
       if (commandMode) {
         setInputValue(">");
       } else {
-        // Pre-fill with current URL for editing
         setInputValue(url);
       }
       setActiveIndex(0);
-      // Need to wait for the input to render
       requestAnimationFrame(() => {
         inputRef.current?.focus();
         inputRef.current?.select();
@@ -472,7 +464,6 @@ export function Omnibar(): React.ReactElement {
     inputRef.current?.blur();
   }, []);
 
-  // Keyboard handler
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       switch (e.key) {
@@ -494,26 +485,19 @@ export function Omnibar(): React.ReactElement {
           if (selected) {
             executeSuggestion(selected);
           } else {
-            // No suggestions but user pressed enter — navigate or search
             const query = inputValue.trim();
             if (query) {
               if (isLikelyUrl(query)) {
                 const targetUrl = ensureUrl(query);
                 if (activeTab?.type === "web") {
-                  void window.electronAPI.tabs.navigate(
-                    activeTab.id,
-                    targetUrl,
-                  );
+                  void window.electronAPI.tabs.navigate(activeTab.id, targetUrl);
                 } else {
                   addTab("web", targetUrl);
                 }
               } else {
                 const searchTarget = searchUrl(query);
                 if (activeTab?.type === "web") {
-                  void window.electronAPI.tabs.navigate(
-                    activeTab.id,
-                    searchTarget,
-                  );
+                  void window.electronAPI.tabs.navigate(activeTab.id, searchTarget);
                 } else {
                   addTab("web", searchTarget);
                 }
@@ -528,7 +512,6 @@ export function Omnibar(): React.ReactElement {
           blur();
           break;
         case "Tab":
-          // Prevent tab switching; just close omnibar
           e.preventDefault();
           blur();
           break;
@@ -537,29 +520,23 @@ export function Omnibar(): React.ReactElement {
     [suggestions, activeIndex, executeSuggestion, inputValue, activeTab, addTab, blur],
   );
 
-  // Scroll active suggestion into view
   useEffect(() => {
     if (!dropdownRef.current) return;
-    const activeEl = dropdownRef.current.children[activeIndex] as
-      | HTMLElement
-      | undefined;
+    const activeEl = dropdownRef.current.children[activeIndex] as HTMLElement | undefined;
     activeEl?.scrollIntoView({ block: "nearest" });
   }, [activeIndex]);
 
-  // Expose focus method for keyboard shortcuts
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent): void => {
       const isMod = e.metaKey || e.ctrlKey;
       if (!isMod) return;
 
-      // Cmd+L: Focus omnibar (URL mode)
       if (e.key === "l" && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         focus(false);
         return;
       }
 
-      // Cmd+K: Focus omnibar (command mode)
       if (e.key === "k" && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         focus(true);
@@ -570,7 +547,6 @@ export function Omnibar(): React.ReactElement {
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
   }, [focus]);
 
-  // Click outside to close
   useEffect(() => {
     if (!isFocused) return;
 
@@ -613,7 +589,6 @@ export function Omnibar(): React.ReactElement {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={(e) => {
-              // Don't blur if clicking a dropdown item
               const related = e.relatedTarget as HTMLElement | null;
               if (related?.closest("[data-omnibar-dropdown]")) return;
             }}
@@ -626,22 +601,25 @@ export function Omnibar(): React.ReactElement {
           <>
             {isWebTab && url ? (
               <>
-                {isHttps && <span style={styles.lockIcon}>{"\u{1F512}"}</span>}
+                {isHttps && (
+                  <span style={styles.lockIcon}>
+                    <Icon name="lock" size={12} />
+                  </span>
+                )}
                 <span style={styles.urlText}>{displayUrl}</span>
               </>
             ) : isWebTab ? (
-              <span style={{ ...styles.urlText, color: "var(--mixa-text-disabled)" }}>
+              <span style={{ ...styles.urlText, color: "var(--mixa-text-muted)" }}>
                 Search or enter URL
               </span>
             ) : (
-              <span style={{ ...styles.urlText, color: "var(--mixa-text-disabled)" }}>
+              <span style={{ ...styles.urlText, color: "var(--mixa-text-muted)" }}>
                 mixa://{activeTab?.type ?? "home"}
               </span>
             )}
           </>
         )}
 
-        {/* Loading indicator */}
         {isLoading && (
           <div style={styles.loadingBar}>
             <div style={styles.loadingFill} />
@@ -649,7 +627,6 @@ export function Omnibar(): React.ReactElement {
         )}
       </div>
 
-      {/* Suggestion dropdown */}
       {showDropdown && (
         <div
           ref={dropdownRef}
@@ -673,7 +650,9 @@ export function Omnibar(): React.ReactElement {
                 executeSuggestion(s);
               }}
             >
-              <span style={styles.suggestionIcon}>{s.icon}</span>
+              <span style={styles.suggestionIcon}>
+                <SuggestionIconDisplay suggestion={s} />
+              </span>
               <span style={styles.suggestionLabel}>{s.label}</span>
               <span style={styles.suggestionDescription}>{s.description}</span>
               <span style={styles.suggestionKindBadge}>
@@ -681,9 +660,11 @@ export function Omnibar(): React.ReactElement {
                   ? "Tab"
                   : s.kind === "command"
                     ? "Cmd"
-                    : s.kind === "url"
-                      ? "URL"
-                      : "Search"}
+                    : s.kind === "history"
+                      ? "History"
+                      : s.kind === "url"
+                        ? "URL"
+                        : "Search"}
               </span>
             </div>
           ))}

@@ -1,15 +1,26 @@
 import { useCallback, useRef, useState } from "react";
-import type { Tab } from "@mixa-ai/types";
+import type { Tab, TabType } from "@mixa-ai/types";
+import { Icon } from "@mixa-ai/ui";
+import type { IconName } from "@mixa-ai/ui";
 import { useTabStore } from "../stores/tabs";
-import { getAppTemplate } from "../stores/appTemplates";
+
+const TAB_TYPE_ICONS: Record<TabType, IconName> = {
+  web: "web",
+  app: "app",
+  terminal: "terminal",
+  knowledge: "knowledge",
+  chat: "chat",
+  canvas: "canvas",
+  dashboard: "dashboard",
+  settings: "settings",
+};
 
 const styles = {
   container: {
     display: "flex",
     alignItems: "center",
-    height: "36px",
-    backgroundColor: "var(--mixa-bg-elevated)",
-    borderBottom: "1px solid var(--mixa-border-default)",
+    height: "38px",
+    backgroundColor: "var(--mixa-bg-surface)",
     paddingLeft: "4px",
     paddingRight: "4px",
     WebkitAppRegion: "drag",
@@ -21,22 +32,22 @@ const styles = {
     alignItems: "center",
     flex: 1,
     overflow: "hidden",
-    gap: "1px",
+    gap: "2px",
   } as React.CSSProperties,
   tab: {
     display: "flex",
     alignItems: "center",
-    height: "28px",
+    height: "30px",
     maxWidth: "200px",
     minWidth: "60px",
-    padding: "0 8px",
+    padding: "0 10px",
     borderRadius: "6px",
     cursor: "pointer",
-    fontSize: "12px",
+    fontSize: "13px",
     color: "var(--mixa-text-muted)",
     backgroundColor: "transparent",
     border: "none",
-    transition: "background-color 0.1s",
+    transition: "background-color 100ms",
     WebkitAppRegion: "no-drag",
     flexShrink: 1,
     overflow: "hidden",
@@ -49,9 +60,9 @@ const styles = {
     backgroundColor: "var(--mixa-bg-hover)",
   } as React.CSSProperties,
   tabFavicon: {
-    width: "14px",
-    height: "14px",
-    marginRight: "6px",
+    width: "16px",
+    height: "16px",
+    marginRight: "8px",
     flexShrink: 0,
     borderRadius: "2px",
   } as React.CSSProperties,
@@ -61,42 +72,39 @@ const styles = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
     textAlign: "left",
-    lineHeight: "28px",
+    lineHeight: "1.3",
   } as React.CSSProperties,
   tabClose: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "16px",
-    height: "16px",
+    width: "18px",
+    height: "18px",
     marginLeft: "4px",
-    borderRadius: "3px",
+    borderRadius: "4px",
     border: "none",
     backgroundColor: "transparent",
-    color: "var(--mixa-text-disabled)",
+    color: "var(--mixa-text-muted)",
     cursor: "pointer",
-    fontSize: "14px",
-    lineHeight: "1",
     padding: 0,
     flexShrink: 0,
     WebkitAppRegion: "no-drag",
   } as React.CSSProperties,
   tabCloseHover: {
-    backgroundColor: "var(--mixa-text-faint)",
+    backgroundColor: "var(--mixa-bg-active)",
     color: "var(--mixa-text-primary)",
   } as React.CSSProperties,
   addButton: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "24px",
-    height: "24px",
+    width: "28px",
+    height: "28px",
     borderRadius: "6px",
     border: "none",
     backgroundColor: "transparent",
     color: "var(--mixa-text-muted)",
     cursor: "pointer",
-    fontSize: "16px",
     padding: 0,
     flexShrink: 0,
     WebkitAppRegion: "no-drag",
@@ -104,9 +112,9 @@ const styles = {
   loadingIndicator: {
     width: "14px",
     height: "14px",
-    marginRight: "6px",
+    marginRight: "8px",
     flexShrink: 0,
-    border: "2px solid var(--mixa-border-strong)",
+    border: "2px solid var(--mixa-border-default)",
     borderTopColor: "var(--mixa-accent-primary)",
     borderRadius: "50%",
     animation: "spin 0.6s linear infinite",
@@ -131,32 +139,9 @@ function TabIcon({ tab }: { tab: Tab }): React.ReactElement {
     );
   }
 
-  // For app tabs, use the template icon
-  if (tab.type === "app" && tab.appTemplateId) {
-    const template = getAppTemplate(tab.appTemplateId);
-    if (template) {
-      return (
-        <span style={{ ...styles.tabFavicon, fontSize: "12px", textAlign: "center" as const }}>
-          {template.icon}
-        </span>
-      );
-    }
-  }
-
-  // Default icon per tab type
-  const icons: Record<string, string> = {
-    web: "\u{1F310}",
-    app: "\u{1F4F1}",
-    terminal: "\u{25B6}",
-    knowledge: "\u{1F4DA}",
-    chat: "\u{1F4AC}",
-    dashboard: "\u{1F4CA}",
-    settings: "\u{2699}",
-  };
-
   return (
-    <span style={{ ...styles.tabFavicon, fontSize: "12px", textAlign: "center" as const }}>
-      {icons[tab.type] ?? "\u{1F310}"}
+    <span style={{ marginRight: "8px", flexShrink: 0, display: "flex" }}>
+      <Icon name={TAB_TYPE_ICONS[tab.type] ?? "web"} size={14} />
     </span>
   );
 }
@@ -194,7 +179,7 @@ function TabItem({ tab }: { tab: Tab }): React.ReactElement {
     ...styles.tab,
     ...(tab.isActive ? styles.tabActive : {}),
     ...(hovered && !tab.isActive ? styles.tabHover : {}),
-    ...(isAppTab ? { borderLeft: "2px solid var(--mixa-accent-primary)", paddingLeft: "6px" } : {}),
+    ...(isAppTab ? { borderLeft: "2px solid var(--mixa-accent-primary)", paddingLeft: "8px" } : {}),
   };
 
   return (
@@ -228,13 +213,12 @@ function TabItem({ tab }: { tab: Tab }): React.ReactElement {
         onMouseEnter={() => setCloseHovered(true)}
         onMouseLeave={() => setCloseHovered(false)}
       >
-        ×
+        <Icon name="close" size={12} />
       </button>
     </div>
   );
 }
 
-// Drag-and-drop reorder support
 function DraggableTabItem({
   tab,
   index,
@@ -304,7 +288,7 @@ export function TabBar(): React.ReactElement {
         aria-label="New tab"
         title="New tab (Cmd+T)"
       >
-        +
+        <Icon name="add" size={16} />
       </button>
     </div>
   );

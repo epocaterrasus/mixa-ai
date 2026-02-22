@@ -16,6 +16,7 @@ interface TabStore {
   // Actions
   addTab: (type: TabType, url?: string) => string;
   addAppTab: (options: AddAppTabOptions) => string;
+  switchOrCreateTab: (type: TabType, url?: string) => string;
   closeTab: (id: string) => void;
   closeOtherTabs: (id: string) => void;
   activateTab: (id: string) => void;
@@ -44,6 +45,8 @@ function defaultTitleForType(type: TabType): string {
       return "Knowledge";
     case "chat":
       return "Chat";
+    case "canvas":
+      return "Canvas";
     case "dashboard":
       return "Dashboard";
     case "settings":
@@ -111,6 +114,16 @@ export const useTabStore = create<TabStore>((set, get) => ({
     }));
 
     return id;
+  },
+
+  switchOrCreateTab: (type: TabType, url?: string): string => {
+    const { tabs } = get();
+    const existing = tabs.find((t) => t.type === type && (url === undefined || t.url === url));
+    if (existing) {
+      get().activateTab(existing.id);
+      return existing.id;
+    }
+    return get().addTab(type, url);
   },
 
   closeTab: (id: string) => {
