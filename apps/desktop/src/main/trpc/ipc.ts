@@ -2,11 +2,12 @@ import { ipcMain } from "electron";
 import { TRPCError } from "@trpc/server";
 import { appRouter } from "./router.js";
 import { createCallerFactory, type TRPCContext } from "./trpc.js";
+import { getDb, getUserId } from "../db/index.js";
 
 const createCaller = createCallerFactory(appRouter);
 
 function createContext(): TRPCContext {
-  return {};
+  return { db: getDb(), userId: getUserId() };
 }
 
 function resolveProcedure(

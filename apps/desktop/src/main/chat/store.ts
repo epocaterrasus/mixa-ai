@@ -1,8 +1,9 @@
-// In-memory conversation and message store
-// Will be replaced by PGlite in MIXA-046
-
 import { randomUUID } from "node:crypto";
+import { eq, desc } from "drizzle-orm";
+import { conversations, messages } from "@mixa-ai/db";
 import type { Citation, ChatScope } from "@mixa-ai/types";
+import type { PgliteDbClient } from "@mixa-ai/db";
+import { getDb, getUserId } from "../db/index.js";
 
 export interface StoredConversation {
   id: string;
@@ -23,88 +24,152 @@ export interface StoredMessage {
   createdAt: string;
 }
 
-const conversations = new Map<string, StoredConversation>();
-const messagesByConversation = new Map<string, StoredMessage[]>();
+function toStoredConversation(row: typeof conversations.$inferSelect): StoredConversation {
+  return {
+    id: row.id,
+    title: row.title,
+    scope: row.scope as ChatScope | null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
 
-export function createConversation(
+function toStoredMessage(row: typeof messages.$inferSelect): StoredMessage {
+  return {
+    id: row.id,
+    conversationId: row.conversationId,
+    role: row.role as "user" | "assistant",
+    content: row.content,
+    citations: (row.citations ?? []) as Citation[],
+    modelUsed: row.modelUsed,
+    tokenCount: row.tokenCount,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export async function createConversation(
   title: string | null,
   scope: ChatScope | null,
-): StoredConversation {
-  const id = randomUUID();
-  const now = new Date().toISOString();
-  const conversation: StoredConversation = {
-    id,
-    title,
-    scope,
-    createdAt: now,
-    updatedAt: now,
-  };
-  conversations.set(id, conversation);
-  messagesByConversation.set(id, []);
-  return conversation;
+): Promise<StoredConversation> {
+  const db = getDb();
+  const [created] = await db
+    .insert(conversations)
+    .values({
+      userId: getUserId(),
+      title,
+      scope: scope as Record<string, unknown> | null,
+    })
+    .returning();
+
+  if (!created) throw new Error("Failed to create conversation");
+  return toStoredConversation(created);
 }
 
-export function getConversation(id: string): StoredConversation | undefined {
-  return conversations.get(id);
+export async function getConversation(id: string): Promise<StoredConversation | undefined> {
+  const db = getDb();
+  const [row] = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.id, id))
+    .limit(1);
+  return row ? toStoredConversation(row) : undefined;
 }
 
-export function listConversations(
+export async function listConversations(
   limit: number,
   offset: number,
-): { conversations: StoredConversation[]; total: number } {
-  const all = Array.from(conversations.values()).sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-  );
+): Promise<{ conversations: StoredConversation[]; total: number }> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.userId, getUserId()))
+    .orderBy(desc(conversations.updatedAt))
+    .limit(limit)
+    .offset(offset);
+
+  const allRows = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(eq(conversations.userId, getUserId()));
+
   return {
-    conversations: all.slice(offset, offset + limit),
-    total: all.length,
+    conversations: rows.map(toStoredConversation),
+    total: allRows.length,
   };
 }
 
-export function deleteConversation(id: string): boolean {
-  const deleted = conversations.delete(id);
-  messagesByConversation.delete(id);
-  return deleted;
+export async function deleteConversation(id: string): Promise<boolean> {
+  const db = getDb();
+  const [deleted] = await db
+    .delete(conversations)
+    .where(eq(conversations.id, id))
+    .returning({ id: conversations.id });
+  return !!deleted;
 }
 
-export function addMessage(
+export async function addMessage(
   conversationId: string,
   role: "user" | "assistant",
   content: string,
   citations: Citation[] = [],
   modelUsed: string | null = null,
-): StoredMessage {
-  const messages = messagesByConversation.get(conversationId);
-  if (!messages) {
-    throw new Error(`Conversation not found: ${conversationId}`);
-  }
+): Promise<StoredMessage> {
+  const db = getDb();
 
-  const message: StoredMessage = {
-    id: randomUUID(),
-    conversationId,
-    role,
-    content,
-    citations,
-    modelUsed,
-    tokenCount: null,
-    createdAt: new Date().toISOString(),
-  };
-  messages.push(message);
+  const [created] = await db
+    .insert(messages)
+    .values({
+      conversationId,
+      role,
+      content,
+      citations: citations as unknown as Record<string, unknown>[],
+      modelUsed,
+    })
+    .returning();
+
+  if (!created) throw new Error("Failed to create message");
 
   // Update conversation timestamp
-  const conversation = conversations.get(conversationId);
-  if (conversation) {
-    conversation.updatedAt = message.createdAt;
-  }
+  await db
+    .update(conversations)
+    .set({ updatedAt: new Date() })
+    .where(eq(conversations.id, conversationId));
 
   // Auto-title from first user message
-  if (role === "user" && messages.length === 1 && conversation && !conversation.title) {
-    conversation.title = content.length > 60 ? content.slice(0, 57) + "..." : content;
+  if (role === "user") {
+    const allMsgs = await db
+      .select({ id: messages.id })
+      .from(messages)
+      .where(eq(messages.conversationId, conversationId));
+
+    if (allMsgs.length === 1) {
+      const [conv] = await db
+        .select({ title: conversations.title })
+        .from(conversations)
+        .where(eq(conversations.id, conversationId))
+        .limit(1);
+
+      if (conv && !conv.title) {
+        const autoTitle = content.length > 60 ? content.slice(0, 57) + "..." : content;
+        await db
+          .update(conversations)
+          .set({ title: autoTitle })
+          .where(eq(conversations.id, conversationId));
+      }
+    }
   }
 
-  return message;
+  return toStoredMessage(created);
 }
 
-export function getMessages(conversationId: string): StoredMessage[] {
-  return messagesByConversation.get(conversationId) ?? [];
+export async function getMessages(conversationId: string): Promise<StoredMessage[]> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(messages.createdAt);
+
+  return rows.map(toStoredMessage);
 }

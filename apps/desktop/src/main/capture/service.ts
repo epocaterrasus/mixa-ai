@@ -1,10 +1,12 @@
-import { randomUUID } from "node:crypto";
 import {
   extractArticle,
   extractThumbnail,
   sanitizeHtml,
 } from "@mixa-ai/content-processor";
+import { items } from "@mixa-ai/db";
+import { eq } from "drizzle-orm";
 import { tabManager } from "../tabs/manager.js";
+import { getDb, getUserId } from "../db/index.js";
 
 /** Result returned after successfully capturing content */
 export interface CaptureResult {
@@ -15,28 +17,6 @@ export interface CaptureResult {
   domain: string | null;
   wordCount: number | null;
   readingTime: number | null;
-}
-
-/** Stored captured item (in-memory until PGlite is integrated in MIXA-046) */
-export interface CapturedItem {
-  id: string;
-  url: string | null;
-  title: string;
-  description: string | null;
-  contentText: string | null;
-  contentHtml: string | null;
-  itemType: string;
-  sourceType: string;
-  thumbnailUrl: string | null;
-  faviconUrl: string | null;
-  domain: string | null;
-  wordCount: number | null;
-  readingTime: number | null;
-  isArchived: boolean;
-  isFavorite: boolean;
-  capturedAt: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 function extractDomain(url: string): string | null {
@@ -60,56 +40,9 @@ function isRestrictedUrl(url: string): boolean {
 }
 
 /**
- * In-memory store for captured items.
- * This serves as the storage layer until PGlite is integrated (MIXA-046).
- * When PGlite is available, this will be replaced with Drizzle DB operations.
- */
-class CaptureStore {
-  private items: CapturedItem[] = [];
-
-  add(item: CapturedItem): void {
-    this.items.push(item);
-  }
-
-  findByUrl(url: string): CapturedItem | undefined {
-    return this.items.find((item) => item.url === url);
-  }
-
-  update(id: string, updates: Partial<CapturedItem>): CapturedItem | undefined {
-    const index = this.items.findIndex((item) => item.id === id);
-    if (index === -1) return undefined;
-    const existing = this.items[index]!;
-    const updated = { ...existing, ...updates, updatedAt: new Date().toISOString() };
-    this.items[index] = updated;
-    return updated;
-  }
-
-  getAll(): CapturedItem[] {
-    return [...this.items];
-  }
-
-  getById(id: string): CapturedItem | undefined {
-    return this.items.find((item) => item.id === id);
-  }
-
-  delete(id: string): boolean {
-    const index = this.items.findIndex((item) => item.id === id);
-    if (index === -1) return false;
-    this.items.splice(index, 1);
-    return true;
-  }
-
-  count(): number {
-    return this.items.length;
-  }
-}
-
-export const captureStore = new CaptureStore();
-
-/**
  * Capture the full page content from a web tab.
  * Extracts article content using Readability, sanitizes HTML,
- * extracts thumbnail, and stores the result.
+ * extracts thumbnail, and stores the result in PGlite.
  */
 export async function captureTab(
   tabId: string,
@@ -126,24 +59,35 @@ export async function captureTab(
     );
   }
 
+  const db = getDb();
+  const userId = getUserId();
+
   // Check for duplicate URL
-  const existing = captureStore.findByUrl(url);
+  const [existing] = await db
+    .select()
+    .from(items)
+    .where(eq(items.url, url))
+    .limit(1);
+
   if (existing) {
-    // Update existing item instead of creating duplicate
     const html = await tabManager.getPageHTML(tabId);
     if (html) {
       const article = extractArticle(html, url);
       const thumbnail = extractThumbnail(html, url);
 
-      captureStore.update(existing.id, {
-        title: article?.title ?? existing.title,
-        contentText: article?.textContent ?? existing.contentText,
-        contentHtml: article?.content ?? (html ? sanitizeHtml(html) : existing.contentHtml),
-        thumbnailUrl: thumbnail?.url ?? existing.thumbnailUrl,
-        faviconUrl: faviconUrl ?? existing.faviconUrl,
-        wordCount: article?.wordCount ?? existing.wordCount,
-        readingTime: article?.readingTime ?? existing.readingTime,
-      });
+      await db
+        .update(items)
+        .set({
+          title: article?.title ?? existing.title,
+          contentText: article?.textContent ?? existing.contentText,
+          contentHtml: article?.content ?? (html ? sanitizeHtml(html) : existing.contentHtml),
+          thumbnailUrl: thumbnail?.url ?? existing.thumbnailUrl,
+          faviconUrl: faviconUrl ?? existing.faviconUrl,
+          wordCount: article?.wordCount ?? existing.wordCount,
+          readingTime: article?.readingTime ?? existing.readingTime,
+          updatedAt: new Date(),
+        })
+        .where(eq(items.id, existing.id));
     }
 
     return {
@@ -166,40 +110,35 @@ export async function captureTab(
   const thumbnail = extractThumbnail(html, url);
   const domain = extractDomain(url);
 
-  const now = new Date().toISOString();
-  const id = randomUUID();
+  const [created] = await db
+    .insert(items)
+    .values({
+      userId,
+      url,
+      title: article?.title ?? url,
+      description: article?.excerpt ?? null,
+      contentText: article?.textContent ?? null,
+      contentHtml: article?.content ?? sanitizeHtml(html),
+      itemType: "article",
+      sourceType: "manual",
+      thumbnailUrl: thumbnail?.url ?? null,
+      faviconUrl: faviconUrl ?? null,
+      domain,
+      wordCount: article?.wordCount ?? null,
+      readingTime: article?.readingTime ?? null,
+    })
+    .returning();
 
-  const item: CapturedItem = {
-    id,
-    url,
-    title: article?.title ?? url,
-    description: article?.excerpt ?? null,
-    contentText: article?.textContent ?? null,
-    contentHtml: article?.content ?? sanitizeHtml(html),
-    itemType: "article",
-    sourceType: "manual",
-    thumbnailUrl: thumbnail?.url ?? null,
-    faviconUrl: faviconUrl ?? null,
-    domain,
-    wordCount: article?.wordCount ?? null,
-    readingTime: article?.readingTime ?? null,
-    isArchived: false,
-    isFavorite: false,
-    capturedAt: now,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  captureStore.add(item);
+  if (!created) throw new Error("Failed to insert captured item");
 
   return {
-    id: item.id,
-    title: item.title,
-    url: item.url,
+    id: created.id,
+    title: created.title,
+    url: created.url,
     itemType: "article",
-    domain: item.domain,
-    wordCount: item.wordCount,
-    readingTime: item.readingTime,
+    domain: created.domain,
+    wordCount: created.wordCount,
+    readingTime: created.readingTime,
   };
 }
 
@@ -217,47 +156,45 @@ export async function captureSelection(
     `<blockquote>${selectedText}</blockquote>`,
   );
 
-  const now = new Date().toISOString();
-  const id = randomUUID();
-
-  // Generate a title from the first line of the selection
   const titleText = selectedText.slice(0, 100).split("\n")[0] ?? selectedText.slice(0, 100);
   const title = titleText.length < selectedText.length
     ? `${titleText}...`
     : titleText;
 
   const wordCount = selectedText.split(/\s+/).filter((w) => w.length > 0).length;
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
-  const item: CapturedItem = {
-    id,
-    url,
-    title,
-    description: null,
-    contentText: selectedText,
-    contentHtml: sanitizedText,
-    itemType: "highlight",
-    sourceType: "manual",
-    thumbnailUrl: null,
-    faviconUrl: faviconUrl ?? null,
-    domain,
-    wordCount,
-    readingTime: Math.max(1, Math.ceil(wordCount / 200)),
-    isArchived: false,
-    isFavorite: false,
-    capturedAt: now,
-    createdAt: now,
-    updatedAt: now,
-  };
+  const db = getDb();
+  const userId = getUserId();
 
-  captureStore.add(item);
+  const [created] = await db
+    .insert(items)
+    .values({
+      userId,
+      url,
+      title,
+      description: null,
+      contentText: selectedText,
+      contentHtml: sanitizedText,
+      itemType: "highlight",
+      sourceType: "manual",
+      thumbnailUrl: null,
+      faviconUrl: faviconUrl ?? null,
+      domain,
+      wordCount,
+      readingTime,
+    })
+    .returning();
+
+  if (!created) throw new Error("Failed to insert captured selection");
 
   return {
-    id: item.id,
-    title: item.title,
-    url: item.url,
+    id: created.id,
+    title: created.title,
+    url: created.url,
     itemType: "highlight",
-    domain: item.domain,
-    wordCount: item.wordCount,
-    readingTime: item.readingTime,
+    domain: created.domain,
+    wordCount: created.wordCount,
+    readingTime: created.readingTime,
   };
 }

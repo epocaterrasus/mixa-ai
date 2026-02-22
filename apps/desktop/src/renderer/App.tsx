@@ -17,6 +17,7 @@ import { useMediaBar } from "./hooks/useMediaBar";
 import { RelatedItemsPanel } from "./components/RelatedItemsPanel";
 import { MediaBar } from "./components/MediaBar";
 import { useTabStore } from "./stores/tabs";
+import { useMediaBarStore } from "./stores/mediaBar";
 
 const styles = {
   root: {
@@ -100,6 +101,7 @@ export function App(): React.ReactElement {
     return s.tabs.find((t) => t.id === id)?.url ?? null;
   });
   const hasTabs = useTabStore((s) => s.tabs.length > 0);
+  const mediaBarPosition = useMediaBarStore((s) => s.position);
 
   return (
     <div style={styles.root}>
@@ -107,6 +109,7 @@ export function App(): React.ReactElement {
       <div style={styles.main}>
         <TabBar />
         <Toolbar />
+        {mediaBarPosition === "top" && <MediaBar />}
         <div style={styles.content}>
           <FindBar />
           {activeTabType ? (
@@ -115,7 +118,7 @@ export function App(): React.ReactElement {
             <EmptyState />
           )}
         </div>
-        <MediaBar />
+        {mediaBarPosition === "bottom" && <MediaBar />}
       </div>
       <RelatedItemsPanel />
       <CaptureToast />

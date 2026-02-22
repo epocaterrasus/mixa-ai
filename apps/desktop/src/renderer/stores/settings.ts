@@ -7,6 +7,7 @@ import type {
   ThemeMode,
   SidebarPosition,
   TabBarPosition,
+  MediaBarPosition,
 } from "@mixa-ai/types";
 import { trpc } from "../trpc";
 import { useThemeStore } from "./theme";
@@ -34,6 +35,8 @@ interface SettingsState {
   updateAutoCaptureMinSeconds: (seconds: number) => Promise<void>;
   updateAugmentedBrowsing: (enabled: boolean) => Promise<void>;
   updateDefaultSearchEngine: (url: string) => Promise<void>;
+  updateMediaBarEnabled: (enabled: boolean) => Promise<void>;
+  updateMediaBarPosition: (position: MediaBarPosition) => Promise<void>;
   completeOnboarding: () => Promise<void>;
   setActiveSection: (section: SettingsSection) => void;
   clearError: () => void;
@@ -324,6 +327,42 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       await trpc.settings.update.mutate({ defaultSearchEngine });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : "Failed to update search engine" });
+    }
+  },
+
+  updateMediaBarEnabled: async (enabled) => {
+    const { settings } = get();
+    if (!settings) return;
+
+    set({
+      settings: {
+        ...settings,
+        mediaBar: { ...settings.mediaBar, enabled },
+      },
+    });
+
+    try {
+      await trpc.settings.update.mutate({ mediaBar: { enabled } });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : "Failed to update media bar setting" });
+    }
+  },
+
+  updateMediaBarPosition: async (position) => {
+    const { settings } = get();
+    if (!settings) return;
+
+    set({
+      settings: {
+        ...settings,
+        mediaBar: { ...settings.mediaBar, position },
+      },
+    });
+
+    try {
+      await trpc.settings.update.mutate({ mediaBar: { position } });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : "Failed to update media bar position" });
     }
   },
 

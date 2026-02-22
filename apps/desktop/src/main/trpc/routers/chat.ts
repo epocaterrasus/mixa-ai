@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { eq, desc } from "drizzle-orm";
+import { conversations, messages } from "@mixa-ai/db";
 import { router, publicProcedure, TRPCError } from "../trpc.js";
-import * as chatStore from "../../chat/store.js";
 
 const chatScopeSchema = z.object({
   projectIds: z.array(z.string().uuid()).default([]),
@@ -16,12 +17,25 @@ export const chatRouter = router({
         scope: chatScopeSchema.nullish(),
       }),
     )
-    .mutation(({ input }) => {
-      const conversation = chatStore.createConversation(
-        input.title ?? null,
-        input.scope ?? null,
-      );
-      return conversation;
+    .mutation(async ({ ctx, input }) => {
+      const [created] = await ctx.db
+        .insert(conversations)
+        .values({
+          userId: ctx.userId,
+          title: input.title ?? null,
+          scope: input.scope as Record<string, unknown> | null ?? null,
+        })
+        .returning();
+
+      if (!created) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create conversation" });
+
+      return {
+        id: created.id,
+        title: created.title,
+        scope: created.scope,
+        createdAt: created.createdAt.toISOString(),
+        updatedAt: created.updatedAt.toISOString(),
+      };
     }),
 
   sendMessage: publicProcedure
@@ -31,8 +45,13 @@ export const chatRouter = router({
         content: z.string().min(1),
       }),
     )
-    .mutation(({ input }) => {
-      const conversation = chatStore.getConversation(input.conversationId);
+    .mutation(async ({ ctx, input }) => {
+      const [conversation] = await ctx.db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.id, input.conversationId))
+        .limit(1);
+
       if (!conversation) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -40,12 +59,21 @@ export const chatRouter = router({
         });
       }
 
-      // Store user message (assistant response is handled via IPC streaming)
-      const userMessage = chatStore.addMessage(
-        input.conversationId,
-        "user",
-        input.content,
-      );
+      const [userMessage] = await ctx.db
+        .insert(messages)
+        .values({
+          conversationId: input.conversationId,
+          role: "user",
+          content: input.content,
+        })
+        .returning();
+
+      if (!userMessage) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to store message" });
+
+      await ctx.db
+        .update(conversations)
+        .set({ updatedAt: new Date() })
+        .where(eq(conversations.id, input.conversationId));
 
       return { messageId: userMessage.id };
     }),
@@ -59,28 +87,81 @@ export const chatRouter = router({
         })
         .default({}),
     )
-    .query(({ input }) => {
-      return chatStore.listConversations(input.limit, input.offset);
+    .query(async ({ ctx, input }) => {
+      const rows = await ctx.db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.userId, ctx.userId))
+        .orderBy(desc(conversations.updatedAt))
+        .limit(input.limit)
+        .offset(input.offset);
+
+      const allIds = await ctx.db
+        .select({ id: conversations.id })
+        .from(conversations)
+        .where(eq(conversations.userId, ctx.userId));
+
+      return {
+        conversations: rows.map((r) => ({
+          id: r.id,
+          title: r.title,
+          scope: r.scope,
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+        })),
+        total: allIds.length,
+      };
     }),
 
   getConversation: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .query(({ input }) => {
-      const conversation = chatStore.getConversation(input.id);
+    .query(async ({ ctx, input }) => {
+      const [conversation] = await ctx.db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.id, input.id))
+        .limit(1);
+
       if (!conversation) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: `Conversation not found: ${input.id}`,
         });
       }
-      const messages = chatStore.getMessages(input.id);
-      return { ...conversation, messages };
+
+      const msgs = await ctx.db
+        .select()
+        .from(messages)
+        .where(eq(messages.conversationId, input.id))
+        .orderBy(messages.createdAt);
+
+      return {
+        id: conversation.id,
+        title: conversation.title,
+        scope: conversation.scope,
+        createdAt: conversation.createdAt.toISOString(),
+        updatedAt: conversation.updatedAt.toISOString(),
+        messages: msgs.map((m) => ({
+          id: m.id,
+          conversationId: m.conversationId,
+          role: m.role,
+          content: m.content,
+          citations: m.citations,
+          modelUsed: m.modelUsed,
+          tokenCount: m.tokenCount,
+          createdAt: m.createdAt.toISOString(),
+        })),
+      };
     }),
 
   deleteConversation: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(({ input }) => {
-      const deleted = chatStore.deleteConversation(input.id);
+    .mutation(async ({ ctx, input }) => {
+      const [deleted] = await ctx.db
+        .delete(conversations)
+        .where(eq(conversations.id, input.id))
+        .returning({ id: conversations.id });
+
       if (!deleted) {
         throw new TRPCError({
           code: "NOT_FOUND",

@@ -18,6 +18,7 @@
     "package:publish": "electron-builder --publish always"
   },
   "dependencies": {
+    "@excalidraw/excalidraw": "^0.18.0",
     "@grpc/grpc-js": "^1.14.3",
     "@grpc/proto-loader": "^0.8.0",
     "@mixa-ai/content-processor": "workspace:^",
@@ -31,6 +32,7 @@
     "@xterm/addon-web-links": "^0.12.0",
     "@xterm/xterm": "^6.0.0",
     "electron-updater": "^6.8.3",
+    "lucide-react": "^0.575.0",
     "node-pty": "^1.1.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",

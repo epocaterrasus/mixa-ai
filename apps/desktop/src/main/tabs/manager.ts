@@ -33,6 +33,7 @@ export class TabManager {
   private mainWindow: BrowserWindow | null = null;
   private sidebarWidth = 0;
   private mediaBarHeight = 0;
+  private mediaBarPosition: "top" | "bottom" = "bottom";
   private configuredSessions = new WeakSet<Electron.Session>();
   private pageLoadedCallbacks: PageLoadedCallback[] = [];
   private tabDestroyedCallbacks: TabDestroyedCallback[] = [];
@@ -67,14 +68,20 @@ export class TabManager {
     this.updateActiveViewBounds();
   }
 
+  setMediaBarPosition(position: "top" | "bottom"): void {
+    this.mediaBarPosition = position;
+    this.updateActiveViewBounds();
+  }
+
   private getContentBounds(): ContentBounds {
     if (!this.mainWindow) {
       return { x: this.sidebarWidth, y: CHROME_HEIGHT, width: 800, height: 600 };
     }
     const { width, height } = this.mainWindow.getContentBounds();
+    const topOffset = this.mediaBarPosition === "top" ? this.mediaBarHeight : 0;
     return {
       x: this.sidebarWidth,
-      y: CHROME_HEIGHT,
+      y: CHROME_HEIGHT + topOffset,
       width: Math.max(0, width - this.sidebarWidth),
       height: Math.max(0, height - CHROME_HEIGHT - this.mediaBarHeight),
     };

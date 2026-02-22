@@ -1,8 +1,9 @@
 import { initTRPC, TRPCError } from "@trpc/server";
+import type { PgliteDbClient } from "@mixa-ai/db";
 
 export interface TRPCContext {
-  // Database client will be injected when PGlite is set up (MIXA-046)
-  // For now, context is empty — procedures are stubs
+  db: PgliteDbClient;
+  userId: string;
 }
 
 const t = initTRPC.context<TRPCContext>().create();

@@ -24,6 +24,7 @@ vi.mock("../tabs/manager.js", () => ({
     isAudible: vi.fn(),
     getWebContentsTitle: vi.fn(),
     setMediaBarHeight: vi.fn(),
+    setMediaBarPosition: vi.fn(),
   },
 }));
 
@@ -120,6 +121,7 @@ describe("MediaDetector", () => {
     expect(channels).toContain("media:execute-control");
     expect(channels).toContain("media:get-state");
     expect(channels).toContain("media:set-bar-height");
+    expect(channels).toContain("media:set-bar-position");
   });
 
   it("removes IPC handlers on destroy", () => {
@@ -128,6 +130,7 @@ describe("MediaDetector", () => {
     expect(channels).toContain("media:execute-control");
     expect(channels).toContain("media:get-state");
     expect(channels).toContain("media:set-bar-height");
+    expect(channels).toContain("media:set-bar-position");
   });
 
   describe("onPageLoaded", () => {
@@ -483,6 +486,24 @@ describe("MediaDetector", () => {
 
       handler!({}, 40);
       expect(tabManager.setMediaBarHeight).toHaveBeenCalledWith(40);
+    });
+  });
+
+  describe("IPC: media:set-bar-position", () => {
+    it("delegates to tabManager.setMediaBarPosition", () => {
+      const handler = getHandler("media:set-bar-position");
+      expect(handler).toBeDefined();
+
+      handler!({}, "top");
+      expect(tabManager.setMediaBarPosition).toHaveBeenCalledWith("top");
+    });
+
+    it("handles bottom position", () => {
+      const handler = getHandler("media:set-bar-position");
+      expect(handler).toBeDefined();
+
+      handler!({}, "bottom");
+      expect(tabManager.setMediaBarPosition).toHaveBeenCalledWith("bottom");
     });
   });
 

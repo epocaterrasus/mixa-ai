@@ -1,5 +1,7 @@
 import type { BrowserWindow } from "electron";
-import { captureStore, type CapturedItem } from "../capture/service.js";
+import { eq } from "drizzle-orm";
+import { items } from "@mixa-ai/db";
+import { getDb, getUserId } from "../db/index.js";
 import { tabManager } from "../tabs/manager.js";
 
 /** A related item found in the knowledge base for the current page */
@@ -82,22 +84,13 @@ export interface PageContext {
   description: string;
 }
 
+type ItemRow = typeof items.$inferSelect;
+
 /**
  * Score how related a captured item is to the current page.
  * Returns 0 if not related, up to 1.0 for exact URL match.
- *
- * Scoring factors:
- * - Exact URL match: 1.0
- * - Same domain: +0.3
- * - Title word overlap (ignoring stopwords): up to +0.35
- * - Description similarity: up to +0.2
- * - URL path segment overlap: up to +0.15
  */
-function scoreRelevance(
-  item: CapturedItem,
-  context: PageContext,
-): number {
-  // Exact URL match
+function scoreRelevance(item: ItemRow, context: PageContext): number {
   if (item.url === context.url) {
     return 1.0;
   }
@@ -105,12 +98,10 @@ function scoreRelevance(
   let score = 0;
   const pageDomain = extractDomain(context.url);
 
-  // Same domain bonus
   if (pageDomain && item.domain === pageDomain) {
     score += 0.3;
   }
 
-  // Title word overlap (ignoring stopwords)
   const pageWords = extractWords(context.title);
   const itemWords = extractWords(item.title);
   if (pageWords.size > 0 && itemWords.size > 0) {
@@ -124,11 +115,9 @@ function scoreRelevance(
     score += overlapRatio * 0.35;
   }
 
-  // Description/content similarity
   if (context.description.length > 10) {
     const descWords = extractWords(context.description);
     if (descWords.size > 0) {
-      // Check against item title and description
       const itemTextWords = new Set<string>();
       for (const w of itemWords) itemTextWords.add(w);
       if (item.description) {
@@ -148,7 +137,6 @@ function scoreRelevance(
     }
   }
 
-  // Content overlap with page title (check if item content mentions the page topic)
   if (item.contentText && context.title.length > 5) {
     const contentLower = item.contentText.toLowerCase();
     const titleLower = context.title.toLowerCase();
@@ -157,7 +145,6 @@ function scoreRelevance(
     }
   }
 
-  // URL path segment overlap
   const pageSegments = extractPathSegments(context.url);
   if (pageSegments.length > 0 && item.url) {
     const itemSegments = extractPathSegments(item.url);
@@ -173,10 +160,10 @@ function scoreRelevance(
     }
   }
 
-  return Math.min(score, 0.99); // Cap below exact match
+  return Math.min(score, 0.99);
 }
 
-function toRelatedItem(item: CapturedItem, score: number): RelatedItem {
+function toRelatedItem(item: ItemRow, score: number): RelatedItem {
   return {
     id: item.id,
     title: item.title,
@@ -184,7 +171,7 @@ function toRelatedItem(item: CapturedItem, score: number): RelatedItem {
     domain: item.domain,
     summary: item.description,
     score,
-    capturedAt: item.capturedAt,
+    capturedAt: item.capturedAt.toISOString(),
     itemType: item.itemType,
     faviconUrl: item.faviconUrl,
   };
@@ -193,15 +180,20 @@ function toRelatedItem(item: CapturedItem, score: number): RelatedItem {
 /**
  * Find items in the knowledge base related to the given page.
  */
-export function findRelatedItems(
+export async function findRelatedItems(
   context: PageContext,
   limit: number = 10,
   minScore: number = 0.2,
-): RelatedItem[] {
-  const allItems = captureStore.getAll();
+): Promise<RelatedItem[]> {
+  const db = getDb();
+  const allItems = await db
+    .select()
+    .from(items)
+    .where(eq(items.userId, getUserId()));
+
   if (allItems.length === 0) return [];
 
-  const scored: Array<{ item: CapturedItem; score: number }> = [];
+  const scored: Array<{ item: ItemRow; score: number }> = [];
 
   for (const item of allItems) {
     const score = scoreRelevance(item, context);
@@ -210,7 +202,6 @@ export function findRelatedItems(
     }
   }
 
-  // Sort by score descending
   scored.sort((a, b) => b.score - a.score);
 
   return scored.slice(0, limit).map((s) => toRelatedItem(s.item, s.score));
@@ -306,7 +297,7 @@ export class AugmentedBrowsingService {
       description: pageDescription,
     };
 
-    const relatedItems = findRelatedItems(context);
+    const relatedItems = await findRelatedItems(context);
     this.sendResult({ tabId, relatedItems });
   }
 

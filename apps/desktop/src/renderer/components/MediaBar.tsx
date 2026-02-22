@@ -1,4 +1,4 @@
-import type { MeetSessionInfo, AudioTabInfo, MeetControlAction } from "@mixa-ai/types";
+import type { MeetSessionInfo, AudioTabInfo, MeetControlAction, MediaBarPosition } from "@mixa-ai/types";
 import { useMediaBarStore } from "../stores/mediaBar";
 import { useTabStore } from "../stores/tabs";
 
@@ -15,14 +15,20 @@ function formatDuration(seconds: number): string {
   return `${mm}:${ss}`;
 }
 
+function getContainerBorder(position: MediaBarPosition): React.CSSProperties {
+  if (position === "top") {
+    return { borderBottom: "1px solid var(--mixa-border-subtle)" };
+  }
+  return { borderTop: "1px solid var(--mixa-border-subtle)" };
+}
+
 const styles = {
-  container: {
+  containerBase: {
     display: "flex",
     alignItems: "center",
     height: "40px",
     padding: "0 12px",
     backgroundColor: "var(--mixa-bg-elevated)",
-    borderTop: "1px solid var(--mixa-border-subtle)",
     gap: "12px",
     fontSize: "12px",
     color: "var(--mixa-text-primary)",
@@ -207,17 +213,27 @@ export function MediaBar(): React.ReactElement | null {
   const meetSessions = useMediaBarStore((s) => s.meetSessions);
   const audioTabs = useMediaBarStore((s) => s.audioTabs);
   const isCollapsed = useMediaBarStore((s) => s.isCollapsed);
+  const position = useMediaBarStore((s) => s.position);
   const toggle = useMediaBarStore((s) => s.toggle);
 
   const hasContent = meetSessions.length > 0 || audioTabs.length > 0;
 
   if (!hasContent) return null;
 
+  const containerStyle: React.CSSProperties = {
+    ...styles.containerBase,
+    ...getContainerBorder(position),
+  };
+
+  // Collapsed arrow direction: point toward expanded direction
+  const expandArrow = position === "top" ? "\u25BC" : "\u25B2";
+  const collapseArrow = position === "top" ? "\u25B2" : "\u25BC";
+
   if (isCollapsed) {
     return (
       <div
         style={{
-          ...styles.container,
+          ...containerStyle,
           height: "24px",
           justifyContent: "center",
           cursor: "pointer",
@@ -232,7 +248,7 @@ export function MediaBar(): React.ReactElement | null {
           {meetSessions.length > 0 ? `\uD83C\uDFA5 ${meetSessions.length} meeting${meetSessions.length > 1 ? "s" : ""}` : ""}
           {meetSessions.length > 0 && audioTabs.length > 0 ? " \u00B7 " : ""}
           {audioTabs.length > 0 ? `\uD83D\uDD0A ${audioTabs.length} playing` : ""}
-          {" \u25B2"}
+          {" "}{expandArrow}
         </span>
       </div>
     );
@@ -243,7 +259,7 @@ export function MediaBar(): React.ReactElement | null {
   const nonMeetAudioTabs = audioTabs.filter((t) => !meetTabIds.has(t.tabId));
 
   return (
-    <div style={styles.container} role="region" aria-label="Media bar">
+    <div style={containerStyle} role="region" aria-label="Media bar">
       {meetSessions.map((session) => (
         <div key={session.tabId} style={styles.meetSection}>
           <span style={styles.meetIcon}>{"\uD83C\uDFA5"}</span>
@@ -281,7 +297,7 @@ export function MediaBar(): React.ReactElement | null {
         title="Collapse media bar"
         aria-label="Collapse media bar"
       >
-        {"\u25BC"}
+        {collapseArrow}
       </button>
     </div>
   );

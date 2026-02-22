@@ -1,5 +1,6 @@
-// General settings section — auto-capture, browsing, search engine
+// General settings section — auto-capture, browsing, search engine, media bar
 
+import type { MediaBarPosition } from "@mixa-ai/types";
 import { useSettingsStore } from "../../stores/settings";
 
 const sectionTitleStyle: React.CSSProperties = {
@@ -111,6 +112,54 @@ function ToggleSwitch({
   );
 }
 
+const segmentedControlStyle: React.CSSProperties = {
+  display: "flex",
+  borderRadius: "6px",
+  overflow: "hidden",
+  border: "1px solid var(--mixa-border-default)",
+  flexShrink: 0,
+};
+
+function SegmentedControl({
+  value,
+  options,
+  onChange,
+  label,
+}: {
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (val: string) => void;
+  label: string;
+}): React.ReactElement {
+  return (
+    <div style={segmentedControlStyle} role="radiogroup" aria-label={label}>
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          role="radio"
+          aria-checked={value === opt.value}
+          onClick={() => onChange(opt.value)}
+          style={{
+            padding: "4px 12px",
+            border: "none",
+            backgroundColor: value === opt.value
+              ? "var(--mixa-accent-primary)"
+              : "var(--mixa-bg-elevated)",
+            color: value === opt.value ? "#fff" : "var(--mixa-text-secondary)",
+            fontSize: "12px",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            fontWeight: value === opt.value ? 500 : 400,
+          }}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function GeneralSection(): React.ReactElement {
   const {
     settings,
@@ -118,6 +167,8 @@ export function GeneralSection(): React.ReactElement {
     updateAutoCaptureMinSeconds,
     updateAugmentedBrowsing,
     updateDefaultSearchEngine,
+    updateMediaBarEnabled,
+    updateMediaBarPosition,
   } = useSettingsStore();
 
   if (!settings) return <div />;
@@ -199,6 +250,49 @@ export function GeneralSection(): React.ReactElement {
             label="Toggle augmented browsing"
           />
         </div>
+      </div>
+
+      {/* Media Bar */}
+      <div style={groupStyle}>
+        <div style={groupTitleStyle}>Media Bar</div>
+
+        <div style={toggleRowStyle}>
+          <div>
+            <div style={{ fontSize: "13px", fontWeight: 500 }}>
+              Enable Media Bar
+            </div>
+            <div style={{ fontSize: "12px", color: "var(--mixa-text-muted)" }}>
+              Show Google Meet controls and audio indicators
+            </div>
+          </div>
+          <ToggleSwitch
+            checked={settings.mediaBar.enabled}
+            onChange={(v) => void updateMediaBarEnabled(v)}
+            label="Toggle media bar"
+          />
+        </div>
+
+        {settings.mediaBar.enabled && (
+          <div style={toggleRowStyle}>
+            <div>
+              <div style={{ fontSize: "13px", fontWeight: 500 }}>
+                Position
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--mixa-text-muted)" }}>
+                Where the media bar appears in the window
+              </div>
+            </div>
+            <SegmentedControl
+              value={settings.mediaBar.position}
+              options={[
+                { value: "top", label: "Top" },
+                { value: "bottom", label: "Bottom" },
+              ]}
+              onChange={(v) => void updateMediaBarPosition(v as MediaBarPosition)}
+              label="Media bar position"
+            />
+          </div>
+        )}
       </div>
 
       {/* Search Engine */}

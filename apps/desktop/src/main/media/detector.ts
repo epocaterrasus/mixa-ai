@@ -208,6 +208,10 @@ export class MediaDetector {
     ipcMain.handle("media:set-bar-height", (_event, height: number) => {
       tabManager.setMediaBarHeight(height);
     });
+
+    ipcMain.handle("media:set-bar-position", (_event, position: string) => {
+      tabManager.setMediaBarPosition(position as "top" | "bottom");
+    });
   }
 
   destroy(): void {
@@ -221,6 +225,7 @@ export class MediaDetector {
     ipcMain.removeHandler("media:execute-control");
     ipcMain.removeHandler("media:get-state");
     ipcMain.removeHandler("media:set-bar-height");
+    ipcMain.removeHandler("media:set-bar-position");
   }
 }
 

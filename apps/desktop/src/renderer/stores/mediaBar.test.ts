@@ -25,6 +25,7 @@ describe("MediaBar Store", () => {
     mockExecuteControl.mockClear();
     useMediaBarStore.setState({
       isCollapsed: false,
+      position: "bottom",
       meetSessions: [],
       audioTabs: [],
     });
@@ -119,6 +120,23 @@ describe("MediaBar Store", () => {
       });
       useMediaBarStore.getState().updateMediaState([], []);
       expect(useMediaBarStore.getState().meetSessions).toEqual([]);
+    });
+  });
+
+  describe("position", () => {
+    it("defaults to bottom", () => {
+      expect(useMediaBarStore.getState().position).toBe("bottom");
+    });
+
+    it("can be set to top", () => {
+      useMediaBarStore.getState().setPosition("top");
+      expect(useMediaBarStore.getState().position).toBe("top");
+    });
+
+    it("can be set back to bottom", () => {
+      useMediaBarStore.getState().setPosition("top");
+      useMediaBarStore.getState().setPosition("bottom");
+      expect(useMediaBarStore.getState().position).toBe("bottom");
     });
   });
 

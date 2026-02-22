@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { eq, and, gte, lte, desc, asc, sql, count } from "drizzle-orm";
+import { items, tags, itemTags } from "@mixa-ai/db";
 import { router, publicProcedure, TRPCError } from "../trpc.js";
-import { captureStore, type CapturedItem } from "../../capture/service.js";
 
 const itemTypeSchema = z.enum([
   "article",
@@ -50,29 +50,44 @@ export interface ItemResponse {
   updatedAt: string;
 }
 
-function toItemResponse(item: CapturedItem): ItemResponse {
+type ItemRow = typeof items.$inferSelect;
+
+async function getItemTags(
+  db: Parameters<typeof publicProcedure.query>[0] extends never ? never : unknown,
+  itemId: string,
+): Promise<ItemTagResponse[]> {
+  const dbTyped = db as ReturnType<typeof import("../trpc.js")["publicProcedure"]["query"]> extends never ? never : import("@mixa-ai/db").PgliteDbClient;
+  const rows = await (dbTyped as import("@mixa-ai/db").PgliteDbClient)
+    .select({ id: tags.id, name: tags.name, color: tags.color })
+    .from(itemTags)
+    .innerJoin(tags, eq(itemTags.tagId, tags.id))
+    .where(eq(itemTags.itemId, itemId));
+  return rows;
+}
+
+function toItemResponse(row: ItemRow, itemTagList: ItemTagResponse[] = []): ItemResponse {
   return {
-    id: item.id,
-    url: item.url,
-    title: item.title,
-    description: item.description,
-    contentText: item.contentText,
-    contentHtml: item.contentHtml,
-    itemType: item.itemType,
-    sourceType: item.sourceType,
-    thumbnailUrl: item.thumbnailUrl,
-    faviconUrl: item.faviconUrl,
-    domain: item.domain,
-    wordCount: item.wordCount,
-    readingTime: item.readingTime,
-    summary: item.description,
-    isArchived: item.isArchived,
-    isFavorite: item.isFavorite,
-    tags: [],
+    id: row.id,
+    url: row.url,
+    title: row.title,
+    description: row.description,
+    contentText: row.contentText,
+    contentHtml: row.contentHtml,
+    itemType: row.itemType,
+    sourceType: row.sourceType,
+    thumbnailUrl: row.thumbnailUrl,
+    faviconUrl: row.faviconUrl,
+    domain: row.domain,
+    wordCount: row.wordCount,
+    readingTime: row.readingTime,
+    summary: row.summary,
+    isArchived: row.isArchived,
+    isFavorite: row.isFavorite,
+    tags: itemTagList,
     projectId: null,
-    capturedAt: item.capturedAt,
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
+    capturedAt: row.capturedAt.toISOString(),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
@@ -92,33 +107,32 @@ export const itemsRouter = router({
         domain: z.string().nullish(),
       }),
     )
-    .mutation(async ({ input }) => {
-      const now = new Date().toISOString();
-      const item: CapturedItem = {
-        id: randomUUID(),
-        url: input.url ?? null,
-        title: input.title,
-        description: input.description ?? null,
-        contentText: input.contentText ?? null,
-        contentHtml: input.contentHtml ?? null,
-        itemType: input.itemType,
-        sourceType: input.sourceType,
-        thumbnailUrl: input.thumbnailUrl ?? null,
-        faviconUrl: input.faviconUrl ?? null,
-        domain: input.domain ?? null,
-        wordCount: input.contentText
-          ? input.contentText.split(/\s+/).filter((w) => w.length > 0).length
-          : null,
-        readingTime: null,
-        isArchived: false,
-        isFavorite: false,
-        capturedAt: now,
-        createdAt: now,
-        updatedAt: now,
-      };
+    .mutation(async ({ ctx, input }) => {
+      const wordCount = input.contentText
+        ? input.contentText.split(/\s+/).filter((w) => w.length > 0).length
+        : null;
 
-      captureStore.add(item);
-      return toItemResponse(item);
+      const [created] = await ctx.db
+        .insert(items)
+        .values({
+          userId: ctx.userId,
+          url: input.url ?? null,
+          title: input.title,
+          description: input.description ?? null,
+          contentText: input.contentText ?? null,
+          contentHtml: input.contentHtml ?? null,
+          itemType: input.itemType,
+          sourceType: input.sourceType,
+          thumbnailUrl: input.thumbnailUrl ?? null,
+          faviconUrl: input.faviconUrl ?? null,
+          domain: input.domain ?? null,
+          wordCount,
+          readingTime: null,
+        })
+        .returning();
+
+      if (!created) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create item" });
+      return toItemResponse(created);
     }),
 
   list: publicProcedure
@@ -137,54 +151,71 @@ export const itemsRouter = router({
         sortOrder: z.enum(["asc", "desc"]).default("desc"),
       }),
     )
-    .query(async ({ input }) => {
-      let items = captureStore.getAll();
+    .query(async ({ ctx, input }) => {
+      const conditions = [eq(items.userId, ctx.userId)];
 
-      // Filter
       if (input.itemType) {
-        items = items.filter((i) => i.itemType === input.itemType);
+        conditions.push(eq(items.itemType, input.itemType));
       }
       if (input.isFavorite !== undefined) {
-        items = items.filter((i) => i.isFavorite === input.isFavorite);
+        conditions.push(eq(items.isFavorite, input.isFavorite));
       }
       if (input.isArchived !== undefined) {
-        items = items.filter((i) => i.isArchived === input.isArchived);
+        conditions.push(eq(items.isArchived, input.isArchived));
       }
       if (input.dateFrom) {
-        items = items.filter((i) => i.capturedAt >= input.dateFrom!);
+        conditions.push(gte(items.capturedAt, new Date(input.dateFrom)));
       }
       if (input.dateTo) {
-        items = items.filter((i) => i.capturedAt <= input.dateTo!);
+        conditions.push(lte(items.capturedAt, new Date(input.dateTo)));
       }
 
-      // Sort
-      const sortDir = input.sortOrder === "asc" ? 1 : -1;
-      items.sort((a, b) => {
-        const aVal = a[input.sortBy] ?? "";
-        const bVal = b[input.sortBy] ?? "";
-        return aVal < bVal ? -sortDir : aVal > bVal ? sortDir : 0;
-      });
+      const where = and(...conditions);
+      const sortCol = input.sortBy === "title" ? items.title
+        : input.sortBy === "updatedAt" ? items.updatedAt
+        : items.capturedAt;
+      const orderFn = input.sortOrder === "asc" ? asc : desc;
 
-      const total = items.length;
-      const sliced = items.slice(input.offset, input.offset + input.limit);
+      const [rows, [totalRow]] = await Promise.all([
+        ctx.db
+          .select()
+          .from(items)
+          .where(where)
+          .orderBy(orderFn(sortCol))
+          .limit(input.limit)
+          .offset(input.offset),
+        ctx.db
+          .select({ count: count() })
+          .from(items)
+          .where(where),
+      ]);
 
       return {
-        items: sliced.map(toItemResponse),
-        total,
+        items: rows.map((row) => toItemResponse(row)),
+        total: totalRow?.count ?? 0,
       };
     }),
 
   get: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .query(async ({ input }) => {
-      const item = captureStore.getById(input.id);
-      if (!item) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: `Item not found: ${input.id}`,
-        });
+    .query(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .select()
+        .from(items)
+        .where(eq(items.id, input.id))
+        .limit(1);
+
+      if (!row) {
+        throw new TRPCError({ code: "NOT_FOUND", message: `Item not found: ${input.id}` });
       }
-      return toItemResponse(item);
+
+      const itemTagList = await ctx.db
+        .select({ id: tags.id, name: tags.name, color: tags.color })
+        .from(itemTags)
+        .innerJoin(tags, eq(itemTags.tagId, tags.id))
+        .where(eq(itemTags.itemId, input.id));
+
+      return toItemResponse(row, itemTagList);
     }),
 
   update: publicProcedure
@@ -198,45 +229,57 @@ export const itemsRouter = router({
         summary: z.string().nullish(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...updates } = input;
-      const updated = captureStore.update(id, updates);
+      const setValues: Record<string, unknown> = { updatedAt: new Date() };
+      if (updates.title !== undefined) setValues["title"] = updates.title;
+      if (updates.description !== undefined) setValues["description"] = updates.description;
+      if (updates.isFavorite !== undefined) setValues["isFavorite"] = updates.isFavorite;
+      if (updates.isArchived !== undefined) setValues["isArchived"] = updates.isArchived;
+      if (updates.summary !== undefined) setValues["summary"] = updates.summary;
+
+      const [updated] = await ctx.db
+        .update(items)
+        .set(setValues)
+        .where(eq(items.id, id))
+        .returning();
+
       if (!updated) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: `Item not found: ${id}`,
-        });
+        throw new TRPCError({ code: "NOT_FOUND", message: `Item not found: ${id}` });
       }
       return toItemResponse(updated);
     }),
 
   delete: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      const deleted = captureStore.delete(input.id);
+    .mutation(async ({ ctx, input }) => {
+      const [deleted] = await ctx.db
+        .delete(items)
+        .where(eq(items.id, input.id))
+        .returning({ id: items.id });
+
       if (!deleted) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: `Item not found: ${input.id}`,
-        });
+        throw new TRPCError({ code: "NOT_FOUND", message: `Item not found: ${input.id}` });
       }
       return { success: true };
     }),
 
   stats: publicProcedure
-    .query(async () => {
-      const items = captureStore.getAll();
-      const total = items.length;
+    .query(async ({ ctx }) => {
+      const allItems = await ctx.db
+        .select()
+        .from(items)
+        .where(eq(items.userId, ctx.userId));
 
-      // Reading time totals
+      const total = allItems.length;
+
       let totalReadingTime = 0;
       let totalWordCount = 0;
-      for (const item of items) {
+      for (const item of allItems) {
         totalReadingTime += item.readingTime ?? 0;
         totalWordCount += item.wordCount ?? 0;
       }
 
-      // Items per day (last 30 days)
       const now = new Date();
       const thirtyDaysAgo = new Date(now);
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -246,8 +289,8 @@ export const itemsRouter = router({
         date.setDate(date.getDate() + d);
         dailyCounts[date.toISOString().slice(0, 10)] = 0;
       }
-      for (const item of items) {
-        const day = item.capturedAt.slice(0, 10);
+      for (const item of allItems) {
+        const day = item.capturedAt.toISOString().slice(0, 10);
         const current = dailyCounts[day];
         if (current !== undefined) {
           dailyCounts[day] = current + 1;
@@ -255,11 +298,10 @@ export const itemsRouter = router({
       }
       const capturesPerDay = Object.entries(dailyCounts)
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([date, count]) => ({ date, count }));
+        .map(([date, cnt]) => ({ date, count: cnt }));
 
-      // Top domains
       const domainCounts: Record<string, number> = {};
-      for (const item of items) {
+      for (const item of allItems) {
         if (item.domain) {
           domainCounts[item.domain] = (domainCounts[item.domain] ?? 0) + 1;
         }
@@ -267,30 +309,27 @@ export const itemsRouter = router({
       const topDomains = Object.entries(domainCounts)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 10)
-        .map(([domain, count]) => ({ domain, count }));
+        .map(([domain, cnt]) => ({ domain, count: cnt }));
 
-      // Item type breakdown
       const typeCounts: Record<string, number> = {};
-      for (const item of items) {
+      for (const item of allItems) {
         typeCounts[item.itemType] = (typeCounts[item.itemType] ?? 0) + 1;
       }
       const typeBreakdown = Object.entries(typeCounts)
         .sort(([, a], [, b]) => b - a)
-        .map(([itemType, count]) => ({ itemType, count }));
+        .map(([itemType, cnt]) => ({ itemType, count: cnt }));
 
-      // Favorites count
-      const favoritesCount = items.filter((i) => i.isFavorite).length;
+      const favoritesCount = allItems.filter((i) => i.isFavorite).length;
 
-      // Recent captures (last 10)
-      const recentCaptures = [...items]
-        .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
+      const recentCaptures = [...allItems]
+        .sort((a, b) => b.capturedAt.getTime() - a.capturedAt.getTime())
         .slice(0, 10)
         .map((item) => ({
           id: item.id,
           title: item.title,
           domain: item.domain,
           itemType: item.itemType,
-          capturedAt: item.capturedAt,
+          capturedAt: item.capturedAt.toISOString(),
           readingTime: item.readingTime,
           faviconUrl: item.faviconUrl,
         }));
@@ -315,9 +354,14 @@ export const itemsRouter = router({
         itemType: itemTypeSchema.optional(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const query = input.query.toLowerCase();
-      let items = captureStore.getAll().filter((item) => {
+      let allItems = await ctx.db
+        .select()
+        .from(items)
+        .where(eq(items.userId, ctx.userId));
+
+      allItems = allItems.filter((item) => {
         const titleMatch = item.title.toLowerCase().includes(query);
         const contentMatch = item.contentText?.toLowerCase().includes(query) ?? false;
         const domainMatch = item.domain?.toLowerCase().includes(query) ?? false;
@@ -325,12 +369,12 @@ export const itemsRouter = router({
       });
 
       if (input.itemType) {
-        items = items.filter((i) => i.itemType === input.itemType);
+        allItems = allItems.filter((i) => i.itemType === input.itemType);
       }
 
       return {
-        items: items.slice(0, input.limit).map(toItemResponse),
-        total: items.length,
+        items: allItems.slice(0, input.limit).map((row) => toItemResponse(row)),
+        total: allItems.length,
       };
     }),
 });

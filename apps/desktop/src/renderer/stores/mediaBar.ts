@@ -1,9 +1,11 @@
 import { create } from "zustand";
-import type { MeetSessionInfo, AudioTabInfo, MeetControlAction } from "@mixa-ai/types";
+import type { MeetSessionInfo, AudioTabInfo, MeetControlAction, MediaBarPosition } from "@mixa-ai/types";
 
 interface MediaBarState {
   /** Whether the media bar is collapsed */
   isCollapsed: boolean;
+  /** Position of the media bar (top or bottom) */
+  position: MediaBarPosition;
   /** Active Google Meet sessions */
   meetSessions: MeetSessionInfo[];
   /** Tabs currently playing audio (excluding Meet tabs) */
@@ -12,6 +14,7 @@ interface MediaBarState {
   // Actions
   toggle: () => void;
   setCollapsed: (collapsed: boolean) => void;
+  setPosition: (position: MediaBarPosition) => void;
   updateMediaState: (meetSessions: MeetSessionInfo[], audioTabs: AudioTabInfo[]) => void;
   executeControl: (tabId: string, action: MeetControlAction) => Promise<boolean>;
 }
@@ -32,6 +35,7 @@ function loadCollapsed(): boolean {
 
 export const useMediaBarStore = create<MediaBarState>((set, get) => ({
   isCollapsed: loadCollapsed(),
+  position: "bottom",
   meetSessions: [],
   audioTabs: [],
 
@@ -44,6 +48,10 @@ export const useMediaBarStore = create<MediaBarState>((set, get) => ({
   setCollapsed: (isCollapsed) => {
     set({ isCollapsed });
     try { localStorage.setItem(STORAGE_KEY, String(isCollapsed)); } catch { /* ignore */ }
+  },
+
+  setPosition: (position) => {
+    set({ position });
   },
 
   updateMediaState: (meetSessions, audioTabs) => {

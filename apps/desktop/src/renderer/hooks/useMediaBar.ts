@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useMediaBarStore } from "../stores/mediaBar";
+import { useSettingsStore } from "../stores/settings";
 
 /** Height of the media bar when visible (in pixels) */
 const MEDIA_BAR_HEIGHT = 40;
@@ -8,14 +9,25 @@ const COLLAPSED_HEIGHT = 24;
 
 /**
  * Hook that subscribes to media state updates from the main process
- * and syncs media bar height to the main process for BrowserView bounds.
+ * and syncs media bar height and position to the main process for BrowserView bounds.
  */
 export function useMediaBar(): void {
   const updateMediaState = useMediaBarStore((s) => s.updateMediaState);
+  const setPosition = useMediaBarStore((s) => s.setPosition);
   const meetSessions = useMediaBarStore((s) => s.meetSessions);
   const audioTabs = useMediaBarStore((s) => s.audioTabs);
   const isCollapsed = useMediaBarStore((s) => s.isCollapsed);
+  const position = useMediaBarStore((s) => s.position);
   const prevHeight = useRef(0);
+  const prevPosition = useRef(position);
+
+  // Sync position from settings store when settings load
+  const settingsPosition = useSettingsStore((s) => s.settings?.mediaBar.position);
+  useEffect(() => {
+    if (settingsPosition && settingsPosition !== position) {
+      setPosition(settingsPosition);
+    }
+  }, [settingsPosition, setPosition, position]);
 
   // Subscribe to media state updates from main process
   useEffect(() => {
@@ -38,4 +50,12 @@ export function useMediaBar(): void {
       void window.electronAPI.media.setBarHeight(currentHeight);
     }
   }, [currentHeight]);
+
+  // Sync position to main process when it changes
+  useEffect(() => {
+    if (prevPosition.current !== position) {
+      prevPosition.current = position;
+      void window.electronAPI.media.setBarPosition(position);
+    }
+  }, [position]);
 }

@@ -1,6 +1,3 @@
-// Chat IPC handler for streaming message responses
-// Uses dedicated IPC events (not tRPC) for token streaming
-
 import { ipcMain, type WebContents } from "electron";
 import * as chatStore from "./store.js";
 
@@ -21,7 +18,6 @@ async function streamPlaceholderResponse(
   conversationId: string,
   messageId: string,
 ): Promise<void> {
-  // Stream the placeholder response word by word
   const words = PLACEHOLDER_RESPONSE.split(" ");
   let accumulated = "";
 
@@ -43,7 +39,6 @@ async function streamPlaceholderResponse(
     await sleep(20);
   }
 
-  // Final chunk
   if (!sender.isDestroyed()) {
     sender.send("chat:stream-chunk", {
       conversationId,
@@ -54,8 +49,7 @@ async function streamPlaceholderResponse(
     });
   }
 
-  // Store the complete assistant message
-  chatStore.addMessage(conversationId, "assistant", accumulated, [], "placeholder");
+  await chatStore.addMessage(conversationId, "assistant", accumulated, [], "placeholder");
 }
 
 export function setupChatHandlers(): void {
@@ -67,19 +61,15 @@ export function setupChatHandlers(): void {
     ): Promise<{ userMessageId: string; assistantMessageId: string }> => {
       const { conversationId, content } = data;
 
-      // Verify conversation exists
-      const conversation = chatStore.getConversation(conversationId);
+      const conversation = await chatStore.getConversation(conversationId);
       if (!conversation) {
         throw new Error(`Conversation not found: ${conversationId}`);
       }
 
-      // Store user message
-      const userMessage = chatStore.addMessage(conversationId, "user", content);
+      const userMessage = await chatStore.addMessage(conversationId, "user", content);
 
-      // Create placeholder for assistant message
       const assistantMessageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-      // Stream response asynchronously
       void streamPlaceholderResponse(
         event.sender,
         conversationId,

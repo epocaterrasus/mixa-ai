@@ -17,3 +17,6 @@ export {
 } from "./themes";
 
 export type { ThemeToken, ThemeColors } from "./themes";
+
+export { Icon, ICON_MAP } from "./icons";
+export type { IconName, IconProps } from "./icons";

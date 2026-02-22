@@ -1,4 +1,7 @@
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
+import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
+import { PGlite } from "@electric-sql/pglite";
+import { vector } from "@electric-sql/pglite/vector";
 import postgres from "postgres";
 import * as schema from "./schema/index.js";
 
@@ -15,14 +18,29 @@ function getConnectionString(): string {
 }
 
 /**
- * Create a database client. Call this once at app startup.
- * The returned object includes the Drizzle client and a close function.
+ * Create a database client backed by an external PostgreSQL instance.
+ * Used by drizzle-kit CLI and optional Docker workflow.
  */
 export function createDbClient(connectionString?: string) {
   const url = connectionString ?? getConnectionString();
   const sql = postgres(url);
-  const db = drizzle(sql, { schema });
+  const db = drizzlePg(sql, { schema });
   return { db, sql };
 }
 
-export type DbClient = ReturnType<typeof createDbClient>["db"];
+/**
+ * Create an embedded PGlite database client with pgvector extension.
+ * Pass a filesystem path for persistent storage, or omit for in-memory.
+ */
+export async function createPgliteClient(dataDir?: string) {
+  const client = new PGlite({
+    dataDir,
+    extensions: { vector },
+  });
+  await client.waitReady;
+  const db = drizzlePglite({ client, schema });
+  return { db, client };
+}
+
+export type PgliteDbClient = Awaited<ReturnType<typeof createPgliteClient>>["db"];
+export type DbClient = PgliteDbClient;

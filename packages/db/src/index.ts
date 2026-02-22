@@ -14,6 +14,9 @@ export {
   messages,
 } from "./schema/index.js";
 
+// All schema as a namespace for Drizzle client initialization
+export * as schema from "./schema/index.js";
+
 // Client exports
-export { createDbClient } from "./client.js";
-export type { DbClient } from "./client.js";
+export { createDbClient, createPgliteClient } from "./client.js";
+export type { DbClient, PgliteDbClient } from "./client.js";

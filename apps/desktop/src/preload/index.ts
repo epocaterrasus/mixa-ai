@@ -407,6 +407,9 @@ const electronAPI = {
     setBarHeight: (height: number): Promise<void> =>
       ipcRenderer.invoke("media:set-bar-height", height),
 
+    setBarPosition: (position: string): Promise<void> =>
+      ipcRenderer.invoke("media:set-bar-position", position),
+
     getState: (): Promise<{
       meetSessions: Array<{
         tabId: string;
