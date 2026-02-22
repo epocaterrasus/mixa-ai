@@ -294,9 +294,9 @@ export function setupChatHandlers(): void {
     "chat:send-message",
     async (
       event,
-      data: { conversationId: string; content: string },
+      data: { conversationId: string; content: string; modelOverride?: string },
     ): Promise<{ userMessageId: string; assistantMessageId: string }> => {
-      const { conversationId, content } = data;
+      const { conversationId, content, modelOverride } = data;
 
       const conversation = await chatStore.getConversation(conversationId);
       if (!conversation) {
@@ -313,6 +313,7 @@ export function setupChatHandlers(): void {
         assistantMessageId,
         content,
         conversation.scope as ChatScope | null,
+        modelOverride,
       );
 
       return {

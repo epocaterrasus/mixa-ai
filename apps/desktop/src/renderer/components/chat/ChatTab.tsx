@@ -7,6 +7,7 @@ import { MessageList } from "./MessageList";
 import { MessageInput } from "./MessageInput";
 import { ConversationSidebar } from "./ConversationSidebar";
 import { ScopeSelector } from "./ScopeSelector";
+import { ModelSelector } from "./ModelSelector";
 
 const containerStyle: React.CSSProperties = {
   display: "flex",
@@ -223,6 +224,7 @@ export function ChatTab(): React.ReactElement {
             )}
           </div>
           <div style={toolbarRightStyle}>
+            <ModelSelector />
             <ScopeSelector scope={scope} onChange={setScope} />
             <button
               type="button"

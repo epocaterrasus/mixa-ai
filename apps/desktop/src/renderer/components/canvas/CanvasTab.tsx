@@ -1,7 +1,7 @@
 // Canvas tab — Excalidraw visual workspace with auto-save, export, and tab embedding
 
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
-import { Excalidraw, exportToSvg, exportToBlob, serializeAsJSON } from "@excalidraw/excalidraw";
+import { Excalidraw, exportToSvg, exportToBlob, serializeAsJSON, convertToExcalidrawElements } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import type { ExcalidrawImperativeAPI, AppState, BinaryFiles } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
@@ -352,53 +352,53 @@ export function CanvasTab(): React.ReactElement {
       const currentElements = excalidrawRef.current.getSceneElements();
       const ts = Date.now();
 
-      const rectElement: Record<string, unknown> = {
-        id: `embed-${tabId}-${ts}`,
-        type: "rectangle",
-        x: sceneX,
-        y: sceneY,
-        width: 320,
-        height: 200,
-        strokeColor: resolvedMode === "dark" ? "#a5a5a5" : "#333333",
-        backgroundColor: resolvedMode === "dark" ? "#2a2a2a" : "#f5f5f5",
-        fillStyle: "solid",
-        strokeWidth: 2,
-        roughness: 0,
-        roundness: { type: 3 },
-        customData: {
-          embeddedTabId: tabId,
-          embeddedTabUrl: tab.url,
-          embeddedTabTitle: tab.title,
-          embeddedTabType: tab.type,
-          embedMode: "snapshot",
-        },
-      };
-
-      const labelElement: Record<string, unknown> = {
-        id: `embed-label-${tabId}-${ts}`,
-        type: "text",
-        x: sceneX + 10,
-        y: sceneY + 10,
-        width: 300,
-        height: 30,
-        text: `${tab.title}\n${descriptionForTab(tab.type, tab.url)}`,
-        fontSize: 14,
-        fontFamily: 1,
-        textAlign: "left",
-        verticalAlign: "top",
-        strokeColor: resolvedMode === "dark" ? "#e0e0e0" : "#1a1a1a",
-        customData: {
-          embeddedTabId: tabId,
-          isLabel: true,
-        },
-      };
+      const newElements = convertToExcalidrawElements(
+        [
+          {
+            type: "rectangle",
+            id: `embed-${tabId}-${ts}`,
+            x: sceneX,
+            y: sceneY,
+            width: 320,
+            height: 200,
+            strokeColor: resolvedMode === "dark" ? "#a5a5a5" : "#333333",
+            backgroundColor: resolvedMode === "dark" ? "#2a2a2a" : "#f5f5f5",
+            fillStyle: "solid",
+            strokeWidth: 2,
+            roughness: 0,
+            roundness: { type: 3 },
+            customData: {
+              embeddedTabId: tabId,
+              embeddedTabUrl: tab.url,
+              embeddedTabTitle: tab.title,
+              embeddedTabType: tab.type,
+              embedMode: "snapshot",
+            },
+          },
+          {
+            type: "text",
+            id: `embed-label-${tabId}-${ts}`,
+            x: sceneX + 10,
+            y: sceneY + 10,
+            width: 300,
+            height: 30,
+            text: `${tab.title}\n${descriptionForTab(tab.type, tab.url)}`,
+            fontSize: 14,
+            fontFamily: 1,
+            textAlign: "left" as const,
+            verticalAlign: "top" as const,
+            strokeColor: resolvedMode === "dark" ? "#e0e0e0" : "#1a1a1a",
+            customData: {
+              embeddedTabId: tabId,
+              isLabel: true,
+            },
+          },
+        ],
+        { regenerateIds: false },
+      );
 
       excalidrawRef.current.updateScene({
-        elements: [
-          ...currentElements,
-          rectElement as unknown as ExcalidrawElement,
-          labelElement as unknown as ExcalidrawElement,
-        ],
+        elements: [...currentElements, ...newElements],
       });
     },
     [tabs, resolvedMode],
