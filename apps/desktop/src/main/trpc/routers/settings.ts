@@ -53,7 +53,7 @@ const defaultSettings: UserSettings = {
         selectedModel: "claude-sonnet-4-20250514",
         availableModels: [
           "claude-sonnet-4-20250514",
-          "claude-haiku-4-5-20251001",
+          "claude-haiku-4-20250414",
         ],
         isActive: false,
         baseUrl: null,

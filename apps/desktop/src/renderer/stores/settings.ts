@@ -241,17 +241,26 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
     try {
       await trpc.settings.setApiKey.mutate({ provider, apiKey });
-      // Update local state to reflect key is now configured
+
+      const noActiveProvider = !settings.llm.providers.some((p) => p.isActive);
+
       const updated = {
         ...settings,
         llm: {
           ...settings.llm,
           providers: settings.llm.providers.map((p) =>
-            p.name === provider ? { ...p, apiKeyConfigured: true } : p,
+            p.name === provider
+              ? { ...p, apiKeyConfigured: true, isActive: noActiveProvider ? true : p.isActive }
+              : p,
           ),
         },
       };
       set({ settings: updated });
+
+      // Auto-activate this provider if none was active
+      if (noActiveProvider) {
+        await get().setActiveProvider(provider);
+      }
     } catch (err) {
       set({ error: err instanceof Error ? err.message : "Failed to store API key" });
     }

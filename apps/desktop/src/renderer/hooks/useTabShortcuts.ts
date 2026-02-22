@@ -128,6 +128,21 @@ export function useTabShortcuts(): void {
         return;
       }
 
+      // Cmd+Shift+T: Open new terminal tab
+      if (e.key === "t" && e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        addTab("terminal");
+        return;
+      }
+
+      // Cmd+,: Open settings (switch to existing or create new)
+      if (e.key === "," && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        const state = useTabStore.getState();
+        state.switchOrCreateTab("settings");
+        return;
+      }
+
       // Cmd+Shift+E: Open new canvas tab
       if (e.key === "e" && e.shiftKey && !e.altKey) {
         e.preventDefault();

@@ -21,6 +21,7 @@
     "@excalidraw/excalidraw": "^0.18.0",
     "@grpc/grpc-js": "^1.14.3",
     "@grpc/proto-loader": "^0.8.0",
+    "@mixa-ai/ai-pipeline": "workspace:^",
     "@mixa-ai/content-processor": "workspace:^",
     "@mixa-ai/db": "workspace:^",
     "@mixa-ai/terminal-renderer": "workspace:*",

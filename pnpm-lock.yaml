@@ -45,6 +45,9 @@ importers:
       '@grpc/proto-loader':
         specifier: ^0.8.0
         version: 0.8.0
+      '@mixa-ai/ai-pipeline':
+        specifier: workspace:^
+        version: link:../../packages/ai-pipeline
       '@mixa-ai/content-processor':
         specifier: workspace:^
         version: link:../../packages/content-processor
