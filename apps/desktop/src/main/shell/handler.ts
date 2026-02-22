@@ -4,11 +4,12 @@
 import { ipcMain, type WebContents } from "electron";
 import * as pty from "node-pty";
 import { platform, homedir } from "node:os";
+import { existsSync } from "node:fs";
 
 /** Active PTY process tracked per shell tab */
 interface ActiveShell {
   process: pty.IPty;
-  module: string; // always "shell" for tracking
+  module: string;
 }
 
 /** Map of shellId (tabId) → active PTY process */
@@ -39,11 +40,34 @@ interface ShellDestroyRequest {
   shellId: string;
 }
 
-function getDefaultShell(): string {
+interface ShellCreateResult {
+  success: boolean;
+  error?: string;
+}
+
+const UNIX_SHELL_CANDIDATES = ["/bin/zsh", "/bin/bash", "/bin/sh"];
+
+function getShellCandidates(): string[] {
   if (platform() === "win32") {
-    return process.env["COMSPEC"] || "cmd.exe";
+    return [process.env["COMSPEC"] || "cmd.exe"];
   }
-  return process.env["SHELL"] || "/bin/zsh";
+
+  const preferred = process.env["SHELL"];
+  const candidates = preferred
+    ? [preferred, ...UNIX_SHELL_CANDIDATES.filter((s) => s !== preferred)]
+    : UNIX_SHELL_CANDIDATES;
+
+  return candidates.filter((s) => existsSync(s));
+}
+
+function buildCleanEnv(): Record<string, string> {
+  const clean: Record<string, string> = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined) {
+      clean[key] = value;
+    }
+  }
+  return clean;
 }
 
 function createShell(
@@ -51,37 +75,61 @@ function createShell(
   shellId: string,
   cols: number,
   rows: number,
-): void {
-  // Destroy any existing shell for this tab
+): ShellCreateResult {
   destroyShell(shellId);
 
-  const shell = getDefaultShell();
+  const candidates = getShellCandidates();
+  if (candidates.length === 0) {
+    const msg = "No shell executable found on this system";
+    console.error(`[shell] ${msg}`);
+    return { success: false, error: msg };
+  }
+
   const home = homedir();
+  const env = buildCleanEnv();
+  const safeCols = Math.max(cols, 1);
+  const safeRows = Math.max(rows, 1);
 
-  const ptyProcess = pty.spawn(shell, [], {
-    name: "xterm-256color",
-    cols: Math.max(cols, 1),
-    rows: Math.max(rows, 1),
-    cwd: home,
-    env: { ...process.env } as Record<string, string>,
-  });
+  let lastError: Error | undefined;
 
-  activeShells.set(shellId, { process: ptyProcess, module: "shell" });
+  for (const shell of candidates) {
+    try {
+      const ptyProcess = pty.spawn(shell, [], {
+        name: "xterm-256color",
+        cols: safeCols,
+        rows: safeRows,
+        cwd: home,
+        env,
+      });
 
-  ptyProcess.onData((data: string) => {
-    if (sender.isDestroyed()) {
-      destroyShell(shellId);
-      return;
+      activeShells.set(shellId, { process: ptyProcess, module: "shell" });
+
+      ptyProcess.onData((data: string) => {
+        if (sender.isDestroyed()) {
+          destroyShell(shellId);
+          return;
+        }
+        sender.send("shell:data", { shellId, data });
+      });
+
+      ptyProcess.onExit(({ exitCode, signal }) => {
+        activeShells.delete(shellId);
+        if (!sender.isDestroyed()) {
+          sender.send("shell:exit", { shellId, exitCode, signal });
+        }
+      });
+
+      console.log(`[shell] Spawned ${shell} for ${shellId}`);
+      return { success: true };
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.warn(`[shell] Failed to spawn ${shell}: ${lastError.message}`);
     }
-    sender.send("shell:data", { shellId, data });
-  });
+  }
 
-  ptyProcess.onExit(({ exitCode, signal }) => {
-    activeShells.delete(shellId);
-    if (!sender.isDestroyed()) {
-      sender.send("shell:exit", { shellId, exitCode, signal });
-    }
-  });
+  const msg = `Failed to spawn shell (tried ${candidates.join(", ")}): ${lastError?.message ?? "unknown error"}`;
+  console.error(`[shell] ${msg}`);
+  return { success: false, error: msg };
 }
 
 function destroyShell(shellId: string): void {
@@ -93,11 +141,10 @@ function destroyShell(shellId: string): void {
 }
 
 export function setupShellHandlers(): void {
-  // Create a new PTY process for a shell tab
   ipcMain.handle(
     "shell:create",
-    (event, data: ShellCreateRequest): void => {
-      createShell(event.sender, data.shellId, data.cols, data.rows);
+    (_event, data: ShellCreateRequest): ShellCreateResult => {
+      return createShell(_event.sender, data.shellId, data.cols, data.rows);
     },
   );
 

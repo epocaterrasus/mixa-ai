@@ -393,6 +393,7 @@ export function CanvasTab(): React.ReactElement {
               y: sceneY,
               width,
               height,
+              link: tab.url,
               customData: {
                 embeddedTabId: tabId,
                 embeddedTabUrl: tab.url,
@@ -441,6 +442,7 @@ export function CanvasTab(): React.ReactElement {
               strokeWidth: 2,
               roughness: 0,
               roundness: { type: 3 },
+              link: tab.url,
               customData: {
                 embeddedTabId: tabId,
                 embeddedTabUrl: tab.url,
@@ -526,6 +528,32 @@ export function CanvasTab(): React.ReactElement {
       }
     },
     [embedTabAtPosition],
+  );
+
+  // ─── Click-to-navigate for embedded tabs ────────────────────
+
+  const handleLinkOpen = useCallback(
+    (
+      element: ExcalidrawElement,
+      event: CustomEvent<{ nativeEvent: MouseEvent | React.PointerEvent<HTMLCanvasElement> }>,
+    ) => {
+      const embeddedTabId = (element.customData as Record<string, unknown> | undefined)?.["embeddedTabId"];
+      if (typeof embeddedTabId === "string") {
+        event.preventDefault();
+        const tabExists = tabs.some((t) => t.id === embeddedTabId);
+        if (tabExists) {
+          activateTab(embeddedTabId);
+        } else {
+          // Tab was closed — open the URL in a new tab instead
+          const url = element.link;
+          if (url) {
+            const newTabId = addTab("web", url);
+            activateTab(newTabId);
+          }
+        }
+      }
+    },
+    [tabs, activateTab, addTab],
   );
 
   // ─── Keyboard save ──────────────────────────────────────────

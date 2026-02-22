@@ -13,6 +13,7 @@ interface ElectronTabsAPI {
   readonly stopFindInPage: (tabId: string) => Promise<void>;
   readonly hideActiveView: () => Promise<void>;
   readonly showActiveView: () => Promise<void>;
+  readonly captureScreenshot: (tabId: string) => Promise<string | null>;
 
   readonly onLoading: (callback: (data: { tabId: string; loading: boolean }) => void) => () => void;
   readonly onStateChanged: (callback: (data: { tabId: string; state: string; error?: string }) => void) => () => void;

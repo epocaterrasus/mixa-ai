@@ -235,7 +235,7 @@ const electronAPI = {
 
   // Shell (xterm.js + node-pty) IPC
   shell: {
-    create: (shellId: string, cols: number, rows: number): Promise<void> =>
+    create: (shellId: string, cols: number, rows: number): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke("shell:create", { shellId, cols, rows }),
 
     write: (shellId: string, data: string): Promise<void> =>
