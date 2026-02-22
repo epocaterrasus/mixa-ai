@@ -442,8 +442,9 @@ function SidebarTabItem({
   );
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       draggable
       style={{
         ...styles.tabItem,
@@ -451,6 +452,7 @@ function SidebarTabItem({
         ...(hovered && !tab.isActive ? styles.tabItemHover : {}),
       }}
       onClick={handleClick}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleClick(); }}
       onContextMenu={handleContextMenu}
       onDragStart={handleDragStart}
       onMouseEnter={() => setHovered(true)}
@@ -474,7 +476,7 @@ function SidebarTabItem({
       >
         <Icon name="close" size={12} />
       </button>
-    </button>
+    </div>
   );
 }
 
