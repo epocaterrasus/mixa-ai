@@ -152,7 +152,7 @@ interface ElectronTerminalAPI {
 }
 
 interface ElectronShellAPI {
-  readonly create: (shellId: string, cols: number, rows: number) => Promise<void>;
+  readonly create: (shellId: string, cols: number, rows: number) => Promise<{ success: boolean; error?: string }>;
   readonly write: (shellId: string, data: string) => Promise<void>;
   readonly resize: (shellId: string, cols: number, rows: number) => Promise<void>;
   readonly destroy: (shellId: string) => Promise<void>;

@@ -32,13 +32,24 @@ const excalidrawWrapperStyle: React.CSSProperties = {
   overflow: "hidden",
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────
+// ─── In-memory scene cache (survives unmount/remount cycles) ─────
 
 interface CachedScene {
   elements: readonly ExcalidrawElement[];
   appState: AppState;
   files: BinaryFiles;
 }
+
+interface SceneCacheEntry {
+  elements: readonly ExcalidrawElement[];
+  appState: Record<string, unknown>;
+  files: BinaryFiles;
+  name: string;
+}
+
+const sceneCache = new Map<string, SceneCacheEntry>();
+
+// ─── Helpers ─────────────────────────────────────────────────────
 
 function buildSavePayload(
   name: string,
@@ -87,6 +98,8 @@ export function CanvasTab(): React.ReactElement {
   // Tab store
   const activeTabId = useTabStore((s) => s.activeTabId);
   const updateTab = useTabStore((s) => s.updateTab);
+  const activateTab = useTabStore((s) => s.activateTab);
+  const addTab = useTabStore((s) => s.addTab);
   const tabs = useTabStore((s) => s.tabs);
 
   // Canvas store
@@ -123,6 +136,40 @@ export function CanvasTab(): React.ReactElement {
   useEffect(() => {
     let cancelled = false;
 
+    function restoreScene(
+      elements: readonly ExcalidrawElement[],
+      rawAppState: Record<string, unknown>,
+      files: BinaryFiles,
+      name: string,
+    ): void {
+      setCanvasName(name);
+
+      if (!excalidrawRef.current) return;
+
+      const restoredAppState: Record<string, unknown> = { theme: resolvedMode };
+      if (typeof rawAppState["viewBackgroundColor"] === "string") {
+        restoredAppState["viewBackgroundColor"] = rawAppState["viewBackgroundColor"];
+      }
+      if (typeof rawAppState["gridSize"] === "number") {
+        restoredAppState["gridSize"] = rawAppState["gridSize"];
+      }
+
+      excalidrawRef.current.updateScene({
+        elements,
+        appState: restoredAppState as unknown as AppState,
+      });
+      excalidrawRef.current.addFiles(Object.values(files));
+    }
+
+    // Try in-memory cache first (instant, no race condition)
+    const cached = sceneCache.get(canvasId);
+    if (cached) {
+      restoreScene(cached.elements, cached.appState, cached.files, cached.name);
+      if (!cancelled) setIsLoaded(true);
+      return;
+    }
+
+    // Fall back to loading from disk
     async function loadCanvas(): Promise<void> {
       try {
         const result = await window.electronAPI.canvas.load(canvasId);
@@ -133,31 +180,17 @@ export function CanvasTab(): React.ReactElement {
           if (typeof parsed === "object" && parsed !== null) {
             const data = parsed as Record<string, unknown>;
             const name = typeof data["name"] === "string" ? data["name"] : "Untitled Canvas";
-            setCanvasName(name);
+            const elements = Array.isArray(data["elements"])
+              ? data["elements"] as readonly ExcalidrawElement[]
+              : [];
+            const rawAppState = typeof data["appState"] === "object" && data["appState"] !== null
+              ? data["appState"] as Record<string, unknown>
+              : {};
+            const files = typeof data["files"] === "object" && data["files"] !== null
+              ? data["files"] as BinaryFiles
+              : {};
 
-            if (excalidrawRef.current && Array.isArray(data["elements"])) {
-              const elements = data["elements"] as readonly ExcalidrawElement[];
-              const rawAppState = typeof data["appState"] === "object" && data["appState"] !== null
-                ? data["appState"] as Record<string, unknown>
-                : {};
-              const files = typeof data["files"] === "object" && data["files"] !== null
-                ? data["files"] as BinaryFiles
-                : {};
-
-              const restoredAppState: Record<string, unknown> = { theme: resolvedMode };
-              if (typeof rawAppState["viewBackgroundColor"] === "string") {
-                restoredAppState["viewBackgroundColor"] = rawAppState["viewBackgroundColor"];
-              }
-              if (typeof rawAppState["gridSize"] === "number") {
-                restoredAppState["gridSize"] = rawAppState["gridSize"];
-              }
-
-              excalidrawRef.current.updateScene({
-                elements,
-                appState: restoredAppState as unknown as AppState,
-              });
-              excalidrawRef.current.addFiles(Object.values(files));
-            }
+            restoreScene(elements, rawAppState, files, name);
           }
         }
       } catch {
@@ -239,7 +272,7 @@ export function CanvasTab(): React.ReactElement {
     [isLoaded, saveCanvas],
   );
 
-  // Reliable unmount save using cached scene data (Excalidraw ref may be destroyed)
+  // Reliable unmount save: write to in-memory cache (sync) + disk (async)
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) {
@@ -248,6 +281,21 @@ export function CanvasTab(): React.ReactElement {
       const scene = latestSceneRef.current;
       if (!scene) return;
 
+      // Write to in-memory cache synchronously so remount can restore instantly
+      sceneCache.set(canvasIdRef.current, {
+        elements: scene.elements,
+        appState: {
+          viewBackgroundColor: scene.appState.viewBackgroundColor,
+          gridSize: scene.appState.gridSize,
+          zoom: scene.appState.zoom,
+          scrollX: scene.appState.scrollX,
+          scrollY: scene.appState.scrollY,
+        },
+        files: scene.files,
+        name: canvasNameRef.current,
+      });
+
+      // Also persist to disk in the background
       const created = lastSavedRef.current
         ? lastSavedRef.current.toISOString()
         : new Date().toISOString();
@@ -351,6 +399,7 @@ export function CanvasTab(): React.ReactElement {
 
       const ts = Date.now();
       const fileId = `screenshot-${tabId}-${ts}` as FileId;
+      const groupId = `group-embed-${tabId}-${ts}`;
 
       // Try to capture a screenshot from web/app tabs
       const isWebTab = tab.type === "web" || tab.type === "app";
@@ -394,6 +443,7 @@ export function CanvasTab(): React.ReactElement {
               width,
               height,
               link: tab.url,
+              groupIds: [groupId],
               customData: {
                 embeddedTabId: tabId,
                 embeddedTabUrl: tab.url,
@@ -413,6 +463,7 @@ export function CanvasTab(): React.ReactElement {
               textAlign: "left" as const,
               verticalAlign: "top" as const,
               strokeColor: resolvedMode === "dark" ? "#a5a5a5" : "#666666",
+              groupIds: [groupId],
               customData: {
                 embeddedTabId: tabId,
                 isLabel: true,
@@ -443,6 +494,7 @@ export function CanvasTab(): React.ReactElement {
               roughness: 0,
               roundness: { type: 3 },
               link: tab.url,
+              groupIds: [groupId],
               customData: {
                 embeddedTabId: tabId,
                 embeddedTabUrl: tab.url,
@@ -464,6 +516,7 @@ export function CanvasTab(): React.ReactElement {
               textAlign: "left" as const,
               verticalAlign: "top" as const,
               strokeColor: resolvedMode === "dark" ? "#e0e0e0" : "#1a1a1a",
+              groupIds: [groupId],
               customData: {
                 embeddedTabId: tabId,
                 isLabel: true,
@@ -597,6 +650,7 @@ export function CanvasTab(): React.ReactElement {
           }}
           theme={resolvedMode}
           onChange={handleChange}
+          onLinkOpen={handleLinkOpen}
           UIOptions={{
             canvasActions: {
               saveToActiveFile: false,

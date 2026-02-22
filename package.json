@@ -11,7 +11,8 @@
     "typecheck": "turbo typecheck",
     "clean": "turbo clean",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "postinstall": "chmod +x node_modules/.pnpm/node-pty@*/node_modules/node-pty/prebuilds/*/spawn-helper 2>/dev/null || true"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.20.0",

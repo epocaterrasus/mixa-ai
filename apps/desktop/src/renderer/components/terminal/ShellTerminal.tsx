@@ -1,6 +1,3 @@
-// ShellTerminal — xterm.js-based raw shell terminal component
-// Connects to node-pty in main process via IPC
-
 import { useEffect, useRef, useCallback, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -24,7 +21,7 @@ const terminalWrapperStyle: React.CSSProperties = {
   overflow: "hidden",
 };
 
-const exitedOverlayStyle: React.CSSProperties = {
+const overlayStyle: React.CSSProperties = {
   position: "absolute",
   bottom: "16px",
   left: "50%",
@@ -38,6 +35,12 @@ const exitedOverlayStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: "8px",
+  maxWidth: "90%",
+};
+
+const errorOverlayStyle: React.CSSProperties = {
+  ...overlayStyle,
+  color: "#f44747",
 };
 
 const restartButtonStyle: React.CSSProperties = {
@@ -48,6 +51,7 @@ const restartButtonStyle: React.CSSProperties = {
   color: "var(--mixa-text-primary, #eee)",
   fontSize: "12px",
   cursor: "pointer",
+  whiteSpace: "nowrap",
 };
 
 interface ShellTerminalProps {
@@ -60,6 +64,24 @@ export function ShellTerminal({ shellId }: ShellTerminalProps): React.ReactEleme
   const fitAddonRef = useRef<FitAddon | null>(null);
   const fontSizeRef = useRef(DEFAULT_FONT_SIZE);
   const [exited, setExited] = useState(false);
+  const [spawnError, setSpawnError] = useState<string | null>(null);
+
+  const spawnShell = useCallback(async (term: Terminal, fitAddon: FitAddon) => {
+    setSpawnError(null);
+    fitAddon.fit();
+    try {
+      const result = await window.electronAPI.shell.create(shellId, term.cols, term.rows);
+      if (!result.success) {
+        const msg = result.error ?? "Unknown error spawning shell";
+        term.write(`\r\n\x1b[31m[Shell error] ${msg}\x1b[0m\r\n`);
+        setSpawnError(msg);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      term.write(`\r\n\x1b[31m[Shell error] ${msg}\x1b[0m\r\n`);
+      setSpawnError(msg);
+    }
+  }, [shellId]);
 
   const restart = useCallback(() => {
     const term = terminalRef.current;
@@ -67,15 +89,12 @@ export function ShellTerminal({ shellId }: ShellTerminalProps): React.ReactEleme
     if (!term || !fitAddon) return;
 
     setExited(false);
+    setSpawnError(null);
     term.clear();
     term.reset();
 
-    // Re-fit to get correct dimensions
-    fitAddon.fit();
-    const cols = term.cols;
-    const rows = term.rows;
-    void window.electronAPI.shell.create(shellId, cols, rows);
-  }, [shellId]);
+    void spawnShell(term, fitAddon);
+  }, [spawnShell]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -123,24 +142,18 @@ export function ShellTerminal({ shellId }: ShellTerminalProps): React.ReactEleme
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
 
-    // Create PTY process in main process
-    const cols = terminal.cols;
-    const rows = terminal.rows;
-    void window.electronAPI.shell.create(shellId, cols, rows);
+    void spawnShell(terminal, fitAddon);
 
-    // Forward terminal input to PTY
     const dataDisposable = terminal.onData((data: string) => {
       void window.electronAPI.shell.write(shellId, data);
     });
 
-    // Listen for PTY output and write to terminal
     const removeDataListener = window.electronAPI.shell.onData((msg) => {
       if (msg.shellId === shellId) {
         terminal.write(msg.data);
       }
     });
 
-    // Listen for PTY exit
     const removeExitListener = window.electronAPI.shell.onExit((msg) => {
       if (msg.shellId === shellId) {
         terminal.write(`\r\n\x1b[90m[Process exited with code ${msg.exitCode}]\x1b[0m\r\n`);
@@ -148,14 +161,12 @@ export function ShellTerminal({ shellId }: ShellTerminalProps): React.ReactEleme
       }
     });
 
-    // Handle window resize
     const resizeObserver = new ResizeObserver(() => {
       fitAddon.fit();
       void window.electronAPI.shell.resize(shellId, terminal.cols, terminal.rows);
     });
     resizeObserver.observe(container);
 
-    // Handle font size shortcuts (Cmd+= to increase, Cmd+- to decrease, Cmd+0 to reset)
     const handleKeyDown = (e: KeyboardEvent): void => {
       const isMod = e.metaKey || e.ctrlKey;
       if (!isMod) return;
@@ -184,7 +195,6 @@ export function ShellTerminal({ shellId }: ShellTerminalProps): React.ReactEleme
     };
     container.addEventListener("keydown", handleKeyDown);
 
-    // Focus terminal
     terminal.focus();
 
     return () => {
@@ -198,16 +208,18 @@ export function ShellTerminal({ shellId }: ShellTerminalProps): React.ReactEleme
       terminalRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [shellId]);
+  }, [shellId, spawnShell]);
+
+  const showOverlay = exited || spawnError;
 
   return (
     <div style={containerStyle}>
       <div ref={containerRef} style={terminalWrapperStyle} />
-      {exited && (
-        <div style={exitedOverlayStyle}>
-          <span>Shell exited</span>
+      {showOverlay && (
+        <div style={spawnError ? errorOverlayStyle : overlayStyle}>
+          <span>{spawnError ? `Shell failed: ${spawnError}` : "Shell exited"}</span>
           <button type="button" onClick={restart} style={restartButtonStyle}>
-            Restart
+            Retry
           </button>
         </div>
       )}
