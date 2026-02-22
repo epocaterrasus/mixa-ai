@@ -131,57 +131,45 @@ export function CanvasTab(): React.ReactElement {
     return tabs.filter((t) => t.id !== activeTabId);
   }, [tabs, activeTabId]);
 
-  // ─── Load ────────────────────────────────────────────────────
+  // ─── Load via initialData (fed to Excalidraw on mount) ───────
 
-  useEffect(() => {
-    let cancelled = false;
-
-    function restoreScene(
-      elements: readonly ExcalidrawElement[],
-      rawAppState: Record<string, unknown>,
-      files: BinaryFiles,
-      name: string,
-    ): void {
-      setCanvasName(name);
-
-      if (!excalidrawRef.current) return;
-
-      const restoredAppState: Record<string, unknown> = { theme: resolvedMode };
-      if (typeof rawAppState["viewBackgroundColor"] === "string") {
-        restoredAppState["viewBackgroundColor"] = rawAppState["viewBackgroundColor"];
-      }
-      if (typeof rawAppState["gridSize"] === "number") {
-        restoredAppState["gridSize"] = rawAppState["gridSize"];
+  // Build the initial scene data for Excalidraw.
+  // Checks in-memory cache first (instant after tab switch), then disk.
+  const initialData = useMemo(() => {
+    return async () => {
+      function buildAppState(raw: Record<string, unknown>): Partial<AppState> {
+        const out: Record<string, unknown> = { theme: resolvedMode };
+        if (typeof raw["viewBackgroundColor"] === "string") {
+          out["viewBackgroundColor"] = raw["viewBackgroundColor"];
+        }
+        if (typeof raw["gridSize"] === "number") {
+          out["gridSize"] = raw["gridSize"];
+        }
+        return out as Partial<AppState>;
       }
 
-      excalidrawRef.current.updateScene({
-        elements,
-        appState: restoredAppState as unknown as AppState,
-      });
-      excalidrawRef.current.addFiles(Object.values(files));
-    }
+      // In-memory cache (instant — no race with disk save)
+      const cached = sceneCache.get(canvasId);
+      if (cached) {
+        setCanvasName(cached.name);
+        setIsLoaded(true);
+        return {
+          elements: cached.elements as ExcalidrawElement[],
+          appState: buildAppState(cached.appState),
+          files: cached.files,
+        };
+      }
 
-    // Try in-memory cache first (instant, no race condition)
-    const cached = sceneCache.get(canvasId);
-    if (cached) {
-      restoreScene(cached.elements, cached.appState, cached.files, cached.name);
-      if (!cancelled) setIsLoaded(true);
-      return;
-    }
-
-    // Fall back to loading from disk
-    async function loadCanvas(): Promise<void> {
+      // Disk fallback (first visit or cold start)
       try {
         const result = await window.electronAPI.canvas.load(canvasId);
-        if (cancelled) return;
-
         if (result.success && result.data) {
           const parsed: unknown = JSON.parse(result.data);
           if (typeof parsed === "object" && parsed !== null) {
             const data = parsed as Record<string, unknown>;
             const name = typeof data["name"] === "string" ? data["name"] : "Untitled Canvas";
             const elements = Array.isArray(data["elements"])
-              ? data["elements"] as readonly ExcalidrawElement[]
+              ? data["elements"] as ExcalidrawElement[]
               : [];
             const rawAppState = typeof data["appState"] === "object" && data["appState"] !== null
               ? data["appState"] as Record<string, unknown>
@@ -190,22 +178,20 @@ export function CanvasTab(): React.ReactElement {
               ? data["files"] as BinaryFiles
               : {};
 
-            restoreScene(elements, rawAppState, files, name);
+            setCanvasName(name);
+            setIsLoaded(true);
+            return { elements, appState: buildAppState(rawAppState), files };
           }
         }
       } catch {
         // New canvas — nothing to load
       }
-      if (!cancelled) {
-        setIsLoaded(true);
-      }
-    }
 
-    void loadCanvas();
-    return () => {
-      cancelled = true;
+      setIsLoaded(true);
+      return null;
     };
-  }, [canvasId, resolvedMode]);
+
+  }, [canvasId]);
 
   // Update tab title when canvas name changes
   useEffect(() => {
@@ -307,7 +293,7 @@ export function CanvasTab(): React.ReactElement {
       );
     };
     // Refs are stable — cleanup only needs to run on true unmount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   // ─── Export ──────────────────────────────────────────────────
@@ -645,6 +631,8 @@ export function CanvasTab(): React.ReactElement {
         onDrop={handleDrop}
       >
         <Excalidraw
+          key={canvasId}
+          initialData={initialData}
           excalidrawAPI={(api: ExcalidrawImperativeAPI) => {
             excalidrawRef.current = api;
           }}
