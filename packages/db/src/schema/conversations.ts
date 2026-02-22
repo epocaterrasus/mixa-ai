@@ -1,7 +1,7 @@
 import { index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./users.js";
 
-interface ChatScope {
+export interface ChatScope {
   projectIds: string[];
   tagIds: string[];
   itemIds: string[];

@@ -1,3 +1,6 @@
+# OPTIONAL: The Electron app uses embedded PGlite (no Docker needed).
+# This file is only for developers who prefer an external PostgreSQL instance,
+# e.g. for running drizzle-kit studio or manual SQL access.
 services:
   postgres:
     image: pgvector/pgvector:pg16

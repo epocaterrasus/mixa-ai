@@ -1,5 +1,6 @@
 import { app, BrowserWindow, session, shell } from "electron";
 import { join } from "node:path";
+import { initDatabase, closeDatabase } from "./db/index.js";
 import { setupTRPCHandler } from "./trpc/index.js";
 import { tabManager } from "./tabs/manager.js";
 import { engineLifecycle } from "./engine/index.js";
@@ -10,6 +11,7 @@ import { setupShellHandlers, cleanupShells } from "./shell/handler.js";
 import { augmentedBrowsingService } from "./augmented/index.js";
 import { loadSettings } from "./trpc/routers/settings.js";
 import { setupUpdater, cleanupUpdater } from "./updater/service.js";
+import { setupCanvasHandlers } from "./canvas/handler.js";
 import { mediaDetector } from "./media/index.js";
 
 function createWindow(): BrowserWindow {
@@ -31,7 +33,6 @@ function createWindow(): BrowserWindow {
     },
   });
 
-  // Attach tab manager to this window
   tabManager.attach(mainWindow);
 
   mainWindow.on("ready-to-show", () => {
@@ -59,9 +60,10 @@ function createWindow(): BrowserWindow {
   return mainWindow;
 }
 
-void app.whenReady().then(() => {
-  // CSP: enforce strict policy in production only
-  // In dev, Vite injects inline scripts/eval for HMR that CSP would block
+void app.whenReady().then(async () => {
+  // Initialize embedded PGlite database before anything else
+  await initDatabase();
+
   if (app.isPackaged) {
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
       callback({
@@ -76,33 +78,28 @@ void app.whenReady().then(() => {
   }
 
   setupTRPCHandler();
+  setupCanvasHandlers();
   setupChatHandlers();
   setupTerminalHandlers();
   setupShellHandlers();
   const mainWindow = createWindow();
 
-  // Set up content capture IPC handlers
   setupCaptureHandlers(mainWindow);
 
-  // Set up augmented browsing (related items indicator)
-  // Sync initial enabled state from saved settings
   const savedSettings = loadSettings();
   augmentedBrowsingService.setEnabled(savedSettings.augmentedBrowsingEnabled);
   augmentedBrowsingService.attach(mainWindow);
   tabManager.onPageLoaded((tabId) => augmentedBrowsingService.onPageLoaded(tabId));
   tabManager.onTabDestroyed((tabId) => augmentedBrowsingService.onTabDestroyed(tabId));
 
-  // Set up media detection (Google Meet + audio tab tracking)
   mediaDetector.attach(mainWindow);
   const savedMediaEnabled = savedSettings.mediaBar.enabled;
   mediaDetector.setEnabled(savedMediaEnabled);
   tabManager.onPageLoaded((tabId) => mediaDetector.onPageLoaded(tabId));
   tabManager.onTabDestroyed((tabId) => mediaDetector.onTabDestroyed(tabId));
 
-  // Start the Go engine as a child process
   void engineLifecycle.start();
 
-  // Set up auto-updater (checks for updates after 5s delay, then every 4h)
   setupUpdater(mainWindow);
 
   app.on("activate", () => {
@@ -114,12 +111,12 @@ void app.whenReady().then(() => {
   });
 });
 
-// Graceful shutdown: clean up terminal streams, shells, and stop engine before quitting
 app.on("before-quit", () => {
   cleanupTerminalStreams();
   cleanupShells();
   cleanupUpdater();
   mediaDetector.destroy();
+  void closeDatabase();
   void engineLifecycle.stop();
 });
 

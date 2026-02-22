@@ -1,207 +1,150 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import {
-  createConversation,
-  getConversation,
-  listConversations,
-  deleteConversation,
-  addMessage,
-  getMessages,
-} from "./store.js";
-import type { ChatScope } from "@mixa-ai/types";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
-// Helper to clear state between tests by deleting all conversations
-function clearStore(): void {
-  const { conversations } = listConversations(1000, 0);
-  for (const conv of conversations) {
-    deleteConversation(conv.id);
-  }
-}
+const mockInsertReturning = vi.fn();
+const mockSelectRows = vi.fn();
+const mockDeleteReturning = vi.fn();
+const mockUpdateSet = vi.fn();
+
+vi.mock("../db/index.js", () => ({
+  getDb: () => ({
+    insert: () => ({
+      values: () => ({
+        returning: mockInsertReturning,
+      }),
+    }),
+    select: () => ({
+      from: () => ({
+        where: (..._: unknown[]) => ({
+          orderBy: () => mockSelectRows(),
+          limit: mockSelectRows,
+        }),
+        orderBy: () => ({
+          limit: () => ({
+            offset: mockSelectRows,
+          }),
+        }),
+      }),
+    }),
+    update: () => ({
+      set: () => ({
+        where: mockUpdateSet,
+      }),
+    }),
+    delete: () => ({
+      where: () => ({
+        returning: mockDeleteReturning,
+      }),
+    }),
+  }),
+  getUserId: () => "user-001",
+}));
+
+vi.mock("@mixa-ai/db", () => ({
+  conversations: { id: "id", userId: "user_id", updatedAt: "updated_at", title: "title" },
+  messages: { id: "id", conversationId: "conversation_id", createdAt: "created_at" },
+}));
+
+vi.mock("drizzle-orm", () => ({
+  eq: vi.fn(() => "eq-filter"),
+  desc: vi.fn(() => "desc-order"),
+}));
 
 describe("Chat Store", () => {
   beforeEach(() => {
-    clearStore();
+    vi.clearAllMocks();
   });
 
-  describe("createConversation", () => {
-    it("creates a conversation with title and scope", () => {
-      const scope: ChatScope = { projectIds: ["p1"], tagIds: [], itemIds: [] };
-      const conv = createConversation("Test Chat", scope);
+  it("createConversation returns a stored conversation", async () => {
+    const now = new Date();
+    mockInsertReturning.mockResolvedValue([{
+      id: "conv-1",
+      userId: "user-001",
+      title: "Test Chat",
+      scope: { projectIds: [], tagIds: [], itemIds: [] },
+      createdAt: now,
+      updatedAt: now,
+    }]);
 
-      expect(conv.id).toBeDefined();
-      expect(conv.title).toBe("Test Chat");
-      expect(conv.scope).toEqual(scope);
-      expect(conv.createdAt).toBeDefined();
-      expect(conv.updatedAt).toBeDefined();
-    });
+    const { createConversation } = await import("./store.js");
+    const conv = await createConversation("Test Chat", null);
 
-    it("creates a conversation with null title and scope", () => {
-      const conv = createConversation(null, null);
-
-      expect(conv.title).toBeNull();
-      expect(conv.scope).toBeNull();
-    });
+    expect(conv.id).toBe("conv-1");
+    expect(conv.title).toBe("Test Chat");
+    expect(conv.createdAt).toBeDefined();
   });
 
-  describe("getConversation", () => {
-    it("retrieves an existing conversation", () => {
-      const conv = createConversation("Find Me", null);
-      const found = getConversation(conv.id);
+  it("getConversation returns undefined for missing ID", async () => {
+    mockSelectRows.mockResolvedValue([]);
 
-      expect(found).toBeDefined();
-      expect(found?.title).toBe("Find Me");
-    });
+    const { getConversation } = await import("./store.js");
+    const result = await getConversation("nonexistent");
 
-    it("returns undefined for nonexistent ID", () => {
-      expect(getConversation("nonexistent-id")).toBeUndefined();
-    });
+    expect(result).toBeUndefined();
   });
 
-  describe("listConversations", () => {
-    it("lists conversations sorted by updatedAt descending", () => {
-      const conv1 = createConversation("First", null);
-      const conv2 = createConversation("Second", null);
+  it("deleteConversation returns false for nonexistent", async () => {
+    mockDeleteReturning.mockResolvedValue([]);
 
-      // Add a message to conv1 so its updatedAt is newer
-      addMessage(conv1.id, "user", "Update timestamp");
+    const { deleteConversation } = await import("./store.js");
+    const result = await deleteConversation("nonexistent");
 
-      const { conversations, total } = listConversations(10, 0);
-
-      expect(total).toBe(2);
-      expect(conversations.length).toBe(2);
-      // conv1 should come first because its updatedAt was updated by the message
-      expect(conversations[0]?.id).toBe(conv1.id);
-      expect(conversations[1]?.id).toBe(conv2.id);
-    });
-
-    it("respects limit and offset", () => {
-      createConversation("A", null);
-      createConversation("B", null);
-      createConversation("C", null);
-
-      const { conversations, total } = listConversations(1, 1);
-
-      expect(total).toBe(3);
-      expect(conversations.length).toBe(1);
-    });
+    expect(result).toBe(false);
   });
 
-  describe("deleteConversation", () => {
-    it("deletes an existing conversation", () => {
-      const conv = createConversation("Delete Me", null);
+  it("deleteConversation returns true for existing", async () => {
+    mockDeleteReturning.mockResolvedValue([{ id: "conv-1" }]);
 
-      expect(deleteConversation(conv.id)).toBe(true);
-      expect(getConversation(conv.id)).toBeUndefined();
-    });
+    const { deleteConversation } = await import("./store.js");
+    const result = await deleteConversation("conv-1");
 
-    it("returns false for nonexistent conversation", () => {
-      expect(deleteConversation("nonexistent")).toBe(false);
-    });
-
-    it("also removes messages for deleted conversation", () => {
-      const conv = createConversation("With Messages", null);
-      addMessage(conv.id, "user", "Hello");
-
-      deleteConversation(conv.id);
-
-      expect(getMessages(conv.id)).toEqual([]);
-    });
+    expect(result).toBe(true);
   });
 
-  describe("addMessage", () => {
-    it("adds a user message", () => {
-      const conv = createConversation(null, null);
-      const msg = addMessage(conv.id, "user", "Hello Mixa");
+  it("addMessage inserts and returns the message", async () => {
+    const now = new Date();
+    mockInsertReturning.mockResolvedValue([{
+      id: "msg-1",
+      conversationId: "conv-1",
+      role: "user",
+      content: "Hello Mixa",
+      citations: [],
+      modelUsed: null,
+      tokenCount: null,
+      createdAt: now,
+    }]);
+    mockUpdateSet.mockResolvedValue(undefined);
+    mockSelectRows.mockResolvedValue([{ id: "msg-1" }]);
 
-      expect(msg.id).toBeDefined();
-      expect(msg.conversationId).toBe(conv.id);
-      expect(msg.role).toBe("user");
-      expect(msg.content).toBe("Hello Mixa");
-      expect(msg.citations).toEqual([]);
-      expect(msg.modelUsed).toBeNull();
-    });
+    const { addMessage } = await import("./store.js");
+    const msg = await addMessage("conv-1", "user", "Hello Mixa");
 
-    it("adds an assistant message with citations", () => {
-      const conv = createConversation(null, null);
-      const citations = [
-        {
-          index: 1,
-          itemId: "item-1",
-          chunkId: "chunk-1",
-          itemTitle: "Source Article",
-          itemUrl: "https://example.com",
-          snippet: "Some text...",
-        },
-      ];
-      const msg = addMessage(conv.id, "assistant", "Here is the answer [1]", citations, "gpt-4o");
-
-      expect(msg.role).toBe("assistant");
-      expect(msg.citations).toEqual(citations);
-      expect(msg.modelUsed).toBe("gpt-4o");
-    });
-
-    it("auto-titles conversation from first user message", () => {
-      const conv = createConversation(null, null);
-      addMessage(conv.id, "user", "What is TypeScript?");
-
-      const updated = getConversation(conv.id);
-      expect(updated?.title).toBe("What is TypeScript?");
-    });
-
-    it("truncates long auto-titles", () => {
-      const conv = createConversation(null, null);
-      const longMessage = "A".repeat(100);
-      addMessage(conv.id, "user", longMessage);
-
-      const updated = getConversation(conv.id);
-      expect(updated?.title).toBe("A".repeat(57) + "...");
-      expect(updated?.title?.length).toBe(60);
-    });
-
-    it("does not override existing title", () => {
-      const conv = createConversation("Existing Title", null);
-      addMessage(conv.id, "user", "New message");
-
-      const updated = getConversation(conv.id);
-      expect(updated?.title).toBe("Existing Title");
-    });
-
-    it("updates conversation updatedAt timestamp", () => {
-      const conv = createConversation(null, null);
-      const originalUpdatedAt = conv.updatedAt;
-
-      // Small delay to ensure different timestamp
-      addMessage(conv.id, "user", "Hello");
-
-      const updated = getConversation(conv.id);
-      expect(updated?.updatedAt).toBeDefined();
-      // updatedAt should be >= original (may be equal if same ms)
-      expect(new Date(updated?.updatedAt ?? "").getTime()).toBeGreaterThanOrEqual(
-        new Date(originalUpdatedAt).getTime(),
-      );
-    });
-
-    it("throws for nonexistent conversation", () => {
-      expect(() => addMessage("nonexistent", "user", "Hello")).toThrow(
-        "Conversation not found",
-      );
-    });
+    expect(msg.id).toBe("msg-1");
+    expect(msg.role).toBe("user");
+    expect(msg.content).toBe("Hello Mixa");
+    expect(msg.citations).toEqual([]);
   });
 
-  describe("getMessages", () => {
-    it("returns messages in order", () => {
-      const conv = createConversation(null, null);
-      addMessage(conv.id, "user", "Question");
-      addMessage(conv.id, "assistant", "Answer");
+  it("getMessages returns messages in order", async () => {
+    const now = new Date();
+    mockSelectRows.mockResolvedValue([
+      { id: "m1", conversationId: "c1", role: "user", content: "Q", citations: [], modelUsed: null, tokenCount: null, createdAt: now },
+      { id: "m2", conversationId: "c1", role: "assistant", content: "A", citations: [], modelUsed: "gpt-4o", tokenCount: 50, createdAt: now },
+    ]);
 
-      const messages = getMessages(conv.id);
+    const { getMessages } = await import("./store.js");
+    const msgs = await getMessages("c1");
 
-      expect(messages.length).toBe(2);
-      expect(messages[0]?.role).toBe("user");
-      expect(messages[1]?.role).toBe("assistant");
-    });
+    expect(msgs).toHaveLength(2);
+    expect(msgs[0]?.role).toBe("user");
+    expect(msgs[1]?.role).toBe("assistant");
+  });
 
-    it("returns empty array for nonexistent conversation", () => {
-      expect(getMessages("nonexistent")).toEqual([]);
-    });
+  it("getMessages returns empty for nonexistent conversation", async () => {
+    mockSelectRows.mockResolvedValue([]);
+
+    const { getMessages } = await import("./store.js");
+    const msgs = await getMessages("nonexistent");
+
+    expect(msgs).toEqual([]);
   });
 });

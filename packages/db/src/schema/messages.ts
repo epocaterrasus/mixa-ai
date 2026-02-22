@@ -1,7 +1,7 @@
 import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { conversations } from "./conversations.js";
 
-interface Citation {
+export interface Citation {
   index: number;
   itemId: string;
   chunkId: string;

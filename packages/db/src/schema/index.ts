@@ -7,4 +7,6 @@ export { projects } from "./projects.js";
 export { itemProjects } from "./item-projects.js";
 export { highlights } from "./highlights.js";
 export { conversations } from "./conversations.js";
+export type { ChatScope } from "./conversations.js";
 export { messages } from "./messages.js";
+export type { Citation } from "./messages.js";

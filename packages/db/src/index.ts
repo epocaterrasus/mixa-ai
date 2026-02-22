@@ -14,6 +14,10 @@ export {
   messages,
 } from "./schema/index.js";
 
+// JSONB type exports (needed for portable type inference in consuming packages)
+export type { ChatScope } from "./schema/conversations.js";
+export type { Citation } from "./schema/messages.js";
+
 // All schema as a namespace for Drizzle client initialization
 export * as schema from "./schema/index.js";
 

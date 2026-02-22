@@ -7,7 +7,6 @@ import {
 import {
   captureTab,
   captureSelection,
-  captureStore,
   type CaptureResult,
 } from "./service.js";
 import { tabManager } from "../tabs/manager.js";
@@ -35,11 +34,8 @@ export function setupCaptureHandlers(mainWindow: BrowserWindow): void {
       faviconUrl?: string | null,
     ): Promise<CaptureResponse> => {
       try {
-        const existing = tabManager.getURL(tabId);
-        const isDuplicate = existing ? !!captureStore.findByUrl(existing) : false;
-
         const result = await captureTab(tabId, faviconUrl);
-        return { success: true, data: result, isDuplicate };
+        return { success: true, data: result };
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Capture failed";
         return { success: false, error: message };

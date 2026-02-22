@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, gte, lte, desc, asc, sql, count } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, count } from "drizzle-orm";
 import { items, tags, itemTags } from "@mixa-ai/db";
 import { router, publicProcedure, TRPCError } from "../trpc.js";
 
@@ -51,19 +51,6 @@ export interface ItemResponse {
 }
 
 type ItemRow = typeof items.$inferSelect;
-
-async function getItemTags(
-  db: Parameters<typeof publicProcedure.query>[0] extends never ? never : unknown,
-  itemId: string,
-): Promise<ItemTagResponse[]> {
-  const dbTyped = db as ReturnType<typeof import("../trpc.js")["publicProcedure"]["query"]> extends never ? never : import("@mixa-ai/db").PgliteDbClient;
-  const rows = await (dbTyped as import("@mixa-ai/db").PgliteDbClient)
-    .select({ id: tags.id, name: tags.name, color: tags.color })
-    .from(itemTags)
-    .innerJoin(tags, eq(itemTags.tagId, tags.id))
-    .where(eq(itemTags.itemId, itemId));
-  return rows;
-}
 
 function toItemResponse(row: ItemRow, itemTagList: ItemTagResponse[] = []): ItemResponse {
   return {

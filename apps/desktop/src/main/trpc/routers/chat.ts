@@ -23,7 +23,7 @@ export const chatRouter = router({
         .values({
           userId: ctx.userId,
           title: input.title ?? null,
-          scope: input.scope as Record<string, unknown> | null ?? null,
+          scope: (input.scope ?? null) as { projectIds: string[]; tagIds: string[]; itemIds: string[] } | null,
         })
         .returning();
 

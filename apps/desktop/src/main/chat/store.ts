@@ -1,8 +1,6 @@
-import { randomUUID } from "node:crypto";
 import { eq, desc } from "drizzle-orm";
 import { conversations, messages } from "@mixa-ai/db";
 import type { Citation, ChatScope } from "@mixa-ai/types";
-import type { PgliteDbClient } from "@mixa-ai/db";
 import { getDb, getUserId } from "../db/index.js";
 
 export interface StoredConversation {
@@ -57,7 +55,7 @@ export async function createConversation(
     .values({
       userId: getUserId(),
       title,
-      scope: scope as Record<string, unknown> | null,
+      scope: scope as { projectIds: string[]; tagIds: string[]; itemIds: string[] } | null,
     })
     .returning();
 
@@ -123,7 +121,7 @@ export async function addMessage(
       conversationId,
       role,
       content,
-      citations: citations as unknown as Record<string, unknown>[],
+      citations: citations as Citation[],
       modelUsed,
     })
     .returning();

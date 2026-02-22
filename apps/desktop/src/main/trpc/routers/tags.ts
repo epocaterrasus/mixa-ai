@@ -20,22 +20,19 @@ export const tagsRouter = router({
         .default({}),
     )
     .query(async ({ ctx, input }): Promise<{ tags: TagListItem[] }> => {
-      let query = ctx.db
+      const baseQuery = ctx.db
         .select({ id: tags.id, name: tags.name, color: tags.color })
-        .from(tags)
-        .orderBy(tags.name)
-        .limit(input.limit);
+        .from(tags);
 
-      if (input.search) {
-        query = ctx.db
-          .select({ id: tags.id, name: tags.name, color: tags.color })
-          .from(tags)
-          .where(ilike(tags.name, `%${input.search}%`))
-          .orderBy(tags.name)
-          .limit(input.limit);
-      }
+      const rows = input.search
+        ? await baseQuery
+            .where(ilike(tags.name, `%${input.search}%`))
+            .orderBy(tags.name)
+            .limit(input.limit)
+        : await baseQuery
+            .orderBy(tags.name)
+            .limit(input.limit);
 
-      const rows = await query;
       return { tags: rows };
     }),
 

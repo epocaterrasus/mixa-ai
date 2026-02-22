@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { eq, count } from "drizzle-orm";
-import { projects, itemProjects } from "@mixa-ai/db";
+import { eq } from "drizzle-orm";
+import { projects } from "@mixa-ai/db";
 import { router, publicProcedure, TRPCError } from "../trpc.js";
 
 export interface ProjectListItem {
@@ -52,7 +52,7 @@ export const projectsRouter = router({
         })
         .default({}),
     )
-    .query(async ({ ctx, input }): Promise<{ projects: ProjectListItem[] }> => {
+    .query(async ({ ctx }): Promise<{ projects: ProjectListItem[] }> => {
       const rows = await ctx.db
         .select()
         .from(projects)
