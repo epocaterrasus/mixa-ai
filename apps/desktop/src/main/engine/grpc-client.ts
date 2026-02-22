@@ -96,7 +96,9 @@ interface ModuleServiceClient extends grpc.Client {
 }
 
 interface UIStreamServiceClient extends grpc.Client {
-  streamUI(
+  // lodash.camelCase("StreamUI") → "streamUi" (not "streamUI")
+  // @grpc/proto-loader uses lodash.camelCase for the originalName alias
+  streamUi(
     request: { module: string },
   ): grpc.ClientReadableStream<ProtoUIViewUpdate>;
   sendEvent(
@@ -300,7 +302,7 @@ export class EngineGrpcClient {
     if (!this.uiStreamClient) {
       throw new Error("UIStream client not connected");
     }
-    return this.uiStreamClient.streamUI({ module });
+    return this.uiStreamClient.streamUi({ module });
   }
 
   /**

@@ -5,6 +5,7 @@ import { createPgliteClient, type PgliteDbClient } from "@mixa-ai/db";
 import { users } from "@mixa-ai/db";
 import { eq } from "drizzle-orm";
 import { SCHEMA_DDL } from "./schema-ddl.js";
+import { createPgliteSqlAdapter } from "./sql-adapter.js";
 
 const MIXA_DATA_DIR = join(homedir(), ".mixa", "data", "pglite");
 const LOCAL_USER_EMAIL = "local@mixa.app";
@@ -62,6 +63,16 @@ export function getDb(): PgliteDbClient {
 export function getUserId(): string {
   if (!_userId) throw new Error("Database not initialized — call initDatabase() first");
   return _userId;
+}
+
+/**
+ * Get a postgres.Sql-compatible tagged template SQL client backed by PGlite.
+ * Used by the ai-pipeline for RAG queries (hybrid search, etc.).
+ * Throws if initDatabase() has not been called.
+ */
+export function getSqlClient(): unknown {
+  if (!_pgliteClient) throw new Error("Database not initialized — call initDatabase() first");
+  return createPgliteSqlAdapter(_pgliteClient);
 }
 
 /** Gracefully close the PGlite instance. Call on app shutdown. */

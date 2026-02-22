@@ -2,14 +2,20 @@ import { ipcMain, type WebContents } from "electron";
 import * as chatStore from "./store.js";
 import { loadSettings } from "../trpc/routers/settings.js";
 import { getApiKey } from "../settings/keychain.js";
+import { getUserId, getSqlClient } from "../db/index.js";
 import {
   ProviderRouter,
+  ragStream,
   type ProviderCredentials,
   type ChatMessage,
+  type RAGStreamChunk,
   LLMAuthenticationError,
   LLMRateLimitError,
   LLMProviderUnavailableError,
 } from "@mixa-ai/ai-pipeline";
+import type { Citation, ChatScope } from "@mixa-ai/types";
+
+type RagSqlClient = Parameters<typeof ragStream>[0];
 
 const PLACEHOLDER_RESPONSE =
   "I'm **Mixa**, your knowledge assistant. I can help you find and discuss information from your saved knowledge base.\n\n" +
@@ -19,7 +25,7 @@ const PLACEHOLDER_RESPONSE =
   "3. **Ask me anything** — I'll search your knowledge base and provide grounded answers with citations\n\n" +
   "Right now, no AI provider is active. Once you configure one in Settings, I'll give you real AI-powered answers.";
 
-const SYSTEM_PROMPT =
+const DIRECT_SYSTEM_PROMPT =
   "You are Mixa, a helpful knowledge assistant embedded in a browser. " +
   "Answer the user's questions clearly and concisely. " +
   "If you don't know something, say so honestly. " +
@@ -36,7 +42,6 @@ function buildProviderRouter(): ProviderRouter | null {
   const activeProvider = llmConfig.providers.find((p) => p.isActive);
   if (!activeProvider) return null;
 
-  // Ollama doesn't need an API key; cloud providers do
   if (activeProvider.name !== "ollama") {
     const key = getApiKey(activeProvider.name);
     if (!key) return null;
@@ -117,11 +122,139 @@ function formatProviderError(error: unknown): string {
   return "**Unexpected error** — something went wrong. Please try again.";
 }
 
+/**
+ * Stream a RAG response: retrieve context from the knowledge base, then generate.
+ * Falls back to direct chat (no retrieval) if the SQL client is unavailable.
+ */
+async function streamRAGResponse(
+  sender: WebContents,
+  conversationId: string,
+  messageId: string,
+  userContent: string,
+  router: ProviderRouter,
+  scope: ChatScope | null,
+): Promise<void> {
+  const userId = getUserId();
+  const sqlClient = getSqlClient() as RagSqlClient;
+
+  const storedMessages = await chatStore.getMessages(conversationId);
+  const chatHistory: ChatMessage[] = storedMessages
+    .slice(-20)
+    .map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    }));
+
+  let fullContent = "";
+  let finalCitations: Citation[] = [];
+  const model = router.getActiveChatModel();
+
+  const stream: AsyncGenerator<RAGStreamChunk> = ragStream(sqlClient, router, {
+    query: userContent,
+    userId,
+    scope: scope ?? undefined,
+    chatHistory,
+  });
+
+  for await (const chunk of stream) {
+    fullContent += chunk.content;
+
+    if (sender.isDestroyed()) return;
+
+    if (chunk.done && chunk.citations) {
+      finalCitations = chunk.citations;
+    }
+
+    sender.send("chat:stream-chunk", {
+      conversationId,
+      messageId,
+      content: fullContent,
+      done: chunk.done,
+      citations: chunk.done ? finalCitations : [],
+    });
+  }
+
+  if (!sender.isDestroyed()) {
+    sender.send("chat:stream-chunk", {
+      conversationId,
+      messageId,
+      content: fullContent,
+      done: true,
+      citations: finalCitations,
+    });
+  }
+
+  await chatStore.addMessage(conversationId, "assistant", fullContent, finalCitations, model);
+}
+
+/**
+ * Stream a direct chat response (no retrieval, no citations).
+ * Used as a fallback when the knowledge base is not available.
+ */
+async function streamDirectResponse(
+  sender: WebContents,
+  conversationId: string,
+  messageId: string,
+  userContent: string,
+  router: ProviderRouter,
+): Promise<void> {
+  const model = router.getActiveChatModel();
+  const provider = router.getChatProvider();
+
+  const storedMessages = await chatStore.getMessages(conversationId);
+  const chatHistory: ChatMessage[] = storedMessages
+    .slice(-20)
+    .map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    }));
+
+  const messages: ChatMessage[] = [
+    { role: "system", content: DIRECT_SYSTEM_PROMPT },
+    ...chatHistory,
+    { role: "user", content: userContent },
+  ];
+
+  let fullContent = "";
+
+  for await (const chunk of provider.stream({
+    model,
+    messages,
+    temperature: 0.3,
+    maxTokens: 4096,
+  })) {
+    fullContent += chunk.content;
+
+    if (sender.isDestroyed()) return;
+
+    sender.send("chat:stream-chunk", {
+      conversationId,
+      messageId,
+      content: fullContent,
+      done: chunk.done,
+      citations: [],
+    });
+  }
+
+  if (!sender.isDestroyed()) {
+    sender.send("chat:stream-chunk", {
+      conversationId,
+      messageId,
+      content: fullContent,
+      done: true,
+      citations: [],
+    });
+  }
+
+  await chatStore.addMessage(conversationId, "assistant", fullContent, [], model);
+}
+
 async function streamAIResponse(
   sender: WebContents,
   conversationId: string,
   messageId: string,
   userContent: string,
+  scope: ChatScope | null,
 ): Promise<void> {
   const router = buildProviderRouter();
 
@@ -131,72 +264,27 @@ async function streamAIResponse(
   }
 
   try {
-    const model = router.getActiveChatModel();
-    const provider = router.getChatProvider();
+    // Try the full RAG pipeline first (knowledge-grounded with citations)
+    await streamRAGResponse(sender, conversationId, messageId, userContent, router, scope);
+  } catch {
+    // If RAG fails (e.g. DB issue, embedding error), fall back to direct chat
+    try {
+      await streamDirectResponse(sender, conversationId, messageId, userContent, router);
+    } catch (directError) {
+      const errorContent = formatProviderError(directError);
 
-    // Load conversation history for multi-turn context
-    const storedMessages = await chatStore.getMessages(conversationId);
-    const chatHistory: ChatMessage[] = storedMessages
-      .filter((m) => m.id !== `temp-user-${Date.now()}`)
-      .slice(-20) // Keep last 20 messages for context window
-      .map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      }));
+      if (!sender.isDestroyed()) {
+        sender.send("chat:stream-chunk", {
+          conversationId,
+          messageId,
+          content: errorContent,
+          done: true,
+          citations: [],
+        });
+      }
 
-    const messages: ChatMessage[] = [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...chatHistory,
-      { role: "user", content: userContent },
-    ];
-
-    let fullContent = "";
-
-    for await (const chunk of provider.stream({
-      model,
-      messages,
-      temperature: 0.3,
-      maxTokens: 4096,
-    })) {
-      fullContent += chunk.content;
-
-      if (sender.isDestroyed()) return;
-
-      sender.send("chat:stream-chunk", {
-        conversationId,
-        messageId,
-        content: fullContent,
-        done: chunk.done,
-        citations: [],
-      });
+      await chatStore.addMessage(conversationId, "assistant", errorContent, [], null);
     }
-
-    // Ensure we send a final done=true if the stream ended without one
-    if (!sender.isDestroyed()) {
-      sender.send("chat:stream-chunk", {
-        conversationId,
-        messageId,
-        content: fullContent,
-        done: true,
-        citations: [],
-      });
-    }
-
-    await chatStore.addMessage(conversationId, "assistant", fullContent, [], model);
-  } catch (error) {
-    const errorContent = formatProviderError(error);
-
-    if (!sender.isDestroyed()) {
-      sender.send("chat:stream-chunk", {
-        conversationId,
-        messageId,
-        content: errorContent,
-        done: true,
-        citations: [],
-      });
-    }
-
-    await chatStore.addMessage(conversationId, "assistant", errorContent, [], null);
   }
 }
 
@@ -223,6 +311,7 @@ export function setupChatHandlers(): void {
         conversationId,
         assistantMessageId,
         content,
+        conversation.scope as ChatScope | null,
       );
 
       return {

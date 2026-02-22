@@ -9,6 +9,7 @@ import {
   MIN_WIDTH,
   MAX_WIDTH,
 } from "../stores/sidebar";
+import { useCanvasStore } from "../stores/canvas";
 import { APP_TEMPLATES, getAppTemplate, generatePartitionId } from "../stores/appTemplates";
 
 // ─── Tab type metadata ───────────────────────────────────────────
@@ -547,6 +548,92 @@ function CollapsedSidebar(): React.ReactElement {
   );
 }
 
+// ─── Saved Canvases Section ──────────────────────────────────────
+
+function SavedCanvasesSection(): React.ReactElement | null {
+  const savedCanvases = useCanvasStore((s) => s.savedCanvases);
+  const listLoaded = useCanvasStore((s) => s.listLoaded);
+  const loadCanvasList = useCanvasStore((s) => s.loadCanvasList);
+  const removeSavedCanvas = useCanvasStore((s) => s.removeSavedCanvas);
+  const assignCanvas = useCanvasStore((s) => s.assignCanvas);
+  const addTab = useTabStore((s) => s.addTab);
+  const updateTab = useTabStore((s) => s.updateTab);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [deleteHoveredId, setDeleteHoveredId] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  useEffect(() => {
+    if (!listLoaded) {
+      void loadCanvasList();
+    }
+  }, [listLoaded, loadCanvasList]);
+
+  if (savedCanvases.length === 0) return null;
+
+  return (
+    <div style={styles.section}>
+      <button
+        type="button"
+        style={{
+          ...styles.sectionHeader,
+          cursor: "pointer",
+          border: "none",
+          backgroundColor: "transparent",
+          width: "100%",
+        }}
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-label={isExpanded ? "Collapse canvases" : "Expand canvases"}
+      >
+        <Icon name="canvas" size={12} />
+        Canvases ({savedCanvases.length})
+      </button>
+      {isExpanded &&
+        savedCanvases.map((canvas) => (
+          <button
+            key={canvas.id}
+            type="button"
+            style={{
+              ...styles.tabItem,
+              ...(hoveredId === canvas.id ? styles.tabItemHover : {}),
+            }}
+            onClick={() => {
+              const tabId = addTab("canvas");
+              assignCanvas(tabId, canvas.id);
+              updateTab(tabId, { title: canvas.name || "Canvas" });
+            }}
+            onMouseEnter={() => setHoveredId(canvas.id)}
+            onMouseLeave={() => setHoveredId(null)}
+            aria-label={`Open canvas: ${canvas.name}`}
+            title={canvas.name}
+          >
+            <Icon name="canvas" size={14} />
+            <span style={styles.tabTitle}>{canvas.name}</span>
+            <button
+              type="button"
+              aria-label={`Delete canvas: ${canvas.name}`}
+              style={{
+                ...styles.tabClose,
+                ...(deleteHoveredId === canvas.id
+                  ? { backgroundColor: "var(--mixa-bg-active)", color: "var(--mixa-text-primary)" }
+                  : {}),
+                opacity: hoveredId === canvas.id ? 1 : 0,
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeSavedCanvas(canvas.id);
+                void window.electronAPI.canvas.delete(canvas.id);
+              }}
+              onMouseEnter={() => setDeleteHoveredId(canvas.id)}
+              onMouseLeave={() => setDeleteHoveredId(null)}
+            >
+              <Icon name="close" size={12} />
+            </button>
+          </button>
+        ))}
+    </div>
+  );
+}
+
 // ─── Main Sidebar Component ─────────────────────────────────────
 
 export function Sidebar(): React.ReactElement {
@@ -702,6 +789,8 @@ export function Sidebar(): React.ReactElement {
             No open tabs
           </div>
         )}
+
+        <SavedCanvasesSection />
       </div>
 
       <div style={styles.quickActions}>
