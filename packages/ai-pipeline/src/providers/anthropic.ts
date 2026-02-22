@@ -21,8 +21,11 @@ import {
 /** Models supported by the Anthropic adapter */
 export const ANTHROPIC_CHAT_MODELS = [
   "claude-sonnet-4-20250514",
+  "claude-opus-4-20250514",
   "claude-haiku-4-20250414",
   "claude-3-5-sonnet-20241022",
+  "claude-3-5-haiku-20241022",
+  "claude-3-opus-20240229",
   "claude-3-haiku-20240307",
 ] as const;
 

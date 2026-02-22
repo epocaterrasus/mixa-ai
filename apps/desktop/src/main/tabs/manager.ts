@@ -37,6 +37,7 @@ export class TabManager {
   private configuredSessions = new WeakSet<Electron.Session>();
   private pageLoadedCallbacks: PageLoadedCallback[] = [];
   private tabDestroyedCallbacks: TabDestroyedCallback[] = [];
+  private ipcRegistered = false;
 
   attach(window: BrowserWindow): void {
     this.mainWindow = window;
@@ -417,6 +418,9 @@ export class TabManager {
   }
 
   private registerIPC(): void {
+    if (this.ipcRegistered) return;
+    this.ipcRegistered = true;
+
     ipcMain.handle("tab:create-web-view", (_event, tabId: string, url?: string, partitionId?: string) => {
       this.createWebView(tabId, url, partitionId);
     });
@@ -475,6 +479,7 @@ export class TabManager {
       this.destroyWebView(tabId);
     }
 
+    this.ipcRegistered = false;
     ipcMain.removeHandler("tab:create-web-view");
     ipcMain.removeHandler("tab:destroy-web-view");
     ipcMain.removeHandler("tab:activate");

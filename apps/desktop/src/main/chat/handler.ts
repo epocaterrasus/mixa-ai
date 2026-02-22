@@ -133,6 +133,7 @@ async function streamRAGResponse(
   userContent: string,
   router: ProviderRouter,
   scope: ChatScope | null,
+  modelOverride?: string,
 ): Promise<void> {
   const userId = getUserId();
   const sqlClient = getSqlClient() as RagSqlClient;
@@ -147,7 +148,7 @@ async function streamRAGResponse(
 
   let fullContent = "";
   let finalCitations: Citation[] = [];
-  const model = router.getActiveChatModel();
+  const model = modelOverride ?? router.getActiveChatModel();
 
   const stream: AsyncGenerator<RAGStreamChunk> = ragStream(sqlClient, router, {
     query: userContent,
@@ -197,8 +198,9 @@ async function streamDirectResponse(
   messageId: string,
   userContent: string,
   router: ProviderRouter,
+  modelOverride?: string,
 ): Promise<void> {
-  const model = router.getActiveChatModel();
+  const model = modelOverride ?? router.getActiveChatModel();
   const provider = router.getChatProvider();
 
   const storedMessages = await chatStore.getMessages(conversationId);
@@ -255,6 +257,7 @@ async function streamAIResponse(
   messageId: string,
   userContent: string,
   scope: ChatScope | null,
+  modelOverride?: string,
 ): Promise<void> {
   const router = buildProviderRouter();
 
@@ -264,12 +267,10 @@ async function streamAIResponse(
   }
 
   try {
-    // Try the full RAG pipeline first (knowledge-grounded with citations)
-    await streamRAGResponse(sender, conversationId, messageId, userContent, router, scope);
+    await streamRAGResponse(sender, conversationId, messageId, userContent, router, scope, modelOverride);
   } catch {
-    // If RAG fails (e.g. DB issue, embedding error), fall back to direct chat
     try {
-      await streamDirectResponse(sender, conversationId, messageId, userContent, router);
+      await streamDirectResponse(sender, conversationId, messageId, userContent, router, modelOverride);
     } catch (directError) {
       const errorContent = formatProviderError(directError);
 

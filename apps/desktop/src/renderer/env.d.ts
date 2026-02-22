@@ -97,7 +97,7 @@ interface ChatStreamChunkData {
 }
 
 interface ElectronChatAPI {
-  readonly sendMessage: (conversationId: string, content: string) => Promise<{
+  readonly sendMessage: (conversationId: string, content: string, modelOverride?: string) => Promise<{
     userMessageId: string;
     assistantMessageId: string;
   }>;

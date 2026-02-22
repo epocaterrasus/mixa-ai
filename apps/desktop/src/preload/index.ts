@@ -154,10 +154,10 @@ const electronAPI = {
 
   // Chat streaming IPC
   chat: {
-    sendMessage: (conversationId: string, content: string): Promise<{
+    sendMessage: (conversationId: string, content: string, modelOverride?: string): Promise<{
       userMessageId: string;
       assistantMessageId: string;
-    }> => ipcRenderer.invoke("chat:send-message", { conversationId, content }),
+    }> => ipcRenderer.invoke("chat:send-message", { conversationId, content, modelOverride }),
 
     onStreamChunk: (callback: (data: {
       conversationId: string;

@@ -30,6 +30,7 @@ interface ChatStore {
   error: string | null;
   showSidebar: boolean;
   scope: ChatScope;
+  modelOverride: string | null;
 
   // Actions
   loadConversations: () => Promise<void>;
@@ -38,6 +39,7 @@ interface ChatStore {
   deleteConversation: (id: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   setScope: (scope: ChatScope) => void;
+  setModelOverride: (model: string | null) => void;
   toggleSidebar: () => void;
   clearError: () => void;
   newConversation: () => void;
@@ -61,6 +63,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   error: null,
   showSidebar: false,
   scope: EMPTY_SCOPE,
+  modelOverride: null,
 
   loadConversations: async () => {
     try {
@@ -147,17 +150,15 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   sendMessage: async (content: string) => {
-    const { activeConversationId, isStreaming } = get();
+    const { activeConversationId, isStreaming, modelOverride } = get();
     if (isStreaming) return;
 
     let conversationId = activeConversationId;
 
-    // Create a new conversation if none is active
     if (!conversationId) {
       conversationId = await get().createConversation();
     }
 
-    // Add user message to local state
     const userMessage: ChatMessage = {
       id: `temp-user-${Date.now()}`,
       role: "user",
@@ -174,8 +175,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }));
 
     try {
-      // Send via IPC (streaming channel)
-      const result = await window.electronAPI.chat.sendMessage(conversationId, content);
+      const result = await window.electronAPI.chat.sendMessage(
+        conversationId,
+        content,
+        modelOverride ?? undefined,
+      );
 
       // Update user message with real ID
       set((state) => ({
@@ -228,6 +232,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     set({ scope });
   },
 
+  setModelOverride: (model: string | null) => {
+    set({ modelOverride: model });
+  },
+
   toggleSidebar: () => {
     set((state) => ({ showSidebar: !state.showSidebar }));
   },
@@ -242,6 +250,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       messages: [],
       error: null,
       isStreaming: false,
+      modelOverride: null,
     });
   },
 }));

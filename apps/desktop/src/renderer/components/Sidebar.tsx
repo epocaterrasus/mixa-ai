@@ -417,6 +417,17 @@ function SidebarTabItem({
     [onContextMenu, tab.id],
   );
 
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      e.dataTransfer.setData(
+        "text/x-mixa-tab",
+        JSON.stringify({ id: tab.id, title: tab.title, type: tab.type, url: tab.url }),
+      );
+      e.dataTransfer.effectAllowed = "copy";
+    },
+    [tab.id, tab.title, tab.type, tab.url],
+  );
+
   const faviconContent = tab.faviconUrl ? (
     <img
       src={tab.faviconUrl}
@@ -433,6 +444,7 @@ function SidebarTabItem({
   return (
     <button
       type="button"
+      draggable
       style={{
         ...styles.tabItem,
         ...(tab.isActive ? styles.tabItemActive : {}),
@@ -440,6 +452,7 @@ function SidebarTabItem({
       }}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
+      onDragStart={handleDragStart}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-label={tab.title}
@@ -589,9 +602,10 @@ function SavedCanvasesSection(): React.ReactElement | null {
       </button>
       {isExpanded &&
         savedCanvases.map((canvas) => (
-          <button
+          <div
             key={canvas.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             style={{
               ...styles.tabItem,
               ...(hoveredId === canvas.id ? styles.tabItemHover : {}),
@@ -600,6 +614,14 @@ function SavedCanvasesSection(): React.ReactElement | null {
               const tabId = addTab("canvas");
               assignCanvas(tabId, canvas.id);
               updateTab(tabId, { title: canvas.name || "Canvas" });
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                const tabId = addTab("canvas");
+                assignCanvas(tabId, canvas.id);
+                updateTab(tabId, { title: canvas.name || "Canvas" });
+              }
             }}
             onMouseEnter={() => setHoveredId(canvas.id)}
             onMouseLeave={() => setHoveredId(null)}
@@ -628,7 +650,7 @@ function SavedCanvasesSection(): React.ReactElement | null {
             >
               <Icon name="close" size={12} />
             </button>
-          </button>
+          </div>
         ))}
     </div>
   );

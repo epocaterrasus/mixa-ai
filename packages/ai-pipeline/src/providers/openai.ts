@@ -18,10 +18,14 @@ import {
 
 /** Models supported by the OpenAI adapter */
 export const OPENAI_CHAT_MODELS = [
+  "gpt-4.1",
+  "gpt-4.1-mini",
+  "gpt-4.1-nano",
   "gpt-4o",
   "gpt-4o-mini",
+  "o3-mini",
+  "o4-mini",
   "gpt-4-turbo",
-  "gpt-3.5-turbo",
 ] as const;
 
 export const OPENAI_EMBEDDING_MODELS = [

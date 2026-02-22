@@ -75,9 +75,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   addSavedCanvas: (meta) => {
-    set((state) => ({
-      savedCanvases: [meta, ...state.savedCanvases],
-    }));
+    set((state) => {
+      if (state.savedCanvases.some((c) => c.id === meta.id)) return state;
+      return { savedCanvases: [meta, ...state.savedCanvases] };
+    });
   },
 
   removeSavedCanvas: (canvasId) => {

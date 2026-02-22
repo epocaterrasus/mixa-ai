@@ -11,6 +11,9 @@ import type { CanvasSaveData } from "../../stores/canvas";
 import { useThemeStore } from "../../stores/theme";
 import { CanvasToolbar } from "./CanvasToolbar";
 
+// MIME type for sidebar tab drag-and-drop
+const MIXA_TAB_MIME = "text/x-mixa-tab";
+
 // ─── Styles ──────────────────────────────────────────────────────
 
 const containerStyle: React.CSSProperties = {
@@ -29,6 +32,40 @@ const excalidrawWrapperStyle: React.CSSProperties = {
   overflow: "hidden",
 };
 
+// ─── Helpers ─────────────────────────────────────────────────────
+
+interface CachedScene {
+  elements: readonly ExcalidrawElement[];
+  appState: AppState;
+  files: BinaryFiles;
+}
+
+function buildSavePayload(
+  name: string,
+  createdIso: string,
+  scene: CachedScene,
+): CanvasSaveData {
+  return {
+    name,
+    createdAt: createdIso,
+    updatedAt: new Date().toISOString(),
+    elements: scene.elements as unknown as readonly Record<string, unknown>[],
+    appState: {
+      viewBackgroundColor: scene.appState.viewBackgroundColor,
+      gridSize: scene.appState.gridSize,
+      zoom: scene.appState.zoom,
+      scrollX: scene.appState.scrollX,
+      scrollY: scene.appState.scrollY,
+    },
+    files: scene.files as unknown as Record<string, unknown>,
+  };
+}
+
+function descriptionForTab(type: string, url: string | null): string {
+  if ((type === "web" || type === "app") && url) return url;
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
 // ─── Component ───────────────────────────────────────────────────
 
 export function CanvasTab(): React.ReactElement {
@@ -40,7 +77,14 @@ export function CanvasTab(): React.ReactElement {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaveDataRef = useRef<string>("");
 
-  // Get active tab ID to associate this canvas instance
+  // Refs for reliable unmount save (avoids stale closures)
+  const latestSceneRef = useRef<CachedScene | null>(null);
+  const canvasIdRef = useRef<string>("");
+  const canvasNameRef = useRef<string>("Untitled Canvas");
+  const lastSavedRef = useRef<Date | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Tab store
   const activeTabId = useTabStore((s) => s.activeTabId);
   const updateTab = useTabStore((s) => s.updateTab);
   const tabs = useTabStore((s) => s.tabs);
@@ -64,12 +108,18 @@ export function CanvasTab(): React.ReactElement {
     return newId;
   }, [activeTabId, getCanvasId, assignCanvas]);
 
-  // Available tabs for embedding
-  const embeddableTabs = useMemo(() => {
-    return tabs.filter((t) => t.type === "web" || t.type === "app");
-  }, [tabs]);
+  // Keep refs in sync for unmount access
+  canvasIdRef.current = canvasId;
+  canvasNameRef.current = canvasName;
+  lastSavedRef.current = lastSaved;
 
-  // Load canvas data on mount
+  // All tabs except the current canvas tab are embeddable
+  const embeddableTabs = useMemo(() => {
+    return tabs.filter((t) => t.id !== activeTabId);
+  }, [tabs, activeTabId]);
+
+  // ─── Load ────────────────────────────────────────────────────
+
   useEffect(() => {
     let cancelled = false;
 
@@ -94,7 +144,6 @@ export function CanvasTab(): React.ReactElement {
                 ? data["files"] as BinaryFiles
                 : {};
 
-              // Only restore safe appState keys to avoid type conflicts
               const restoredAppState: Record<string, unknown> = { theme: resolvedMode };
               if (typeof rawAppState["viewBackgroundColor"] === "string") {
                 restoredAppState["viewBackgroundColor"] = rawAppState["viewBackgroundColor"];
@@ -132,7 +181,8 @@ export function CanvasTab(): React.ReactElement {
     }
   }, [activeTabId, canvasName, updateTab]);
 
-  // Save canvas data
+  // ─── Save ────────────────────────────────────────────────────
+
   const saveCanvas = useCallback(async () => {
     if (!excalidrawRef.current) return;
 
@@ -140,24 +190,13 @@ export function CanvasTab(): React.ReactElement {
     const appState = excalidrawRef.current.getAppState();
     const files = excalidrawRef.current.getFiles();
 
-    const saveData: CanvasSaveData = {
-      name: canvasName,
-      createdAt: lastSaved ? lastSaved.toISOString() : new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      elements: elements as unknown as readonly Record<string, unknown>[],
-      appState: {
-        viewBackgroundColor: appState.viewBackgroundColor,
-        gridSize: appState.gridSize,
-        zoom: appState.zoom,
-        scrollX: appState.scrollX,
-        scrollY: appState.scrollY,
-      },
-      files: files as unknown as Record<string, unknown>,
-    };
+    const saveData = buildSavePayload(
+      canvasName,
+      lastSaved ? lastSaved.toISOString() : new Date().toISOString(),
+      { elements, appState, files },
+    );
 
     const dataStr = JSON.stringify(saveData);
-
-    // Skip if data hasn't changed
     if (dataStr === lastSaveDataRef.current) return;
     lastSaveDataRef.current = dataStr;
 
@@ -168,7 +207,6 @@ export function CanvasTab(): React.ReactElement {
         const now = new Date();
         setLastSaved(now);
 
-        // Update canvas list metadata
         const meta = {
           id: canvasId,
           name: canvasName,
@@ -176,7 +214,6 @@ export function CanvasTab(): React.ReactElement {
           updatedAt: saveData.updatedAt,
         };
         updateSavedCanvas(canvasId, meta);
-        // If first save, add to list
         addSavedCanvas(meta);
       }
     } catch {
@@ -185,9 +222,11 @@ export function CanvasTab(): React.ReactElement {
     setIsSaving(false);
   }, [canvasId, canvasName, lastSaved, addSavedCanvas, updateSavedCanvas]);
 
-  // Auto-save on changes (debounced 2 seconds)
+  // Cache scene data on every change for reliable unmount save
   const handleChange = useCallback(
-    (_elements: readonly ExcalidrawElement[], _appState: AppState, _files: BinaryFiles) => {
+    (elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) => {
+      latestSceneRef.current = { elements, appState, files };
+
       if (!isLoaded) return;
 
       if (saveTimerRef.current) {
@@ -200,18 +239,31 @@ export function CanvasTab(): React.ReactElement {
     [isLoaded, saveCanvas],
   );
 
-  // Cleanup save timer on unmount
+  // Reliable unmount save using cached scene data (Excalidraw ref may be destroyed)
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
       }
-      // Final save on unmount
-      void saveCanvas();
-    };
-  }, [saveCanvas]);
+      const scene = latestSceneRef.current;
+      if (!scene) return;
 
-  // Export handlers
+      const created = lastSavedRef.current
+        ? lastSavedRef.current.toISOString()
+        : new Date().toISOString();
+
+      const payload = buildSavePayload(canvasNameRef.current, created, scene);
+      void window.electronAPI.canvas.save(
+        canvasIdRef.current,
+        JSON.stringify(payload),
+      );
+    };
+    // Refs are stable — cleanup only needs to run on true unmount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ─── Export ──────────────────────────────────────────────────
+
   const handleExportPNG = useCallback(async () => {
     if (!excalidrawRef.current) return;
 
@@ -288,23 +340,23 @@ export function CanvasTab(): React.ReactElement {
     }
   }, [canvasName]);
 
-  // Embed tab as a labeled element
-  const handleEmbedTab = useCallback(
-    (tabId: string) => {
+  // ─── Embed tab at scene coordinates ──────────────────────────
+
+  const embedTabAtPosition = useCallback(
+    (tabId: string, sceneX: number, sceneY: number) => {
       if (!excalidrawRef.current) return;
 
       const tab = tabs.find((t) => t.id === tabId);
       if (!tab) return;
 
       const currentElements = excalidrawRef.current.getSceneElements();
-      const appState = excalidrawRef.current.getAppState();
+      const ts = Date.now();
 
-      // Create a frame-like rectangle with the tab title
-      const newElement: Record<string, unknown> = {
-        id: `embed-${tabId}-${Date.now()}`,
+      const rectElement: Record<string, unknown> = {
+        id: `embed-${tabId}-${ts}`,
         type: "rectangle",
-        x: (appState.scrollX ?? 0) * -1 + 200,
-        y: (appState.scrollY ?? 0) * -1 + 200,
+        x: sceneX,
+        y: sceneY,
         width: 320,
         height: 200,
         strokeColor: resolvedMode === "dark" ? "#a5a5a5" : "#333333",
@@ -317,19 +369,19 @@ export function CanvasTab(): React.ReactElement {
           embeddedTabId: tabId,
           embeddedTabUrl: tab.url,
           embeddedTabTitle: tab.title,
+          embeddedTabType: tab.type,
           embedMode: "snapshot",
         },
       };
 
-      // Add a text label for the tab
       const labelElement: Record<string, unknown> = {
-        id: `embed-label-${tabId}-${Date.now()}`,
+        id: `embed-label-${tabId}-${ts}`,
         type: "text",
-        x: (appState.scrollX ?? 0) * -1 + 210,
-        y: (appState.scrollY ?? 0) * -1 + 210,
+        x: sceneX + 10,
+        y: sceneY + 10,
         width: 300,
         height: 30,
-        text: `${tab.title}\n${tab.url ?? ""}`,
+        text: `${tab.title}\n${descriptionForTab(tab.type, tab.url)}`,
         fontSize: 14,
         fontFamily: 1,
         textAlign: "left",
@@ -344,7 +396,7 @@ export function CanvasTab(): React.ReactElement {
       excalidrawRef.current.updateScene({
         elements: [
           ...currentElements,
-          newElement as unknown as ExcalidrawElement,
+          rectElement as unknown as ExcalidrawElement,
           labelElement as unknown as ExcalidrawElement,
         ],
       });
@@ -352,7 +404,57 @@ export function CanvasTab(): React.ReactElement {
     [tabs, resolvedMode],
   );
 
-  // Save on Cmd+S
+  // Toolbar "Embed Tab" button — places at viewport center
+  const handleEmbedTab = useCallback(
+    (tabId: string) => {
+      if (!excalidrawRef.current) return;
+      const appState = excalidrawRef.current.getAppState();
+      const centerX = -(appState.scrollX ?? 0) + 200;
+      const centerY = -(appState.scrollY ?? 0) + 200;
+      embedTabAtPosition(tabId, centerX, centerY);
+    },
+    [embedTabAtPosition],
+  );
+
+  // ─── Drag-and-drop from sidebar ─────────────────────────────
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes(MIXA_TAB_MIME)) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      const raw = e.dataTransfer.getData(MIXA_TAB_MIME);
+      if (!raw) return;
+      e.preventDefault();
+
+      try {
+        const { id } = JSON.parse(raw) as { id: string };
+        if (!excalidrawRef.current || !wrapperRef.current) return;
+
+        const appState = excalidrawRef.current.getAppState();
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const zoom = typeof appState.zoom === "object" && appState.zoom !== null
+          ? (appState.zoom as { value: number }).value
+          : 1;
+
+        // Convert screen coordinates → Excalidraw scene coordinates
+        const sceneX = (e.clientX - rect.left) / zoom - (appState.scrollX ?? 0);
+        const sceneY = (e.clientY - rect.top) / zoom - (appState.scrollY ?? 0);
+
+        embedTabAtPosition(id, sceneX, sceneY);
+      } catch {
+        // ignore malformed drop data
+      }
+    },
+    [embedTabAtPosition],
+  );
+
+  // ─── Keyboard save ──────────────────────────────────────────
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
       if ((e.metaKey || e.ctrlKey) && e.key === "s" && !e.shiftKey && !e.altKey) {
@@ -363,6 +465,8 @@ export function CanvasTab(): React.ReactElement {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [saveCanvas]);
+
+  // ─── Render ─────────────────────────────────────────────────
 
   return (
     <div style={containerStyle}>
@@ -378,7 +482,12 @@ export function CanvasTab(): React.ReactElement {
         embeddableTabs={embeddableTabs}
         onEmbedTab={handleEmbedTab}
       />
-      <div style={excalidrawWrapperStyle}>
+      <div
+        ref={wrapperRef}
+        style={excalidrawWrapperStyle}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         <Excalidraw
           excalidrawAPI={(api: ExcalidrawImperativeAPI) => {
             excalidrawRef.current = api;
