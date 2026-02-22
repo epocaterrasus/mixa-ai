@@ -71,7 +71,7 @@ const QUICK_ACTIONS: QuickAction[] = [
 
 function handleQuickAction(
   action: QuickAction,
-  addTab: (type: TabType, url?: string) => string,
+  switchOrCreateTab: (type: TabType, url?: string) => string,
   addAppTab: (options: {
     templateId: string;
     title: string;
@@ -92,7 +92,7 @@ function handleQuickAction(
       });
     }
   } else {
-    addTab(action.type, action.url);
+    switchOrCreateTab(action.type, action.url);
   }
 }
 
@@ -470,7 +470,7 @@ function CollapsedSidebar(): React.ReactElement {
   const toggle = useSidebarStore((s) => s.toggle);
   const tabs = useTabStore((s) => s.tabs);
   const activateTab = useTabStore((s) => s.activateTab);
-  const addTab = useTabStore((s) => s.addTab);
+  const switchOrCreateTab = useTabStore((s) => s.switchOrCreateTab);
   const addAppTab = useTabStore((s) => s.addAppTab);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -533,11 +533,11 @@ function CollapsedSidebar(): React.ReactElement {
             ...styles.collapsedTabIcon,
             ...(hoveredId === `qa-${action.label}` ? { backgroundColor: "var(--mixa-bg-hover)" } : {}),
           }}
-          onClick={() => handleQuickAction(action, addTab, addAppTab)}
+          onClick={() => handleQuickAction(action, switchOrCreateTab, addAppTab)}
           onMouseEnter={() => setHoveredId(`qa-${action.label}`)}
           onMouseLeave={() => setHoveredId(null)}
-          aria-label={`New ${action.label}`}
-          title={`New ${action.label}`}
+          aria-label={action.label}
+          title={action.label}
         >
           <Icon name={action.iconName} size={16} />
         </button>
@@ -555,7 +555,7 @@ export function Sidebar(): React.ReactElement {
   const toggle = useSidebarStore((s) => s.toggle);
   const setWidth = useSidebarStore((s) => s.setWidth);
   const tabs = useTabStore((s) => s.tabs);
-  const addTab = useTabStore((s) => s.addTab);
+  const switchOrCreateTab = useTabStore((s) => s.switchOrCreateTab);
   const addAppTab = useTabStore((s) => s.addAppTab);
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -713,11 +713,11 @@ export function Sidebar(): React.ReactElement {
               ...styles.quickActionButton,
               ...(qaHovered === action.label ? { backgroundColor: "var(--mixa-bg-hover)", color: "var(--mixa-text-secondary)" } : {}),
             }}
-            onClick={() => handleQuickAction(action, addTab, addAppTab)}
+            onClick={() => handleQuickAction(action, switchOrCreateTab, addAppTab)}
             onMouseEnter={() => setQaHovered(action.label)}
             onMouseLeave={() => setQaHovered(null)}
-            aria-label={`New ${action.label}`}
-            title={`New ${action.label}`}
+            aria-label={action.label}
+            title={action.label}
           >
             <Icon name={action.iconName} size={14} />
             <span>{action.label}</span>

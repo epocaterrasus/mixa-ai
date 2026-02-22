@@ -51,9 +51,9 @@ function makeItem(overrides: Partial<{
     sourceType: "manual",
     thumbnailUrl: null,
     faviconUrl: null,
-    domain: overrides.domain ?? "example.com",
-    wordCount: overrides.wordCount ?? 100,
-    readingTime: overrides.readingTime ?? 1,
+    domain: "domain" in overrides ? overrides.domain : "example.com",
+    wordCount: "wordCount" in overrides ? overrides.wordCount : 100,
+    readingTime: "readingTime" in overrides ? overrides.readingTime : 1,
     summary: null,
     isArchived: overrides.isArchived ?? false,
     isFavorite: overrides.isFavorite ?? false,
@@ -97,11 +97,10 @@ describe("knowledgeStatsRouter", () => {
     });
 
     it("computes total word count and reading time", async () => {
-      const itemNullCounts = makeItem({ wordCount: null, readingTime: null });
       mockSelectRows.mockResolvedValue([
         makeItem({ wordCount: 500, readingTime: 3 }),
         makeItem({ wordCount: 300, readingTime: 2 }),
-        itemNullCounts,
+        makeItem({ wordCount: null, readingTime: null }),
       ]);
 
       const result = await caller.overview();
