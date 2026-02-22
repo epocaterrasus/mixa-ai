@@ -60,7 +60,16 @@ export type {
   ThemeMode,
   SidebarPosition,
   TabBarPosition,
+  MediaBarPosition,
+  MediaBarConfig,
   ThemeConfig,
   KeyboardShortcut,
   UserSettings,
 } from "./settings.js";
+
+export type {
+  MeetSessionInfo,
+  AudioTabInfo,
+  MediaBarState,
+  MeetControlAction,
+} from "./media.js";

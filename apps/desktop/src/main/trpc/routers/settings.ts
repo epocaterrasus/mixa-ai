@@ -21,6 +21,7 @@ const llmProviderNameSchema = z.enum([
 const themeModeSchema = z.enum(["dark", "light", "system"]);
 const sidebarPositionSchema = z.enum(["left", "right"]);
 const tabBarPositionSchema = z.enum(["top", "bottom"]);
+const mediaBarPositionSchema = z.enum(["top", "bottom"]);
 
 // --- File-based settings persistence ---
 
@@ -95,6 +96,10 @@ const defaultSettings: UserSettings = {
   augmentedBrowsingEnabled: true,
   defaultSearchEngine: "https://www.google.com/search?q=",
   onboardingCompleted: false,
+  mediaBar: {
+    enabled: true,
+    position: "bottom",
+  },
 };
 
 export function loadSettings(): UserSettings {
@@ -166,6 +171,12 @@ export const settingsRouter = router({
         augmentedBrowsingEnabled: z.boolean().optional(),
         defaultSearchEngine: z.string().optional(),
         onboardingCompleted: z.boolean().optional(),
+        mediaBar: z
+          .object({
+            enabled: z.boolean().optional(),
+            position: mediaBarPositionSchema.optional(),
+          })
+          .optional(),
       }),
     )
     .mutation(async ({ input }): Promise<UserSettings> => {
@@ -215,6 +226,9 @@ export const settingsRouter = router({
       }
       if (input.onboardingCompleted !== undefined) {
         current.onboardingCompleted = input.onboardingCompleted;
+      }
+      if (input.mediaBar) {
+        current.mediaBar = { ...current.mediaBar, ...input.mediaBar };
       }
 
       saveSettings(current);

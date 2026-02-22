@@ -49,6 +49,15 @@ export interface KeyboardShortcut {
   category: string;
 }
 
+/** Media bar position */
+export type MediaBarPosition = "top" | "bottom";
+
+/** Media bar configuration */
+export interface MediaBarConfig {
+  enabled: boolean;
+  position: MediaBarPosition;
+}
+
 /** Top-level user settings */
 export interface UserSettings {
   llm: LLMConfig;
@@ -59,4 +68,5 @@ export interface UserSettings {
   augmentedBrowsingEnabled: boolean;
   defaultSearchEngine: string;
   onboardingCompleted: boolean;
+  mediaBar: MediaBarConfig;
 }

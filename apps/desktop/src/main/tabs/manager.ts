@@ -32,6 +32,7 @@ export class TabManager {
   private activeTabId: string | null = null;
   private mainWindow: BrowserWindow | null = null;
   private sidebarWidth = 0;
+  private mediaBarHeight = 0;
   private configuredSessions = new WeakSet<Electron.Session>();
   private pageLoadedCallbacks: PageLoadedCallback[] = [];
   private tabDestroyedCallbacks: TabDestroyedCallback[] = [];
@@ -61,6 +62,11 @@ export class TabManager {
     this.updateActiveViewBounds();
   }
 
+  setMediaBarHeight(height: number): void {
+    this.mediaBarHeight = Math.max(0, Math.round(height));
+    this.updateActiveViewBounds();
+  }
+
   private getContentBounds(): ContentBounds {
     if (!this.mainWindow) {
       return { x: this.sidebarWidth, y: CHROME_HEIGHT, width: 800, height: 600 };
@@ -70,7 +76,7 @@ export class TabManager {
       x: this.sidebarWidth,
       y: CHROME_HEIGHT,
       width: Math.max(0, width - this.sidebarWidth),
-      height: Math.max(0, height - CHROME_HEIGHT),
+      height: Math.max(0, height - CHROME_HEIGHT - this.mediaBarHeight),
     };
   }
 
@@ -319,6 +325,48 @@ export class TabManager {
       "window.getSelection()?.toString() ?? ''",
     ) as string;
     return text || null;
+  }
+
+  /** Get the webContents title synchronously (without executing JS) */
+  getWebContentsTitle(tabId: string): string | null {
+    const info = this.views.get(tabId);
+    if (!info || info.view.webContents.isDestroyed()) return null;
+    return info.view.webContents.getTitle();
+  }
+
+  /** Check whether a view exists and its webContents is not destroyed */
+  hasActiveView(tabId: string): boolean {
+    const info = this.views.get(tabId);
+    return !!info && !info.view.webContents.isDestroyed();
+  }
+
+  /** Get all tab IDs that currently have an active web view */
+  getAllViewIds(): string[] {
+    return Array.from(this.views.keys());
+  }
+
+  /** Get all active views with their tab IDs */
+  getViews(): WebViewInfo[] {
+    return Array.from(this.views.values());
+  }
+
+  /** Get view info for a specific tab */
+  getViewInfo(tabId: string): WebViewInfo | undefined {
+    return this.views.get(tabId);
+  }
+
+  /** Check if a tab's webContents is currently audible */
+  isAudible(tabId: string): boolean {
+    const info = this.views.get(tabId);
+    if (!info || info.view.webContents.isDestroyed()) return false;
+    return info.view.webContents.isCurrentlyAudible();
+  }
+
+  /** Execute JavaScript in a tab's webContents and return the result */
+  async executeInTab(tabId: string, code: string): Promise<unknown> {
+    const info = this.views.get(tabId);
+    if (!info || info.view.webContents.isDestroyed()) return null;
+    return info.view.webContents.executeJavaScript(code);
   }
 
   hideActiveView(): void {

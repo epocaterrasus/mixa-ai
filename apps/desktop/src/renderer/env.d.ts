@@ -179,6 +179,34 @@ interface ElectronUpdaterAPI {
   readonly onStateChanged: (callback: (data: UpdaterStateData) => void) => () => void;
 }
 
+interface MeetSessionData {
+  readonly tabId: string;
+  readonly meetingName: string;
+  readonly durationSeconds: number;
+  readonly participantCount: number;
+  readonly isMuted: boolean;
+  readonly isCameraOff: boolean;
+}
+
+interface AudioTabData {
+  readonly tabId: string;
+  readonly title: string;
+  readonly faviconUrl: string | null;
+  readonly url: string | null;
+}
+
+interface MediaBarStateData {
+  readonly meetSessions: MeetSessionData[];
+  readonly audioTabs: AudioTabData[];
+}
+
+interface ElectronMediaAPI {
+  readonly getState: () => Promise<MediaBarStateData>;
+  readonly executeControl: (tabId: string, action: string) => Promise<boolean>;
+  readonly setBarHeight: (height: number) => Promise<void>;
+  readonly onStateChanged: (callback: (data: MediaBarStateData) => void) => () => void;
+}
+
 interface ElectronAPI {
   readonly versions: {
     readonly node: string;
@@ -201,6 +229,7 @@ interface ElectronAPI {
   readonly augmented: ElectronAugmentedAPI;
   readonly terminal: ElectronTerminalAPI;
   readonly shell: ElectronShellAPI;
+  readonly media: ElectronMediaAPI;
 }
 
 interface Window {

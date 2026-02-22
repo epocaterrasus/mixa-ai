@@ -13,7 +13,9 @@ import { useEngineStatus } from "./hooks/useEngineStatus";
 import { useCapture } from "./hooks/useCapture";
 import { useAugmentedBrowsing } from "./hooks/useAugmentedBrowsing";
 import { useUpdater } from "./hooks/useUpdater";
+import { useMediaBar } from "./hooks/useMediaBar";
 import { RelatedItemsPanel } from "./components/RelatedItemsPanel";
+import { MediaBar } from "./components/MediaBar";
 import { useTabStore } from "./stores/tabs";
 
 const styles = {
@@ -87,6 +89,7 @@ export function App(): React.ReactElement {
   useCapture();
   useAugmentedBrowsing();
   useUpdater();
+  useMediaBar();
 
   const activeTabType = useTabStore((s) => {
     const id = s.activeTabId;
@@ -112,6 +115,7 @@ export function App(): React.ReactElement {
             <EmptyState />
           )}
         </div>
+        <MediaBar />
       </div>
       <RelatedItemsPanel />
       <CaptureToast />

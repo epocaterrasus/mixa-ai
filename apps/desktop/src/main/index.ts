@@ -10,6 +10,7 @@ import { setupShellHandlers, cleanupShells } from "./shell/handler.js";
 import { augmentedBrowsingService } from "./augmented/index.js";
 import { loadSettings } from "./trpc/routers/settings.js";
 import { setupUpdater, cleanupUpdater } from "./updater/service.js";
+import { mediaDetector } from "./media/index.js";
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -91,6 +92,13 @@ void app.whenReady().then(() => {
   tabManager.onPageLoaded((tabId) => augmentedBrowsingService.onPageLoaded(tabId));
   tabManager.onTabDestroyed((tabId) => augmentedBrowsingService.onTabDestroyed(tabId));
 
+  // Set up media detection (Google Meet + audio tab tracking)
+  mediaDetector.attach(mainWindow);
+  const savedMediaEnabled = savedSettings.mediaBar.enabled;
+  mediaDetector.setEnabled(savedMediaEnabled);
+  tabManager.onPageLoaded((tabId) => mediaDetector.onPageLoaded(tabId));
+  tabManager.onTabDestroyed((tabId) => mediaDetector.onTabDestroyed(tabId));
+
   // Start the Go engine as a child process
   void engineLifecycle.start();
 
@@ -111,6 +119,7 @@ app.on("before-quit", () => {
   cleanupTerminalStreams();
   cleanupShells();
   cleanupUpdater();
+  mediaDetector.destroy();
   void engineLifecycle.stop();
 });
 

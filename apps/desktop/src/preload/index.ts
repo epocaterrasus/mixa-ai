@@ -401,6 +401,70 @@ const electronAPI = {
       return () => ipcRenderer.removeListener("engine:log", handler);
     },
   },
+
+  // Media bar IPC (Google Meet + audio tab detection)
+  media: {
+    setBarHeight: (height: number): Promise<void> =>
+      ipcRenderer.invoke("media:set-bar-height", height),
+
+    getState: (): Promise<{
+      meetSessions: Array<{
+        tabId: string;
+        meetingName: string;
+        durationSeconds: number;
+        participantCount: number;
+        isMuted: boolean;
+        isCameraOff: boolean;
+      }>;
+      audioTabs: Array<{
+        tabId: string;
+        title: string;
+        faviconUrl: string | null;
+        url: string | null;
+      }>;
+    }> => ipcRenderer.invoke("media:get-state"),
+
+    executeControl: (tabId: string, action: string): Promise<boolean> =>
+      ipcRenderer.invoke("media:execute-control", tabId, action) as Promise<boolean>,
+
+    onStateChanged: (callback: (data: {
+      meetSessions: Array<{
+        tabId: string;
+        meetingName: string;
+        durationSeconds: number;
+        participantCount: number;
+        isMuted: boolean;
+        isCameraOff: boolean;
+      }>;
+      audioTabs: Array<{
+        tabId: string;
+        title: string;
+        faviconUrl: string | null;
+        url: string | null;
+      }>;
+    }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: {
+        meetSessions: Array<{
+          tabId: string;
+          meetingName: string;
+          durationSeconds: number;
+          participantCount: number;
+          isMuted: boolean;
+          isCameraOff: boolean;
+        }>;
+        audioTabs: Array<{
+          tabId: string;
+          title: string;
+          faviconUrl: string | null;
+          url: string | null;
+        }>;
+      }): void => {
+        callback(data);
+      };
+      ipcRenderer.on("media:state-changed", handler);
+      return () => ipcRenderer.removeListener("media:state-changed", handler);
+    },
+  },
 } as const;
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);
