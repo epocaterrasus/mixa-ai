@@ -6,6 +6,8 @@ import type { LLMProviderName } from "@mixa-ai/types";
 export interface ProviderConfig {
   apiKey: string;
   baseUrl?: string;
+  /** Custom fetch implementation (e.g. Electron net.fetch) to bypass node-fetch issues */
+  fetch?: typeof globalThis.fetch;
 }
 
 /** A message in a chat conversation */

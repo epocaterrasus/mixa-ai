@@ -1,4 +1,4 @@
-import { ipcMain, type WebContents } from "electron";
+import { ipcMain, net, type WebContents } from "electron";
 import * as chatStore from "./store.js";
 import { loadSettings } from "../trpc/routers/settings.js";
 import { getApiKey } from "../settings/keychain.js";
@@ -57,6 +57,7 @@ function buildProviderRouter(): ProviderRouter | null {
     if (!key) return null;
   }
 
+  const electronFetch = net.fetch.bind(net) as typeof globalThis.fetch;
   const credentials: ProviderCredentials = {};
 
   for (const provider of llmConfig.providers) {
@@ -65,11 +66,13 @@ function buildProviderRouter(): ProviderRouter | null {
       credentials[provider.name] = {
         apiKey: key,
         baseUrl: provider.baseUrl ?? undefined,
+        fetch: electronFetch,
       };
     } else if (provider.name === "ollama") {
       credentials.ollama = {
         apiKey: "",
         baseUrl: provider.baseUrl ?? "http://localhost:11434",
+        fetch: electronFetch,
       };
     }
   }

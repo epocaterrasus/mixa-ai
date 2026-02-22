@@ -44,9 +44,11 @@ interface OllamaEmbedResponse {
 export class OllamaProvider implements LLMProviderAdapter {
   readonly name = "ollama" as const;
   private readonly baseUrl: string;
+  private readonly fetchFn: typeof globalThis.fetch;
 
   constructor(config: ProviderConfig) {
     this.baseUrl = (config.baseUrl ?? DEFAULT_OLLAMA_URL).replace(/\/+$/, "");
+    this.fetchFn = config.fetch ?? globalThis.fetch;
   }
 
   async chat(options: ChatOptions): Promise<ChatResponse> {
@@ -126,7 +128,7 @@ export class OllamaProvider implements LLMProviderAdapter {
 
     let response: Response;
     try {
-      response = await fetch(`${this.baseUrl}/api/chat`, {
+      response = await this.fetchFn(`${this.baseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -187,7 +189,7 @@ export class OllamaProvider implements LLMProviderAdapter {
   private async request<T>(path: string, body: unknown): Promise<T> {
     let response: Response;
     try {
-      response = await fetch(`${this.baseUrl}${path}`, {
+      response = await this.fetchFn(`${this.baseUrl}${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

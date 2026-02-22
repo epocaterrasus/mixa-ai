@@ -42,6 +42,7 @@ export class OpenAIProvider implements LLMProviderAdapter {
     this.client = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.baseUrl,
+      ...(config.fetch ? { fetch: config.fetch as unknown as NonNullable<ConstructorParameters<typeof OpenAI>[0]>["fetch"] } : {}),
     });
   }
 

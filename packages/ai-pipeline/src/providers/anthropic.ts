@@ -37,6 +37,7 @@ export class AnthropicProvider implements LLMProviderAdapter {
     this.client = new Anthropic({
       apiKey: config.apiKey,
       baseURL: config.baseUrl ?? undefined,
+      ...(config.fetch ? { fetch: config.fetch as unknown as NonNullable<ConstructorParameters<typeof Anthropic>[0]>["fetch"] } : {}),
     });
   }
 

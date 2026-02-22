@@ -73,10 +73,12 @@ export class GeminiProvider implements LLMProviderAdapter {
   readonly name = "gemini" as const;
   private readonly apiKey: string;
   private readonly baseUrl: string;
+  private readonly _fetch: typeof globalThis.fetch;
 
   constructor(config: ProviderConfig) {
     this.apiKey = config.apiKey;
     this.baseUrl = (config.baseUrl ?? GEMINI_BASE_URL).replace(/\/+$/, "");
+    this._fetch = config.fetch ?? globalThis.fetch;
   }
 
   async chat(options: ChatOptions): Promise<ChatResponse> {
@@ -187,7 +189,7 @@ export class GeminiProvider implements LLMProviderAdapter {
 
     let response: Response;
     try {
-      response = await fetch(url, {
+      response = await this._fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -251,7 +253,7 @@ export class GeminiProvider implements LLMProviderAdapter {
 
     let response: Response;
     try {
-      response = await fetch(url, {
+      response = await this._fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

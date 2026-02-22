@@ -10,6 +10,7 @@ import {
   getApiKey,
   getApiKeyStatus,
 } from "../../settings/keychain.js";
+import { net } from "electron";
 import { augmentedBrowsingService } from "../../augmented/index.js";
 import {
   ProviderRouter,
@@ -318,16 +319,19 @@ export const settingsRouter = router({
           return { success: false, model: "", error: `Provider ${providerName} not found in settings.` };
         }
 
+        const electronFetch = net.fetch.bind(net) as typeof globalThis.fetch;
         const credentials: ProviderCredentials = {
           [providerName]:
             providerName === "ollama"
               ? {
                   apiKey: "",
                   baseUrl: providerConfig.baseUrl ?? "http://localhost:11434",
+                  fetch: electronFetch,
                 }
               : {
                   apiKey: key ?? "",
                   baseUrl: providerConfig.baseUrl ?? undefined,
+                  fetch: electronFetch,
                 },
         };
 
