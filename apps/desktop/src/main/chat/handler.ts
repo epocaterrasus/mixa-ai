@@ -26,10 +26,20 @@ const PLACEHOLDER_RESPONSE =
   "Right now, no AI provider is active. Once you configure one in Settings, I'll give you real AI-powered answers.";
 
 const DIRECT_SYSTEM_PROMPT =
-  "You are Mixa, a helpful knowledge assistant embedded in a browser. " +
-  "Answer the user's questions clearly and concisely. " +
-  "If you don't know something, say so honestly. " +
-  "Use Markdown formatting where appropriate.";
+  "You are Mixa, an AI knowledge assistant built into a desktop browser app. " +
+  "The user is chatting with you inside the Mixa app, which is a full web browser with a built-in knowledge base.\n\n" +
+  "KEY CAPABILITIES the user already has in this app:\n" +
+  "- **Browse the web** — Mixa has a full browser with tabs, just like Chrome or Safari.\n" +
+  "- **Save any web page** — the user can press Cmd+S (or right-click → Save to Mixa) to capture the current page into their knowledge base.\n" +
+  "- **Save text selections** — the user can highlight text on any page and save just that selection.\n" +
+  "- **Search saved knowledge** — you can search across everything the user has saved.\n" +
+  "- **Chat with knowledge** — when the user asks you questions, you search their saved content and answer with citations.\n\n" +
+  "IMPORTANT RULES:\n" +
+  "- NEVER suggest external tools, libraries, or services for tasks the app already handles (web browsing, saving pages, searching knowledge).\n" +
+  "- If the user asks to open or visit a website, tell them to use the browser tab bar or Cmd+T to open a new tab and navigate there.\n" +
+  "- If the user asks to save or capture content, tell them to navigate to the page and press Cmd+S.\n" +
+  "- Answer clearly and concisely. Use Markdown formatting where appropriate.\n" +
+  "- If you don't know something and it's not in the knowledge base, say so honestly.";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -106,20 +116,28 @@ async function streamPlaceholderResponse(
   await chatStore.addMessage(conversationId, "assistant", accumulated, [], "placeholder");
 }
 
-function formatProviderError(error: unknown): string {
+function describeError(error: unknown): string {
   if (error instanceof LLMAuthenticationError) {
-    return "**Authentication failed** — your API key appears to be invalid or expired. Please check it in Settings.";
+    return `Authentication failed for ${error.provider} — your API key appears to be invalid or expired. Please check it in Settings.`;
   }
   if (error instanceof LLMRateLimitError) {
-    return "**Rate limited** — the AI provider is throttling requests. Please wait a moment and try again.";
+    const retry = error.retryAfterMs
+      ? ` (retry after ${Math.ceil(error.retryAfterMs / 1000)}s)`
+      : "";
+    return `Rate limited by ${error.provider}${retry} — please wait a moment and try again.`;
   }
   if (error instanceof LLMProviderUnavailableError) {
-    return "**Provider unavailable** — could not connect to the AI provider. Check your internet connection or provider status.";
+    const cause = error.cause instanceof Error ? `: ${error.cause.message}` : "";
+    return `Could not reach ${error.provider}${cause}. Check your internet connection or provider status.`;
   }
   if (error instanceof Error) {
-    return `**Error:** ${error.message}`;
+    return error.message;
   }
-  return "**Unexpected error** — something went wrong. Please try again.";
+  return "Something went wrong. Please try again.";
+}
+
+function formatProviderError(error: unknown): string {
+  return `**Error:** ${describeError(error)}`;
 }
 
 /**
@@ -262,16 +280,20 @@ async function streamAIResponse(
   const router = buildProviderRouter();
 
   if (!router) {
+    console.warn("[chat] No active provider or missing API key — sending placeholder");
     await streamPlaceholderResponse(sender, conversationId, messageId);
     return;
   }
 
   try {
     await streamRAGResponse(sender, conversationId, messageId, userContent, router, scope, modelOverride);
-  } catch {
+  } catch (ragError) {
+    console.warn("[chat] RAG response failed, falling back to direct:", describeError(ragError));
+
     try {
       await streamDirectResponse(sender, conversationId, messageId, userContent, router, modelOverride);
     } catch (directError) {
+      console.error("[chat] Direct response also failed:", directError);
       const errorContent = formatProviderError(directError);
 
       if (!sender.isDestroyed()) {

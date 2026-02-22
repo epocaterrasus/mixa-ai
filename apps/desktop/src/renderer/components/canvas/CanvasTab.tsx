@@ -86,13 +86,13 @@ export function CanvasTab(): React.ReactElement {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSaveDataRef = useRef<string>("");
+  const lastSceneHashRef = useRef<string>("");
 
   // Refs for reliable unmount save (avoids stale closures)
   const latestSceneRef = useRef<CachedScene | null>(null);
   const canvasIdRef = useRef<string>("");
   const canvasNameRef = useRef<string>("Untitled Canvas");
-  const lastSavedRef = useRef<Date | null>(null);
+  const createdAtRef = useRef<string>(new Date().toISOString());
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Tab store
@@ -124,7 +124,6 @@ export function CanvasTab(): React.ReactElement {
   // Keep refs in sync for unmount access
   canvasIdRef.current = canvasId;
   canvasNameRef.current = canvasName;
-  lastSavedRef.current = lastSaved;
 
   // All tabs except the current canvas tab are embeddable
   const embeddableTabs = useMemo(() => {
@@ -178,20 +177,24 @@ export function CanvasTab(): React.ReactElement {
               ? data["files"] as BinaryFiles
               : {};
 
+            if (typeof data["createdAt"] === "string") {
+              createdAtRef.current = data["createdAt"];
+            }
+
             setCanvasName(name);
             setIsLoaded(true);
             return { elements, appState: buildAppState(rawAppState), files };
           }
         }
-      } catch {
-        // New canvas — nothing to load
+      } catch (err) {
+        console.warn("[canvas] Failed to load canvas from disk:", canvasId, err);
       }
 
       setIsLoaded(true);
       return null;
     };
 
-  }, [canvasId]);
+  }, [canvasId, resolvedMode]);
 
   // Update tab title when canvas name changes
   useEffect(() => {
@@ -209,15 +212,18 @@ export function CanvasTab(): React.ReactElement {
     const appState = excalidrawRef.current.getAppState();
     const files = excalidrawRef.current.getFiles();
 
+    // Dedup by scene content only (exclude volatile timestamps)
+    const sceneHash = JSON.stringify({ elements, files });
+    if (sceneHash === lastSceneHashRef.current) return;
+    lastSceneHashRef.current = sceneHash;
+
     const saveData = buildSavePayload(
-      canvasName,
-      lastSaved ? lastSaved.toISOString() : new Date().toISOString(),
+      canvasNameRef.current,
+      createdAtRef.current,
       { elements, appState, files },
     );
 
     const dataStr = JSON.stringify(saveData);
-    if (dataStr === lastSaveDataRef.current) return;
-    lastSaveDataRef.current = dataStr;
 
     setIsSaving(true);
     try {
@@ -228,18 +234,20 @@ export function CanvasTab(): React.ReactElement {
 
         const meta = {
           id: canvasId,
-          name: canvasName,
+          name: canvasNameRef.current,
           createdAt: saveData.createdAt,
           updatedAt: saveData.updatedAt,
         };
         updateSavedCanvas(canvasId, meta);
         addSavedCanvas(meta);
+      } else {
+        console.error("[canvas] Save failed:", result.error);
       }
-    } catch {
-      // ignore save errors silently
+    } catch (err) {
+      console.error("[canvas] Save threw:", err);
     }
     setIsSaving(false);
-  }, [canvasId, canvasName, lastSaved, addSavedCanvas, updateSavedCanvas]);
+  }, [canvasId, addSavedCanvas, updateSavedCanvas]);
 
   // Cache scene data on every change for reliable unmount save
   const handleChange = useCallback(
@@ -282,15 +290,13 @@ export function CanvasTab(): React.ReactElement {
       });
 
       // Also persist to disk in the background
-      const created = lastSavedRef.current
-        ? lastSavedRef.current.toISOString()
-        : new Date().toISOString();
-
-      const payload = buildSavePayload(canvasNameRef.current, created, scene);
-      void window.electronAPI.canvas.save(
+      const payload = buildSavePayload(canvasNameRef.current, createdAtRef.current, scene);
+      window.electronAPI.canvas.save(
         canvasIdRef.current,
         JSON.stringify(payload),
-      );
+      ).catch((err: unknown) => {
+        console.error("[canvas] Unmount save failed:", err);
+      });
     };
     // Refs are stable — cleanup only needs to run on true unmount
 

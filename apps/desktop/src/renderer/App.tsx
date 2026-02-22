@@ -40,6 +40,18 @@ const styles = {
     position: "relative",
     overflow: "hidden",
   } as React.CSSProperties,
+  tabPane: {
+    position: "absolute",
+    inset: 0,
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  } as React.CSSProperties,
+  tabPaneHidden: {
+    position: "absolute",
+    inset: 0,
+    display: "none",
+  } as React.CSSProperties,
   emptyState: {
     display: "flex",
     flexDirection: "column",
@@ -81,7 +93,6 @@ function EmptyState(): React.ReactElement {
 }
 
 export function App(): React.ReactElement {
-  // Wire up event listeners and lifecycle management
   useTabEvents();
   useTabShortcuts();
   useTabLifecycle();
@@ -91,15 +102,8 @@ export function App(): React.ReactElement {
   useUpdater();
   useMediaBar();
 
-  const activeTabType = useTabStore((s) => {
-    const id = s.activeTabId;
-    return s.tabs.find((t) => t.id === id)?.type ?? null;
-  });
-  const activeTabUrl = useTabStore((s) => {
-    const id = s.activeTabId;
-    return s.tabs.find((t) => t.id === id)?.url ?? null;
-  });
-  const hasTabs = useTabStore((s) => s.tabs.length > 0);
+  const tabs = useTabStore((s) => s.tabs);
+  const activeTabId = useTabStore((s) => s.activeTabId);
   const mediaBarPosition = useMediaBarStore((s) => s.position);
 
   return (
@@ -111,9 +115,21 @@ export function App(): React.ReactElement {
         {mediaBarPosition === "top" && <MediaBar />}
         <div style={styles.content}>
           <FindBar />
-          {activeTabType ? (
-            <TabContent type={activeTabType} hasUrl={!!activeTabUrl} url={activeTabUrl} />
-          ) : hasTabs ? null : (
+          {tabs.length > 0 ? (
+            tabs.map((tab) => (
+              <div
+                key={tab.id}
+                style={tab.id === activeTabId ? styles.tabPane : styles.tabPaneHidden}
+              >
+                <TabContent
+                  tabId={tab.id}
+                  type={tab.type}
+                  hasUrl={!!tab.url}
+                  url={tab.url}
+                />
+              </div>
+            ))
+          ) : (
             <EmptyState />
           )}
         </div>

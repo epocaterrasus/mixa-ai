@@ -1,7 +1,3 @@
-// Terminal tab — supports two modes:
-// 1. "fenix" mode: renders Fenix UI protocol views streamed from the Go engine
-// 2. "shell" mode: raw xterm.js shell connected to user's shell via node-pty
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { UIEvent, UIAction, EngineModule } from "@mixa-ai/types";
 import { UIViewRenderer } from "@mixa-ai/terminal-renderer";
@@ -138,10 +134,6 @@ function getStatusLabel(state: TerminalStreamState): string {
   }
 }
 
-/**
- * Normalize a keyboard event into a shortcut string matching the format
- * used by UIAction.shortcut (e.g., "Ctrl+R", "Ctrl+Shift+F").
- */
 function keyboardEventToShortcut(e: React.KeyboardEvent): string | null {
   if (e.key === "Shift" || e.key === "Control" || e.key === "Alt" || e.key === "Meta") {
     return null;
@@ -158,25 +150,23 @@ function keyboardEventToShortcut(e: React.KeyboardEvent): string | null {
   return parts.join("+");
 }
 
-export function TerminalTab(): React.ReactElement {
-  const activeTab = useTabStore((s) => {
-    const id = s.activeTabId;
-    return s.tabs.find((t) => t.id === id);
-  });
-  const activeTabId = useTabStore((s) => s.activeTabId);
+interface TerminalTabProps {
+  tabId: string;
+}
+
+export function TerminalTab({ tabId }: TerminalTabProps): React.ReactElement {
+  const tab = useTabStore((s) => s.tabs.find((t) => t.id === tabId));
   const updateTab = useTabStore((s) => s.updateTab);
   const engineConnected = useEngineStore((s) => s.connected);
   const engineModules = useEngineStore((s) => s.modules);
 
-  // Determine initial mode from tab URL: "shell" → shell mode, else fenix
-  const initialMode: TerminalMode = activeTab?.url === "shell" ? "shell" : "fenix";
+  const initialMode: TerminalMode = tab?.url === "shell" ? "shell" : "fenix";
   const [mode, setMode] = useState<TerminalMode>(initialMode);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const streamId = activeTabId ?? "terminal-default";
   const { view, state, error, sendEvent, reconnect } = useTerminalStream(
-    streamId,
+    tabId,
     mode === "fenix" ? selectedModule : null,
   );
 
@@ -195,7 +185,6 @@ export function TerminalTab(): React.ReactElement {
     [sendEvent],
   );
 
-  // Capture keyboard shortcuts and forward matching ones as UIEvents (fenix mode only)
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (mode !== "fenix" || !selectedModule || !view) return;
@@ -224,21 +213,18 @@ export function TerminalTab(): React.ReactElement {
 
   const enabledModules = engineModules.filter((m: EngineModule) => m.enabled);
 
-  // Update tab title when mode or module changes
   const activeModule = enabledModules.find((m) => m.name === selectedModule);
   useEffect(() => {
-    if (!activeTabId) return;
     if (mode === "shell") {
-      updateTab(activeTabId, { title: "Shell" });
+      updateTab(tabId, { title: "Shell" });
     } else {
       const title = activeModule
         ? `Terminal - ${activeModule.displayName || activeModule.name}`
         : "Terminal";
-      updateTab(activeTabId, { title });
+      updateTab(tabId, { title });
     }
-  }, [activeTabId, mode, activeModule, updateTab]);
+  }, [tabId, mode, activeModule, updateTab]);
 
-  // Focus container when streaming starts to enable keyboard shortcut capture
   useEffect(() => {
     if (mode === "fenix" && state === "streaming" && containerRef.current) {
       containerRef.current.focus();
@@ -273,7 +259,7 @@ export function TerminalTab(): React.ReactElement {
           <span style={statusTextStyle}>Raw shell</span>
         </div>
         <div style={{ flex: 1, overflow: "hidden" }}>
-          <ShellTerminal shellId={streamId} />
+          <ShellTerminal shellId={tabId} />
         </div>
       </div>
     );

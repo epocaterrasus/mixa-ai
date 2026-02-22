@@ -7,6 +7,7 @@ import "@xterm/xterm/css/xterm.css";
 const DEFAULT_FONT_SIZE = 14;
 const MIN_FONT_SIZE = 8;
 const MAX_FONT_SIZE = 32;
+const RESIZE_DEBOUNCE_MS = 100;
 
 const containerStyle: React.CSSProperties = {
   display: "flex",
@@ -63,8 +64,19 @@ export function ShellTerminal({ shellId }: ShellTerminalProps): React.ReactEleme
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const fontSizeRef = useRef(DEFAULT_FONT_SIZE);
+  const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [exited, setExited] = useState(false);
   const [spawnError, setSpawnError] = useState<string | null>(null);
+
+  const debouncedResize = useCallback((term: Terminal, fitAddon: FitAddon) => {
+    if (resizeTimerRef.current) {
+      clearTimeout(resizeTimerRef.current);
+    }
+    resizeTimerRef.current = setTimeout(() => {
+      fitAddon.fit();
+      void window.electronAPI.shell.resize(shellId, term.cols, term.rows);
+    }, RESIZE_DEBOUNCE_MS);
+  }, [shellId]);
 
   const spawnShell = useCallback(async (term: Terminal, fitAddon: FitAddon) => {
     setSpawnError(null);
@@ -162,8 +174,7 @@ export function ShellTerminal({ shellId }: ShellTerminalProps): React.ReactEleme
     });
 
     const resizeObserver = new ResizeObserver(() => {
-      fitAddon.fit();
-      void window.electronAPI.shell.resize(shellId, terminal.cols, terminal.rows);
+      debouncedResize(terminal, fitAddon);
     });
     resizeObserver.observe(container);
 
@@ -198,6 +209,9 @@ export function ShellTerminal({ shellId }: ShellTerminalProps): React.ReactEleme
     terminal.focus();
 
     return () => {
+      if (resizeTimerRef.current) {
+        clearTimeout(resizeTimerRef.current);
+      }
       container.removeEventListener("keydown", handleKeyDown);
       resizeObserver.disconnect();
       dataDisposable.dispose();
@@ -208,7 +222,7 @@ export function ShellTerminal({ shellId }: ShellTerminalProps): React.ReactEleme
       terminalRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [shellId, spawnShell]);
+  }, [shellId, spawnShell, debouncedResize]);
 
   const showOverlay = exited || spawnError;
 

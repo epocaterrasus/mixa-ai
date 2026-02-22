@@ -100,9 +100,13 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       const result = await window.electronAPI.canvas.list();
       if (result.success && result.canvases) {
         set({ savedCanvases: result.canvases, listLoaded: true });
+      } else {
+        console.warn("[canvas] loadCanvasList returned failure:", result.error);
+        set({ listLoaded: true });
       }
-    } catch {
-      // ignore — list will remain empty
+    } catch (err) {
+      console.error("[canvas] loadCanvasList threw:", err);
+      set({ listLoaded: true });
     }
   },
 }));

@@ -7,9 +7,14 @@ import { router, publicProcedure } from "../trpc.js";
 import {
   storeApiKey,
   deleteApiKey,
+  getApiKey,
   getApiKeyStatus,
 } from "../../settings/keychain.js";
 import { augmentedBrowsingService } from "../../augmented/index.js";
+import {
+  ProviderRouter,
+  type ProviderCredentials,
+} from "@mixa-ai/ai-pipeline";
 
 const llmProviderNameSchema = z.enum([
   "openai",
@@ -283,4 +288,74 @@ export const settingsRouter = router({
       return getApiKeyStatus();
     },
   ),
+
+  testConnection: publicProcedure
+    .input(
+      z.object({
+        provider: llmProviderNameSchema,
+      }),
+    )
+    .mutation(
+      async ({
+        input,
+      }): Promise<{ success: boolean; model: string; error?: string }> => {
+        const providerName = input.provider as LLMProviderName;
+
+        const key = getApiKey(providerName);
+        if (!key && providerName !== "ollama") {
+          return {
+            success: false,
+            model: "",
+            error: `No API key found for ${providerName}. The stored key may be corrupted — try re-entering it in Settings.`,
+          };
+        }
+
+        const settings = loadSettings();
+        const providerConfig = settings.llm.providers.find(
+          (p) => p.name === providerName,
+        );
+        if (!providerConfig) {
+          return { success: false, model: "", error: `Provider ${providerName} not found in settings.` };
+        }
+
+        const credentials: ProviderCredentials = {
+          [providerName]:
+            providerName === "ollama"
+              ? {
+                  apiKey: "",
+                  baseUrl: providerConfig.baseUrl ?? "http://localhost:11434",
+                }
+              : {
+                  apiKey: key ?? "",
+                  baseUrl: providerConfig.baseUrl ?? undefined,
+                },
+        };
+
+        const tempConfig = {
+          ...settings.llm,
+          providers: settings.llm.providers.map((p) => ({
+            ...p,
+            isActive: p.name === providerName,
+          })),
+        };
+
+        const router = new ProviderRouter(tempConfig, credentials);
+
+        try {
+          const provider = router.getChatProvider();
+          const model = providerConfig.selectedModel || "unknown";
+          const response = await provider.chat({
+            model,
+            messages: [{ role: "user", content: "Say OK" }],
+            temperature: 0,
+            maxTokens: 5,
+          });
+          return { success: true, model: response.model };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.error(`[settings] Connection test failed for ${providerName}:`, err);
+          return { success: false, model: "", error: message };
+        }
+      },
+    ),
 });

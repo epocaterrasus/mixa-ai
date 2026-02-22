@@ -32,57 +32,45 @@ function NewTabPage(): React.ReactElement {
   );
 }
 
-/** Renders placeholder content for non-web tabs, or a new tab page for empty web tabs */
-export function TabContent({
-  type,
-  hasUrl,
-  url,
-}: {
+interface TabContentProps {
+  tabId: string;
   type: TabType;
   hasUrl: boolean;
   url: string | null;
-}): React.ReactElement {
+}
+
+export function TabContent({ tabId, type, hasUrl, url }: TabContentProps): React.ReactElement {
   if (type === "web") {
-    // Web tabs without a URL show the new tab page
-    // Web tabs WITH a URL are rendered by the BrowserView (main process) — this component is not shown
     if (!hasUrl) {
       return <NewTabPage />;
     }
-    // This shouldn't be visible when there's a URL (BrowserView covers it)
     return <div />;
   }
 
-  // App tabs are rendered by the main process WebContentsView (like web tabs with session partitions)
   if (type === "app") {
     return <div />;
   }
 
-  // Chat tab renders the full ChatTab component
   if (type === "chat") {
     return <ChatTab />;
   }
 
-  // Knowledge tab renders the knowledge browse/search UI
   if (type === "knowledge") {
     return <KnowledgeTab />;
   }
 
-  // Settings tab renders the full settings panel
   if (type === "settings") {
     return <SettingsTab />;
   }
 
-  // Canvas tab renders the Excalidraw visual workspace
   if (type === "canvas") {
     return <CanvasTab />;
   }
 
-  // Terminal tab renders the Fenix engine UI via gRPC streaming
   if (type === "terminal") {
-    return <TerminalTab />;
+    return <TerminalTab tabId={tabId} />;
   }
 
-  // Dashboard tab renders cost, health, or knowledge dashboard based on url
   if (type === "dashboard") {
     if (url === "health") {
       return <HealthDashboard />;

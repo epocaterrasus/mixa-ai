@@ -67,6 +67,9 @@ function buildCleanEnv(): Record<string, string> {
       clean[key] = value;
     }
   }
+  clean["TERM_PROGRAM"] = "MixaAI";
+  clean["TERM_PROGRAM_VERSION"] = "0.1.0";
+  clean["COLORTERM"] = "truecolor";
   return clean;
 }
 

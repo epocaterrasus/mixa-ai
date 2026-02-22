@@ -181,14 +181,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         modelOverride ?? undefined,
       );
 
-      // Update user message with real ID
       set((state) => ({
         messages: state.messages.map((m) =>
           m.id === userMessage.id ? { ...m, id: result.userMessageId } : m,
         ),
       }));
 
-      // Add placeholder for streaming assistant message
       const assistantMessage: ChatMessage = {
         id: result.assistantMessageId,
         role: "assistant",
@@ -202,7 +200,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         messages: [...state.messages, assistantMessage],
       }));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to send message";
+      const raw = err instanceof Error ? err.message : String(err);
+      const message = raw.toLowerCase().includes("connection")
+        ? `Cannot reach the AI provider — check your internet connection and API key in Settings. (${raw})`
+        : raw;
       set({ error: message, isStreaming: false });
     }
   },
