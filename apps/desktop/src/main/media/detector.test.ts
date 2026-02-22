@@ -107,7 +107,7 @@ describe("MediaDetector", () => {
     };
 
     detector = new MediaDetector();
-    detector.attach(mockWindow as unknown as import("electron").BrowserWindow);
+    detector.attach(mockWindow as unknown as Electron.BrowserWindow);
   });
 
   afterEach(() => {
@@ -513,7 +513,8 @@ describe("MediaDetector", () => {
         .pop();
       expect(lastCall).toBeDefined();
       const state = lastCall![1] as { meetSessions: Array<{ durationSeconds: number }> };
-      expect(state.meetSessions[0].durationSeconds).toBeGreaterThanOrEqual(30);
+      expect(state.meetSessions).toHaveLength(1);
+      expect(state.meetSessions[0]!.durationSeconds).toBeGreaterThanOrEqual(30);
     });
   });
 });
